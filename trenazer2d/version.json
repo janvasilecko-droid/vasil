@@ -1,1 +1,1 @@
-{"ver": 9, "date": "2026-10-22", "notes": "Přesné definice výtěžnosti (varna / do spilky / využití lab. extraktu), kontrola receptu na začátku várky, kalibrace přes kalibrace.json, prahy lože jako kalibrovatelné parametry, 10 nových testů.", "size": 747456}
+{"ver": 10, "date": "2026-10-22", "notes": "Opravy fyziky: tepelná kapacita oceli (0,5 kJ/kg·K), viskozita sladiny, ledovka podle okolí, kvašení s CO₂ (Balling), CIP s koncentrací. Kalibrace platí i pro uloženou várku a kontroluje rozsahy; čerpadla, trasy a průměry kalibrovatelné.", "size": 757600}
