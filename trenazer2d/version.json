@@ -1,1 +1,1 @@
-{"ver": 1, "date": "2026-10-22", "notes": "Tlačítko Aktualizovat v horní liště, nový vzhled haly a panelu", "size": 667136}
+{"ver": 2, "date": "2026-10-22", "notes": "Opravy: klapky už nejsou přivřené na 50 %, čerpadla jdou pustit (hlášení, když je rozvaděč bez napětí), plynulejší chod. Rozvaděč stále vpravo, panel schovaný (☰ Panel), potenciometry 1–10. Tmavá hala se světly, karty nádob s teploměrem, trend teplot.", "size": 690128}
