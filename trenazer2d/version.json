@@ -1,1 +1,1 @@
-{"ver": 8, "date": "2026-10-22", "notes": "Zapnuté voliče na rozvaděči (čerpadla, míchadla, kopačka, ohřev, osvětlení) svítí zeleně.", "size": 736064}
+{"ver": 9, "date": "2026-10-22", "notes": "Přesné definice výtěžnosti (varna / do spilky / využití lab. extraktu), kontrola receptu na začátku várky, kalibrace přes kalibrace.json, prahy lože jako kalibrovatelné parametry, 10 nových testů.", "size": 747456}
