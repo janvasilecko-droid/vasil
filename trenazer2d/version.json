@@ -1,1 +1,1 @@
-{"ver": 62, "date": "2026-10-24", "notes": "Kapaliny jako skutečná voda/suspenze: GPU shader nádob (hloubka, kaustika, částice, bublinky při varu), trubky plně vyplněné a jednolité bez barevných skoků a švů", "size": 3559760}
+{"ver": 63, "date": "2026-10-24", "notes": "2D nádoby podle 3D: armatury na víku (CIP hlavice, odvzdušnění, průhledítko), průlez s přírubou a pantem, čidlo teploty s kabelem, tri-clamp výpust, vzpěry a šrouby nohou, válcovaný lem víka", "size": 3564064}
