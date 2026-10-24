@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Kontrola překladu Unity skriptů mimo Unity: chytá syntaktické a typové chyby (ne rozdíly proti skutečnému API HDRP). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Assets/Pivovar/**/*.cs" />
+    <Compile Include="Stubs.cs" />
+    <PackageReference Include="UnityEngine.Modules" Version="2022.*" />
+  </ItemGroup>
+</Project>

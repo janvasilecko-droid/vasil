@@ -27,3 +27,22 @@ jobs:
           if [ $code -eq 0 ]; then echo "::notice title=core-tests::$msg"; else echo "::error title=core-tests::$msg"; fi
           cat out.txt
           exit $code
+
+  compile-unity-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Překlad Unity skriptů proti UnityEngine.Modules
+        working-directory: unity/CompileCheck
+        run: |
+          set +e
+          dotnet build -c Release > out.txt 2>&1
+          code=$?
+          { grep -E "error|Build succeeded|Warn.*CS" out.txt | sort -u | head -c 6000; echo; tail -n 3 out.txt; } > summary.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' summary.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=unity-compile::$msg"; else echo "::error title=unity-compile::$msg"; fi
+          cat out.txt
+          exit $code
