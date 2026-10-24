@@ -1,0 +1,174 @@
+// Potrubí, armatury, čerpadla a doplňky podle plan.json.
+using System.Collections.Generic;
+using UnityEngine;
+using Pivovar.Core;
+
+namespace Pivovar
+{
+    public partial class BreweryBuilder
+    {
+        static Texture2D dashTex;
+
+        static Texture2D DashTexture()
+        {
+            if (dashTex != null) return dashTex;
+            const int n = 64;
+            dashTex = new Texture2D(n, 4, TextureFormat.RGBA32, true, false);
+            for (int x = 0; x < n; x++)
+            {
+                float s = x / (float)n;
+                float dash = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.30f, 0.45f, s)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.70f, s)));
+                float v = 0.18f + 0.82f * dash;
+                for (int y = 0; y < 4; y++) dashTex.SetPixel(x, y, new Color(v, v, v, 1f));
+            }
+            dashTex.wrapMode = TextureWrapMode.Repeat; dashTex.filterMode = FilterMode.Bilinear;
+            dashTex.Apply(true);
+            return dashTex;
+        }
+
+        static Color MediumColor(string medium)
+        {
+            switch (medium)
+            {
+                case "water": return new Color(0.30f, 0.62f, 0.95f);
+                case "mash": return new Color(0.78f, 0.55f, 0.22f);
+                case "wort": return new Color(0.95f, 0.62f, 0.12f);
+                case "steam": return new Color(0.92f, 0.92f, 0.96f);
+                case "glycol": return new Color(0.30f, 0.85f, 1.00f);
+                default: return new Color(0.45f, 0.70f, 0.90f);
+            }
+        }
+
+        Vessel VesselAt(double x, double y)
+        {
+            foreach (Vessel v in vessels)
+            {
+                PlanItem it = v.item;
+                if (x > it.X - 8 && x < it.X + it.W + 8 && y > it.Y - 8 && y < it.Y + it.H + 8) return v;
+            }
+            return null;
+        }
+
+        void ClampAt(Transform parent, Vector3 p, Vector3 dir, float rad)
+        {
+            Quaternion q = Quaternion.FromToRotation(Vector3.up, dir.normalized);
+            foreach (float off in new float[] { -0.014f, 0.014f })
+                MakeOriented(parent, MeshKit.Cylinder(rad * 1.75f, 0.012f, 20), steelP, p + dir.normalized * off, q);
+            MakeOriented(parent, MeshKit.Cylinder(rad * 1.6f, 0.012f, 20), rubber, p, q);
+            MakeOriented(parent, MeshKit.Cylinder(rad * 1.95f, 0.02f, 20), steelB, p, q);
+        }
+
+        void MakeOriented(Transform parent, Mesh mesh, Material mat, Vector3 unityPos, Quaternion q)
+        {
+            var go = new GameObject("clamp");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = unityPos; go.transform.localRotation = q;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+        }
+
+        void BuildPipes()
+        {
+            var pp = new GameObject("Potrubí").transform; pp.SetParent(root, false);
+            foreach (PlanItem it in plan.OfType("pipe"))
+            {
+                List<double[]> pts = it.Pts();
+                if (pts.Count < 2) continue;
+                if (it.IsHose)
+                {
+                    var hp = new List<Vector3>();
+                    foreach (double[] p in pts) hp.Add(Pp(p[0], p[1], ZP + 0.12f));
+                    AddRaw(pp, MeshKit.Tube(MeshKit.RoundPath(hp, 0.2f), 0.045f, 14), HdrpUtil.Lit(new Color(0.12f, 0.12f, 0.14f), 0f, 0.35f), Vector3.zero, Vector3.zero, "hadice " + it.Id);
+                    continue;
+                }
+                var raw = new List<Vector3>();
+                foreach (double[] p in pts) raw.Add(Pp(p[0], p[1], ZP));
+                float rad = Mathf.Clamp((float)it.Num("dn", 50) * 0.00056f, 0.016f, 0.06f);
+                List<Vector3> path = MeshKit.RoundPath(raw, Mathf.Max(0.09f, rad * 3f));
+
+                Material mat = HdrpUtil.Lit(new Color(0.78f, 0.80f, 0.84f), 1f, 0.78f);
+                HdrpUtil.SetEmissiveMap(mat, DashTexture(), new Vector2(3.3f, 1f));
+                HdrpUtil.SetEmissive(mat, Color.black, 0f);
+                var go = AddRaw(pp, MeshKit.Tube(path, rad, 14), mat, Vector3.zero, Vector3.zero, "trubka " + it.Id);
+                var flow = go.AddComponent<PipeFlow>();
+                flow.mat = go.GetComponent<MeshRenderer>().material;   // vlastní instance materiálu pro každou trubku
+                flow.liquid = MediumColor(it.Str("medium", ""));
+                flows.Add(flow);
+
+                // tri-clamp spoje na koncích a po cca 3 m
+                for (int e = 0; e < 2; e++)
+                {
+                    Vector3 dv = e == 0 ? raw[1] - raw[0] : raw[raw.Count - 1] - raw[raw.Count - 2];
+                    if (dv.magnitude > 0.01f) ClampAt(pp, raw[e == 0 ? 0 : raw.Count - 1] + dv.normalized * (e == 0 ? 0.06f : -0.06f), dv, rad);
+                }
+                for (int k = 0; k < raw.Count - 1; k++)
+                {
+                    Vector3 dv = raw[k + 1] - raw[k];
+                    float sl = dv.magnitude;
+                    int nj = (int)(sl / 3f);
+                    for (int j = 1; j <= nj; j++) ClampAt(pp, raw[k] + dv.normalized * (sl * j / (nj + 1)), dv, rad);
+                }
+                // nátrubky do nádoby
+                for (int e = 0; e < 2; e++)
+                {
+                    double[] pt = pts[e == 0 ? 0 : pts.Count - 1];
+                    Vessel vh = VesselAt(pt[0], pt[1]);
+                    if (vh == null) continue;
+                    float dx = (float)pt[0] * K - vh.cx;
+                    float zs = vh.item.Shape == "horiz" ? vh.z + vh.r * 0.8f : vh.z + Mathf.Sqrt(Mathf.Max(0.02f, vh.r * vh.r - dx * dx));
+                    Vector3 a = raw[e == 0 ? 0 : raw.Count - 1];
+                    Vector3 b = new Vector3(a.x, a.y, -zs);
+                    AddRaw(pp, MeshKit.Tube(new List<Vector3> { a, b }, rad, 14), mat, Vector3.zero, Vector3.zero, "nátrubek");
+                    MakeOriented(pp, MeshKit.Cylinder(rad * 2.2f, 0.03f, 20), steelP, b, Quaternion.Euler(90f, 0f, 0f));
+                }
+            }
+        }
+
+        void BuildValve(PlanItem it)
+        {
+            var n = new GameObject("klapka " + it.Id).transform; n.SetParent(root, false);
+            n.localPosition = Pp(it.X, it.Y, ZP);
+            n.localRotation = Quaternion.Euler(0f, 0f, -(float)it.Num("rot", 0));
+            float rp = 0.028f;
+            CylX(n, rp * 1.5f, 0.085f, steelB, Vector3.zero);
+            foreach (float s in new float[] { -1f, 1f })
+            {
+                CylX(n, rp * 1.95f, 0.016f, steelP, new Vector3(s * 0.052f, 0, 0));
+                CylX(n, rp * 1.7f, 0.022f, steelP, new Vector3(s * 0.075f, 0, 0));
+            }
+            Cyl(n, 0.026f, 0.075f, steelP, new Vector3(0, 0.082f, 0), Vector3.zero, 16);
+            var stem = new GameObject("páka").transform; stem.SetParent(n, false);
+            stem.localPosition = new Vector3(0, 0.125f, 0);
+            stem.rotation = Quaternion.identity;   // páka zůstává svisle bez ohledu na natočení potrubí
+            Cyl(stem, 0.028f, 0.02f, steelP, Vector3.zero, Vector3.zero, 16);
+            Box(stem, new Vector3(0.12f, 0.008f, 0.022f), steelP, new Vector3(0.06f, 0.012f, 0), Vector3.zero);
+            Box(stem, new Vector3(0.07f, 0.022f, 0.03f), HdrpUtil.Lit(new Color(0.12f, 0.13f, 0.15f), 0f, 0.4f), new Vector3(0.155f, 0.012f, 0), Vector3.zero);
+            Material dot = HdrpUtil.Lit(new Color(0.2f, 0.85f, 0.3f), 0f, 0.4f);
+            HdrpUtil.SetEmissive(dot, new Color(0.2f, 0.85f, 0.3f), 300f);
+            Cyl(stem, 0.007f, 0.004f, dot, new Vector3(0.155f, 0.025f, 0), Vector3.zero, 10);
+        }
+
+        void BuildPump(PlanItem it)
+        {
+            var n = new GameObject("čerpadlo " + it.Id).transform; n.SetParent(root, false);
+            n.localPosition = Pp(it.X, it.Y, ZP);
+            CylZ(n, 0.135f, 0.085f, steelB, new Vector3(0, 0, 0), 36);
+            CylZ(n, 0.06f, 0.07f, steelP, new Vector3(0, 0, -0.085f), 24);
+            Cyl(n, 0.04f, 0.17f, steelP, new Vector3(0, 0.15f, 0), Vector3.zero, 20);
+            Cyl(n, 0.052f, 0.018f, steelP, new Vector3(0, 0.245f, 0), Vector3.zero, 24);
+            CylZ(n, 0.09f, 0.09f, steelB, new Vector3(0, 0, 0.08f), 28);
+            CylZ(n, 0.105f, 0.34f, steelB, new Vector3(0, 0, 0.30f), 36);
+            for (int k = 0; k < 7; k++) CylZ(n, 0.112f, 0.012f, steelP, new Vector3(0, 0, 0.16f + k * 0.045f), 36);
+            Box(n, new Vector3(0.28f, 0.03f, 0.5f), steelB, new Vector3(0, -0.13f, 0.2f), Vector3.zero);
+            var rot = HdrpUtil.Lit(new Color(0.2f, 0.85f, 0.3f), 0f, 0.4f);
+            HdrpUtil.SetEmissive(rot, new Color(0.2f, 0.85f, 0.3f), 200f);
+        }
+
+        void BuildDeco(PlanItem it)
+        {
+            if (it.Str("k", "") != "vent") return;
+            float hgt = 70f * K;
+            Cyl(root, 0.15f, hgt, steelB, new Vector3((float)it.X * K, (floorY - (float)it.Y + 35f) * K, -0.2f), Vector3.zero, 20);
+        }
+    }
+}
