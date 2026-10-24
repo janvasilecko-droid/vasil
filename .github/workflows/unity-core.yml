@@ -17,4 +17,13 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Testy jádra (bez Unity)
         working-directory: unity/CoreTests
-        run: dotnet run -c Release
+        run: |
+          set +e
+          dotnet run -c Release > out.txt 2>&1
+          code=$?
+          # výsledek jde do anotace (čte se přes API, protože logy se z prostředí Claude stáhnout nedají)
+          { grep -E "FAIL|error|Error|Unhandled|celkem" out.txt | head -c 6000; echo; tail -n 5 out.txt; } > summary.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' summary.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=core-tests::$msg"; else echo "::error title=core-tests::$msg"; fi
+          cat out.txt
+          exit $code
