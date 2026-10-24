@@ -1,1 +1,1 @@
-{"ver": 65, "date": "2026-10-24", "notes": "Vyhlazení hran celé scény (FXAA přes celou 2D scénu; Compatibility renderer nemá ve 2D MSAA). Vypnutí: spuštění s --noaa", "size": 3566352}
+{"ver": 66, "date": "2026-10-24", "notes": "Kapalina v trubkách jako sladina v SK: jeden shader s válcovým průřezem (absorpce barvy, lesk, tmavý okraj, jemné částice po proudu), plynulé koleno i napojení větví (T-kus) bez švů", "size": 3568528}
