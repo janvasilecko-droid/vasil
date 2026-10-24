@@ -12,7 +12,31 @@ namespace Pivovar
         const string Asm = "Unity.RenderPipelines.HighDefinition.Runtime";
         const string Ns = "UnityEngine.Rendering.HighDefinition.";
 
-        static Type HdType(string name) { return Type.GetType(Ns + name + ", " + Asm); }
+        static readonly System.Collections.Generic.Dictionary<string, Type> typeCache = new System.Collections.Generic.Dictionary<string, Type>();
+
+        /// <summary>Najde typ podle jména: nejdřív v HDRP, potom v kterékoli načtené assembly v UnityEngine.Rendering*
+        /// (nové verze přesouvají post-processing komponenty z HighDefinition do Core).</summary>
+        static Type HdType(string name)
+        {
+            Type t;
+            if (typeCache.TryGetValue(name, out t)) return t;
+            t = Type.GetType(Ns + name + ", " + Asm);
+            if (t == null)
+            {
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    Type[] types;
+                    try { types = a.GetTypes(); } catch (ReflectionTypeLoadException e) { types = e.Types; } catch (Exception) { continue; }
+                    foreach (Type c in types)
+                    {
+                        if (c == null || c.Name != name || c.Namespace == null || !c.Namespace.StartsWith("UnityEngine.Rendering")) continue;
+                        if (t == null || c.Namespace.Contains("HighDefinition")) t = c;
+                    }
+                }
+            }
+            typeCache[name] = t;
+            return t;
+        }
 
         public static bool IsHdrp { get { return HdType("HDMaterial") != null; } }
 
