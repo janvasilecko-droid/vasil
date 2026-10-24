@@ -1,1 +1,1 @@
-{"ver": 147, "date": "2026-10-24", "notes": "Trubky jako ve 3D: tri-clamp spoje s upínacím pásem a křídlovou maticí na dlouhých rovných úsecích (vedle stávajících objímek na koncích a svarů na kolenech)", "size": 3579240}
+{"ver": 148, "date": "2026-10-24", "notes": "Vyhlazení hran celé scény (FXAA přes celou 2D scénu; Compatibility renderer nemá ve 2D MSAA). Vypnutí: spuštění s --noaa", "size": 3579912}
