@@ -13,7 +13,7 @@ namespace Pivovar
         public const float K = 0.005f;        // 1 px plánu = 5 mm
         public const float ZP = 0.42f;        // rovina potrubí (m před osou nádob)
 
-        public Plan plan;
+        [System.NonSerialized] public Plan plan;
         public float floorY;                  // px plánu, kde stojí podlaha
         public bool demoFlow;
         public bool cutaway = true;
