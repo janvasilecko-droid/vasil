@@ -1,0 +1,20 @@
+name: Unity core tests
+
+on:
+  push:
+    paths:
+      - "unity/**"
+      - ".github/workflows/unity-core.yml"
+  workflow_dispatch:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Testy jádra (bez Unity)
+        working-directory: unity/CoreTests
+        run: dotnet run -c Release
