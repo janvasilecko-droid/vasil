@@ -1,1 +1,1 @@
-{"ver": 67, "date": "2026-10-24", "notes": "Pád pelet chmele do mladiny s kruhy po dopadu a měkká pára z odtahu nad vroucí nádobou (podle videa The art of brewing)", "size": 3571104}
+{"ver": 68, "date": "2026-10-25", "notes": "Kontrola fyziky a parametrů: pára z kotle odpovídá skutečně předanému výkonu, tlak páry a potrubí podle kalibrace, kalibrace skPerm se už nepřepisuje, kvašení a CIP z kalibrace, nové parametry v kalibrace.json (111 s popisem)", "size": 3595504}
