@@ -1,1 +1,1 @@
-{"ver": 68, "date": "2026-10-25", "notes": "Kontrola fyziky a parametrů: pára z kotle odpovídá skutečně předanému výkonu, tlak páry a potrubí podle kalibrace, kalibrace skPerm se už nepřepisuje, kvašení a CIP z kalibrace, nové parametry v kalibrace.json (111 s popisem)", "size": 3595504}
+{"ver": 69, "date": "2026-10-25", "notes": "Smyk míchadla: nad 57 °C a nad 1 m/s tvoří β-glukan gel a zhorší scezování (Kunze s. 241)", "size": 3640080}
