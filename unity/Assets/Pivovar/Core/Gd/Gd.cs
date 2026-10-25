@@ -776,6 +776,7 @@ namespace Pivovar.Gd
         public static Gv snappedf(Gv v, Gv s) { return Gv.F(s.d == 0 ? v.d : Math.Floor(v.d / s.d + 0.5) * s.d); }
         public static Gv snapped(Gv v, Gv s) { return v.k == KK.Int && s.k == KK.Int ? Gv.I((long)(s.d == 0 ? v.d : Math.Floor(v.d / s.d + 0.5) * s.d)) : snappedf(v, s); }
         public static Gv is_nan(Gv x) { return Gv.B(double.IsNaN(x.d)); }
+        public static Gv is_finite(Gv x) { return Gv.B(!double.IsNaN(x.d) && !double.IsInfinity(x.d)); }
         public static Gv is_inf(Gv x) { return Gv.B(double.IsInfinity(x.d)); }
         public static Gv is_equal_approx(Gv a, Gv b) { return Gv.B(Math.Abs(a.d - b.d) <= 1e-5 * Math.Max(1.0, Math.Abs(a.d))); }
         public static Gv is_zero_approx(Gv a) { return Gv.B(Math.Abs(a.d) < 1e-5); }
@@ -859,7 +860,7 @@ namespace Pivovar.Gd
                 case "inverse_lerp": return inverse_lerp(A(a, 0), A(a, 1), A(a, 2)); case "remap": return remap(A(a, 0), A(a, 1), A(a, 2), A(a, 3), A(a, 4));
                 case "smoothstep": return smoothstep(A(a, 0), A(a, 1), A(a, 2)); case "move_toward": return move_toward(A(a, 0), A(a, 1), A(a, 2));
                 case "snappedf": return snappedf(A(a, 0), A(a, 1)); case "snapped": return snapped(A(a, 0), A(a, 1));
-                case "is_nan": return is_nan(A(a, 0)); case "is_inf": return is_inf(A(a, 0));
+                case "is_finite": return is_finite(A(a, 0)); case "is_nan": return is_nan(A(a, 0)); case "is_inf": return is_inf(A(a, 0));
                 case "is_equal_approx": return is_equal_approx(A(a, 0), A(a, 1)); case "is_zero_approx": return is_zero_approx(A(a, 0));
                 case "randi": return randi(); case "randf": return randf();
                 case "randf_range": return randf_range(A(a, 0), A(a, 1)); case "randi_range": return randi_range(A(a, 0), A(a, 1));

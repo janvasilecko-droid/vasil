@@ -989,20 +989,20 @@ public partial class S_tests : GdObject {
       Gv why = Gv.S("");
       foreach (Gv vk in (Gd.Arr(S.G("rvp"), S.G("mp"), S.G("wp"), S.G("sk").G("mash"))).Iter()) {
         foreach (Gv k_3 in (vk).Iter()) {
-          if ((Gv.Eq(Gd.Dyn("typeof", vk.I(k_3)), Gd.K("TYPE_FLOAT")) && (!(Self.C("is_finite", vk.I(k_3))).T() || (Gv.Lt(vk.I(k_3), Gv.F(-0.001)) && !Gv.In(k_3, Gd.Arr(Gv.S("O2"), Gv.S("smm"))))))) {
+          if ((Gv.Eq(Gd.Dyn("typeof", vk.I(k_3)), Gd.K("TYPE_FLOAT")) && (!(Gd.is_finite(vk.I(k_3))).T() || (Gv.Lt(vk.I(k_3), Gv.F(-0.001)) && !Gv.In(k_3, Gd.Arr(Gv.S("O2"), Gv.S("smm"))))))) {
             sane = Gv.B(false);
             why = (Gv.S("%s=%s") % Gd.Arr(k_3, Gd.Dyn("str", vk.I(k_3))));
           }
         }
       }
       foreach (Gv k2 in (Gd.Arr(Gv.S("hlt"), Gv.S("lv"))).Iter()) {
-        if (((!(Self.C("is_finite", S.I(k2).G("w"))).T() || Gv.Lt(S.I(k2).G("w"), Gv.F(-0.001))) || !(Self.C("is_finite", S.I(k2).G("T"))).T())) {
+        if (((!(Gd.is_finite(S.I(k2).G("w"))).T() || Gv.Lt(S.I(k2).G("w"), Gv.F(-0.001))) || !(Gd.is_finite(S.I(k2).G("T"))).T())) {
           sane = Gv.B(false);
           why = k2;
         }
       }
       foreach (Gv p_ in (Gd.Arr(Gv.S("p1"), Gv.S("p2"), Gv.S("p3"))).Iter()) {
-        if (((!(Self.C("is_finite", S.I(p_).G("q"))).T() || Gv.Lt(S.I(p_).G("prime"), Gv.F(0.0))) || Gv.Gt(S.I(p_).G("prime"), Gv.F(1.0001)))) {
+        if (((!(Gd.is_finite(S.I(p_).G("q"))).T() || Gv.Lt(S.I(p_).G("prime"), Gv.F(0.0))) || Gv.Gt(S.I(p_).G("prime"), Gv.F(1.0001)))) {
           sane = Gv.B(false);
           why = p_;
         }
