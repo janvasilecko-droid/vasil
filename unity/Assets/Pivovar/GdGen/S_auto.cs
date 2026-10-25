@@ -93,7 +93,8 @@ public partial class S_auto : GdObject {
     foreach (Gv pk in (Gd.Arr(Gv.S("p1"), Gv.S("p2"), Gv.S("p3"))).Iter()) {
       S = S.SI(pk, S.I(pk).S("on", Gv.B(false)));
     }
-    foreach (Gv it in (m.G("items")).Iter()) {
+    foreach (Gv it__it in (m.G("items")).Iter()) {
+      Gv it = it__it;
       if ((Gv.Eq(it.G("type"), Gv.S("valve")) && Gv.Ne(it.C("get", Gv.S("kind"), Gv.S("")), Gv.S("zasl")))) {
         it = it.SI(Gv.S("open"), keep.C("has", it.G("id")));
       }
@@ -116,7 +117,8 @@ public partial class S_auto : GdObject {
       }
     }
     ice_prep = Gv.B(true);
-    foreach (Gv it in (m.G("items")).Iter()) {
+    foreach (Gv it__it in (m.G("items")).Iter()) {
+      Gv it = it__it;
       if (Gv.Eq(it.G("type"), Gv.S("sw"))) {
         it = it.SI(Gv.S("on"), Gv.B(true));
       }
@@ -192,7 +194,8 @@ public partial class S_auto : GdObject {
     return Gv.Null;
   }
   public Gv _inlet(Gv on_ = default(Gv)) {
-    foreach (Gv it in (m.G("items")).Iter()) {
+    foreach (Gv it__it in (m.G("items")).Iter()) {
+      Gv it = it__it;
       if ((Gv.Eq(it.G("type"), Gv.S("vessel")) && Gv.Eq(it.C("get", Gv.S("shape")), Gv.S("inlet")))) {
         it = it.SI(Gv.S("on"), on_);
       }

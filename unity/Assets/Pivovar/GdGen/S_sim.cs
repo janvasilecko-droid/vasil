@@ -1595,7 +1595,8 @@ public partial class S_sim : GdObject {
     if (Gv.Gt(hm.G("w"), Gv.I(1L))) {
       react(hm, m);
     }
-    foreach (Gv v_3 in (Gd.Arr(mp, S.G("wp"))).Iter()) {
+    foreach (Gv v_3__it in (Gd.Arr(mp, S.G("wp"))).Iter()) {
+      Gv v_3 = v_3__it;
       if (((!(v_3.G("whirlNow")).T() && !(v_3.G("boiling")).T()) && Gv.Gt(v_3.G("trubSus"), Gv.I(0L)))) {
         v_3 = v_3.S("settleMin", (v_3.G("settleMin") + m));
         Gv k_2 = (Gv.Ge(v_3.G("whirlMin"), Gv.I(3L)) ? (Gv.F(1.0) / Gv.F(5.0)) : (Gv.F(1.0) / Gv.F(90.0)));
@@ -1816,7 +1817,8 @@ public partial class S_sim : GdObject {
     Gv moved = Gv.F(0.0);
     Gv ex = Gv.F(0.0);
     Gv tout = (Gv.Ne(S.G("cool").G("Tout"), Gv.Null) ? S.G("cool").G("Tout") : Gv.F(8.0));
-    foreach (Gv e in (net.G("edges")).Iter()) {
+    foreach (Gv e__it in (net.G("edges")).Iter()) {
+      Gv e = e__it;
       if ((!(ids.C("has", e.G("id"))).T() || Gv.Lt(vol(e.G("c")), Gv.F(0.01)))) {
         continue;
       }
@@ -2518,7 +2520,8 @@ public partial class S_sim : GdObject {
         continue;
       }
       foreach (Gv pr in (Gd.Arr(Gd.Arr(Gv.S("t"), Gd.Ctor("Vector2", G.G("x"), (G.G("y1") - Gv.F(30.0)))), Gd.Arr(Gv.S("b"), Gd.Ctor("Vector2", G.G("x"), (G.G("y2") + Gv.F(30.0)))))).Iter()) {
-        foreach (Gv n_3 in (nodes.C("values")).Iter()) {
+        foreach (Gv n_3__it in (nodes.C("values")).Iter()) {
+          Gv n_3 = n_3__it;
           if (Gv.Le(Gd.Ctor("Vector2", n_3.G("x"), n_3.G("y")).C("distance_to", pr.I(Gv.I(1L))), Gv.F(14.0))) {
             n_3 = n_3.SI(Gv.S("gauge"), Gv.B(true));
             n_3 = n_3.SI(Gv.S("gaugeId"), gi.G("id"));
@@ -2527,7 +2530,8 @@ public partial class S_sim : GdObject {
         }
       }
     }
-    foreach (Gv n_4 in (nodes.C("values")).Iter()) {
+    foreach (Gv n_4__it in (nodes.C("values")).Iter()) {
+      Gv n_4 = n_4__it;
       if ((((((n_4.G("att").C("size")).T() || Gv.Ne(n_4.G("edges").C("size"), Gv.I(1L))) || !(n_4.G("end")).T()) || (n_4.G("_tap")).T()) || (n_4.C("get", Gv.S("gauge"), Gv.B(false))).T())) {
         continue;
       }
@@ -2566,12 +2570,14 @@ public partial class S_sim : GdObject {
       n_4 = n_4.S("openEnd", Gv.B(!(touch).T()));
     }
     Gv eset = Gd.Dict();
-    foreach (Gv e_5 in (edges).Iter()) {
+    foreach (Gv e_5__it in (edges).Iter()) {
+      Gv e_5 = e_5__it;
       e_5 = e_5.S("pts", Gd.Arr(Gd.Ctor("Vector2", e_5.G("ax"), e_5.G("ay")), Gd.Ctor("Vector2", e_5.G("bx"), e_5.G("by"))));
       e_5 = e_5.S("ids", Gd.Arr(e_5.G("id")));
       eset = eset.SI(e_5.G("id"), e_5);
     }
-    foreach (Gv n_5 in (nodes.C("values")).Iter()) {
+    foreach (Gv n_5__it in (nodes.C("values")).Iter()) {
+      Gv n_5 = n_5__it;
       if (((((((Gv.Ne(n_5.G("edges").C("size"), Gv.I(2L)) || (n_5.G("att").C("size")).T()) || Gv.Ne(n_5.G("valve"), Gv.Null)) || (n_5.G("end")).T()) || (n_5.G("_tap")).T()) || Gv.Ne(n_5.G("_chil"), Gv.S(""))) || (n_5.G("openEnd")).T())) {
         continue;
       }
@@ -2619,7 +2625,8 @@ public partial class S_sim : GdObject {
       n_5 = n_5.S("edges", Gd.Arr());
     }
     edges = eset.C("values");
-    foreach (Gv e_6 in (edges).Iter()) {
+    foreach (Gv e_6__it in (edges).Iter()) {
+      Gv e_6 = e_6__it;
       if ((old.C("has", e_6.G("id"))).T()) {
         e_6 = e_6.S("c", old.I(e_6.G("id")).G("c"));
         e_6 = e_6.S("q", old.I(e_6.G("id")).G("q"));
@@ -3264,10 +3271,12 @@ public partial class S_sim : GdObject {
     Gv c = S.G("cfg");
     Gv _n0 = Gd.Static("Time", "get_ticks_usec");
     Gv kcool = Gd.minf(Gv.F(1.0), (dt / Gv.F(1800.0)));
-    foreach (Gv e in (net.G("edges")).Iter()) {
+    foreach (Gv e__it in (net.G("edges")).Iter()) {
+      Gv e = e__it;
       if (((!(e.G("flow")).T() && Gv.Gt(e.G("c").G("w"), Gv.F(0.01))) && !(e.G("steam")).T())) {
         e = e.S("c", e.G("c").S("T", (e.G("c").G("T") + (((c.G("ambientT") - e.G("c").G("T"))) * kcool))));
-        foreach (Gv b in (e.G("q")).Iter()) {
+        foreach (Gv b__it in (e.G("q")).Iter()) {
+          Gv b = b__it;
           b = b.S("T", (b.G("T") + (((c.G("ambientT") - b.G("T"))) * kcool)));
         }
       }
@@ -3316,7 +3325,8 @@ public partial class S_sim : GdObject {
         S = S.S("steamOK", S.G("steamOK").SI(b_2, Gv.B(((reach.C("has", b_2)).T() || !(hasSt).T()))));
         Gv on = (Gv.Eq(b_2, Gv.S("hlt")) ? (Gv.B(Gv.Gt(S.G("hlt").G("heat"), Gv.I(0L)))) : (Gv.B(Gv.Gt(S.I(b_2).G("heat"), Gv.I(0L)))));
         if ((((reach.C("has", b_2)).T() && (on).T()) && (S.G("boiler").G("on")).T())) {
-          foreach (Gv s in (path_to(r, reach.I(b_2).G("k"))).Iter()) {
+          foreach (Gv s__it in (path_to(r, reach.I(b_2).G("k"))).Iter()) {
+            Gv s = s__it;
             if ((s.C("has", Gv.S("e"))).T()) {
               s = s.S("e", s.G("e").S("steam", Gv.B(true)));
             }
@@ -3512,7 +3522,8 @@ public partial class S_sim : GdObject {
       }
       Gv sw = Gv.F(0.0);
       Gv nOpen = Gv.I(0L);
-      foreach (Gv o in (outs).Iter()) {
+      foreach (Gv o__it in (outs).Iter()) {
+        Gv o = o__it;
         o = o.S("f", path_pct(o.G("path")));
         o = o.S("w", (o.G("f") / Gd.sqrt((Gv.F(1.0) + (path_len(o.G("path")) / Gv.F(3000.0))))));
         sw = (sw + o.G("w"));
@@ -3765,7 +3776,8 @@ public partial class S_sim : GdObject {
           Gv Lh2 = (((S.G("mixAuto")).T() ? Lh : Gd.minf(Lh, Gd.maxf(Gv.F(0.0), (S.G("hlt").G("w") - Gv.F(150.0)))))).AsF();
           if (Gv.Gt(Lh2, Gv.F(0.01))) {
             Gv fk = ((Lh2 / Lh)).AsF();
-            foreach (Gv x_3 in (hplan).Iter()) {
+            foreach (Gv x_3__it in (hplan).Iter()) {
+              Gv x_3 = x_3__it;
               x_3 = x_3.SI(Gv.I(1L), (x_3.I(Gv.I(1L)) * fk));
             }
             Gv Th = (((S.G("mixAuto")).T() ? drawWater(Lh2, Tset) : drawHot(Lh2))).AsF();

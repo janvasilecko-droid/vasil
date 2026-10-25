@@ -26,7 +26,8 @@ public partial class S_tests : GdObject {
     return Gv.Null;
   }
   public Gv fresh() {
-    foreach (Gv it in (m.G("items")).Iter()) {
+    foreach (Gv it__it in (m.G("items")).Iter()) {
+      Gv it = it__it;
       if (Gv.Eq(it.G("type"), Gv.S("valve"))) {
         it = it.SI(Gv.S("open"), Gv.B(false));
       }
@@ -440,7 +441,8 @@ public partial class S_tests : GdObject {
       sim.C("net_step", Gv.F(1.0));
     }
     chk(Gv.S("po zavodnění teče plným průtokem"), Gv.B(((Gv.Ge(S.G("p1").G("prime"), Gv.F(0.95)) && Gv.Gt(S.G("p1").G("q"), Gv.F(100.0))) && Gv.Eq(S.G("p1").G("dry"), Gv.F(0.0)))), (Gv.S("%.0f L/min") % S.G("p1").G("q")));
-    foreach (Gv it in (m.G("items")).Iter()) {
+    foreach (Gv it__it in (m.G("items")).Iter()) {
+      Gv it = it__it;
       if ((Gv.Eq(it.G("type"), Gv.S("valve")) && (rids.C("has", it.G("id"))).T())) {
         it = it.SI(Gv.S("open"), Gv.B(false));
       }
@@ -544,7 +546,8 @@ public partial class S_tests : GdObject {
       chk(Gv.S("konce trubek u stavoznaku jsou rozpoznané a nejsou únik"), Gv.B((Gv.Ge(ends, Gv.I(1L)) && Gv.Eq(leaking, Gv.I(0L)))), (Gv.S("konců %d, úniků %d") % Gd.Arr(ends, leaking)));
       Gv gv0 = sim.C("gauge_vessel_free", gg);
       chk(Gv.S("stavoznak je trubkou napojen přímo na ledovku (horní hrdlo nemá klapku)"), Gv.B((Gv.Ne(gv0, Gv.Null) && Gv.Eq(gv0.C("get", Gv.S("bind")), Gv.S("lv")))));
-      foreach (Gv it_4 in (m.G("items")).Iter()) {
+      foreach (Gv it_4__it in (m.G("items")).Iter()) {
+        Gv it_4 = it_4__it;
         if (Gv.Eq(it_4.G("type"), Gv.S("valve"))) {
           it_4 = it_4.SI(Gv.S("open"), Gv.B(true));
         }
@@ -561,7 +564,8 @@ public partial class S_tests : GdObject {
       chk(Gv.S("se zavřenými oběma kohouty stavoznak nic neukazuje"), Gv.B(Gv.Eq(sim.C("gauge_vessel_free", gg), Gv.Null)));
       gg = gg.SI(Gv.S("top"), Gv.B(true));
       gg = gg.SI(Gv.S("bot"), Gv.B(true));
-      foreach (Gv it_5 in (m.G("items")).Iter()) {
+      foreach (Gv it_5__it in (m.G("items")).Iter()) {
+        Gv it_5 = it_5__it;
         if (Gv.Eq(it_5.G("type"), Gv.S("valve"))) {
           it_5 = it_5.SI(Gv.S("open"), Gv.B(false));
         }

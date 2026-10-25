@@ -266,7 +266,8 @@ public partial class S_audit_tests : GdObject {
     Gv ids = Gd.Dict();
     Gv ex0 = Gv.F(0.0);
     Gv n = Gv.I(0L);
-    foreach (Gv e in (sim.G("net").G("edges")).Iter()) {
+    foreach (Gv e__it in (sim.G("net").G("edges")).Iter()) {
+      Gv e = e__it;
       if (Gv.Ge(n, Gv.I(5L))) {
         break;
       }

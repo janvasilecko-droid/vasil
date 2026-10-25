@@ -393,8 +393,13 @@ class Gen:
                 itx = 'Gd.RangeIter(%s)' % ', '.join(self.ex(a, ci, sc, fc) for a in it[2])
             else:
                 itx = '(%s).Iter()' % self.ex(it, ci, sc, fc)
-            out = [P + 'foreach (Gv %s in %s) {' % (cs, itx)]
-            out.extend(self.block(body, ci, inner, fc, ind + 1))
+            blk = self.block(body, ci, inner, fc, ind + 1)
+            assigned = re.search(r'(?<![\w.])%s\s*([-+*/%%]|<<|>>|\||&|\^)?=(?!=)' % re.escape(cs), '\n'.join(blk)) is not None
+            if assigned:
+                out = [P + 'foreach (Gv %s__it in %s) {' % (cs, itx), P + '  Gv %s = %s__it;' % (cs, cs)]
+            else:
+                out = [P + 'foreach (Gv %s in %s) {' % (cs, itx)]
+            out.extend(blk)
             out.append(P + '}')
             return out
         if k == 'match':

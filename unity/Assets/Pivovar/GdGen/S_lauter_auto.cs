@@ -44,7 +44,8 @@ public partial class S_lauter_auto : GdObject {
         }
       }
     }
-    foreach (Gv it in (get_sim().G("net").G("byId").C("values")).Iter()) {
+    foreach (Gv it__it in (get_sim().G("net").G("byId").C("values")).Iter()) {
+      Gv it = it__it;
       if ((Gv.Eq(it.G("type"), Gv.S("valve")) && !(steam_valves.C("has", it.G("id"))).T())) {
         it = it.SI(Gv.S("open"), Gv.B(false));
       }
