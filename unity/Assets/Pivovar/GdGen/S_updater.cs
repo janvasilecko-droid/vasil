@@ -121,7 +121,7 @@ public partial class S_updater : GdNode {
       if ((Gv.Ne(main, Gv.Null) && (main.C("has_method", Gv.S("save_game"))).T())) {
         main.C("save_game");
       }
-      Self.C("get_tree").C("create_timer", Gv.F(1.2)).G("timeout");
+      _ = Self.C("get_tree").C("create_timer", Gv.F(1.2)).G("timeout");
       Gd.Static("OS", "set_restart_on_exit", Gv.B(true));
       Self.C("get_tree").C("quit");
     }

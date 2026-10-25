@@ -141,7 +141,7 @@ public partial class S_editor : GdNode {
     hb.C("add_child", t);
     Gv more = Gd.New("VBoxContainer");
     more.C("add_theme_constant_override", Gv.S("separation"), Gv.I(5L));
-    Gv cb = _b(hb, Gv.S("▴ sbalit"), Gd.Fn((_a) => {  Gd.K("pass"); return Gv.Null; }));
+    Gv cb = _b(hb, Gv.S("▴ sbalit"), Gd.Fn((_a) => {  _ = Gd.K("pass"); return Gv.Null; }));
     cb.G("pressed").C("connect", Gd.Fn((_a) => {  more = more.S("visible", Gv.B(!(more.G("visible")).T())); info = info.S("visible", more.G("visible")); cb = cb.S("text", ((more.G("visible")).T() ? Gv.S("▴ sbalit") : Gv.S("▾ rozbalit"))); return Gv.Null; }));
     Gv r = _row(v);
     foreach (Gv d in (Gd.Arr(Gd.Arr(Gv.S("select"), Gv.S("⬚ Výběr (V)")), Gd.Arr(Gv.S("pipe"), Gv.S("╱ Trubka (T)")), Gd.Arr(Gv.S("hose"), Gv.S("∿ Nerez. hadice (H)")), Gd.Arr(Gv.S("pitch"), Gv.S("⤳ Spílací hadice")), Gd.Arr(Gv.S("joint"), Gv.S("● Spoj (J)")), Gd.Arr(Gv.S("measure"), Gv.S("⟷ Měřit (M)")), Gd.Arr(Gv.S("route"), Gv.S("➜ Cesta (C)")), Gd.Arr(Gv.S("paint"), Gv.S("▦ Barva (B)")))).Iter()) {
@@ -514,7 +514,7 @@ public partial class S_editor : GdNode {
     }
     m.C("save_game");
     m.G("hud").C("toast", Gv.S("Plán uložen – načítám trenažér znovu…"));
-    Self.C("get_tree").C("create_timer", Gv.F(0.5)).G("timeout");
+    _ = Self.C("get_tree").C("create_timer", Gv.F(0.5)).G("timeout");
     Self.C("get_tree").C("reload_current_scene");
     return Gv.Null;
   }
@@ -549,7 +549,7 @@ public partial class S_editor : GdNode {
     }
     m.C("save_game");
     m.G("hud").C("toast", Gv.S("Vrácen původní plán – načítám znovu…"));
-    Self.C("get_tree").C("create_timer", Gv.F(0.6)).G("timeout");
+    _ = Self.C("get_tree").C("create_timer", Gv.F(0.6)).G("timeout");
     Self.C("get_tree").C("reload_current_scene");
     return Gv.Null;
   }
@@ -2183,7 +2183,7 @@ public partial class S_editor : GdNode {
   public Gv clicktest() {
     m = m.S("cam", m.G("cam").S("zoom", Gd.StaticGet("Vector2", "ONE")));
     m = m.S("cam", m.G("cam").S("position", Gd.Ctor("Vector2", Gv.I(700L), Gv.I(900L))));
-    Self.C("get_tree").G("process_frame");
+    _ = Self.C("get_tree").G("process_frame");
     Gv vp = m.C("vp_size");
     Gv to_s = Gd.Fn((_a) => { Gv w = Gd.A(_a, 0); return ((((w - m.G("cam").C("get_screen_center_position"))) * m.G("cam").G("zoom").G("x")) + (vp * Gv.F(0.5))); return Gv.Null; });
     Gv n0 = (m.G("items").C("size")).AsI();
@@ -2196,7 +2196,7 @@ public partial class S_editor : GdNode {
         ev = ev.S("position", to_s.C("call", w_2));
         ev = ev.S("global_position", ev.G("position"));
         Self.C("get_viewport").C("push_input", ev);
-        Self.C("get_tree").G("process_frame");
+        _ = Self.C("get_tree").G("process_frame");
       }
     }
     Gv ev2 = Gd.New("InputEventMouseButton");
@@ -2204,7 +2204,7 @@ public partial class S_editor : GdNode {
     ev2 = ev2.S("pressed", Gv.B(true));
     ev2 = ev2.S("position", to_s.C("call", Gd.Ctor("Vector2", Gv.I(620L), Gv.I(1160L))));
     Self.C("get_viewport").C("push_input", ev2);
-    Self.C("get_tree").G("process_frame");
+    _ = Self.C("get_tree").G("process_frame");
     Gv last = m.G("items").I((m.G("items").C("size") - Gv.I(1L)));
     Gd.print((Gv.S("EDCLICK trubka myší: položek %d→%d, body %s") % Gd.Arr(n0, m.G("items").C("size"), Gd.Dyn("str", last.C("get", Gv.S("pts"), Gd.Arr())))));
     Gd.print((Gv.S("EDCLICK ") + (((Gv.Eq(m.G("items").C("size"), (n0 + Gv.I(1L))) && Gv.Eq(last.G("type"), Gv.S("pipe"))) ? Gv.S("OK") : Gv.S("CHYBA")))));

@@ -4715,7 +4715,7 @@ public partial class S_main : GdNode {
     }
     if (Gv.In(Gv.S("--tests"), Gd.Static("OS", "get_cmdline_user_args"))) {
       save_path = Gv.S("user://test_tmp.sav");
-      _run_tests();
+      _ = _run_tests();
       return Gv.Null;
     }
     if (Gv.In(Gv.S("--autotest"), Gd.Static("OS", "get_cmdline_user_args"))) {
@@ -4762,10 +4762,10 @@ public partial class S_main : GdNode {
     hud.C("add_child", mini);
     mini.C("setup");
     hud.C("toast", Gv.S("Připravuji plánek…"));
-    Self.C("get_tree").G("process_frame");
+    _ = Self.C("get_tree").G("process_frame");
     fit_all();
     if (Gv.Ne(Gd.Static("DisplayServer", "get_name"), Gv.S("headless"))) {
-      _bake();
+      _ = _bake();
     }
     flow_layer = S_main_FlowLayer.New();
     flow_layer = flow_layer.S("m", Self);
@@ -4836,7 +4836,7 @@ public partial class S_main : GdNode {
     rota = rota.S("m", Self);
     game.C("add_child", rota);
     apply_ui();
-    Self.C("get_tree").G("process_frame");
+    _ = Self.C("get_tree").G("process_frame");
     if (Gv.Ne(dock, Gv.Null)) {
       dock.C("fit");
     }
@@ -4874,7 +4874,7 @@ public partial class S_main : GdNode {
       if ((Gv.Eq(editor, Gv.Null) || !(editor.G("on")).T())) {
         open_editor();
       }
-      editor.C("clicktest");
+      _ = editor.C("clicktest");
       Self.C("get_tree").C("quit");
       return Gv.Null;
     }
@@ -4961,7 +4961,7 @@ public partial class S_main : GdNode {
       }
     }
     if (Gv.In(Gv.S("--bench"), Gd.Static("OS", "get_cmdline_user_args"))) {
-      Self.C("get_tree").C("create_timer", Gv.F(1.0)).G("timeout");
+      _ = Self.C("get_tree").C("create_timer", Gv.F(1.0)).G("timeout");
       Gv t0 = Gd.Static("Time", "get_ticks_usec");
       Gv frames = Gv.I(0L);
       Gv worst = Gv.F(0.0);
@@ -4972,7 +4972,7 @@ public partial class S_main : GdNode {
         if (Gv.Lt(Gd.fmod(el, Gv.F(3.0)), Gv.F(0.05))) {
           zoom_at((Gv.Lt(Gd.fmod(el, Gv.F(6.0)), Gv.F(3.0)) ? Gv.F(1.6) : Gv.F(0.62)), (vp_size() * Gv.F(0.5)));
         }
-        Self.C("get_tree").G("process_frame");
+        _ = Self.C("get_tree").G("process_frame");
         Gv now = Gd.Static("Time", "get_ticks_usec");
         worst = Gd.maxf(worst, (((now - last)) / Gv.F(1000.0)));
         last = now;
@@ -4983,7 +4983,7 @@ public partial class S_main : GdNode {
       Self.C("get_tree").C("quit");
     }
     if (Gv.In(Gv.S("--hosetest"), Gd.Static("OS", "get_cmdline_user_args"))) {
-      Self.C("get_tree").C("create_timer", Gv.F(0.5)).G("timeout");
+      _ = Self.C("get_tree").C("create_timer", Gv.F(0.5)).G("timeout");
       Gv hs = Gv.Null;
       foreach (Gv it_4 in (items).Iter()) {
         if (((Gv.Eq(it_4.G("type"), Gv.S("pipe")) && (it_4.C("get", Gv.S("hose"), Gv.B(false))).T()) && Gv.Eq(it_4.C("get", Gv.S("dn"), Gv.I(50L)), Gv.I(40L)))) {
@@ -5002,20 +5002,20 @@ public partial class S_main : GdNode {
         Gv mv = Gd.New("InputEventMouseMotion");
         mv = mv.S("position", to_s.C("call", a_4.C("lerp", b, (i_2 / Gv.F(10.0)))));
         Gd.Static("Input", "parse_input_event", mv);
-        Self.C("get_tree").G("process_frame");
+        _ = Self.C("get_tree").G("process_frame");
       }
-      Self.C("get_tree").G("process_frame");
+      _ = Self.C("get_tree").G("process_frame");
       Gv up = Gd.New("InputEventMouseButton");
       up = up.S("button_index", Gd.K("MOUSE_BUTTON_LEFT"));
       up = up.S("pressed", Gv.B(false));
       up = up.S("position", to_s.C("call", b));
       Gd.Static("Input", "parse_input_event", up);
-      Self.C("get_tree").G("process_frame");
+      _ = Self.C("get_tree").G("process_frame");
       Gd.print(Gv.S("HOSETEST konec="), hs.G("pts").I(Gv.I(0L)), Gv.S(" vývod="), b);
     }
     foreach (Gv a_5 in (Gd.Static("OS", "get_cmdline_user_args")).Iter()) {
       if ((a_5.C("begins_with", Gv.S("--shot="))).T()) {
-        Self.C("get_tree").C("create_timer", Gv.F(4.0)).G("timeout");
+        _ = Self.C("get_tree").C("create_timer", Gv.F(4.0)).G("timeout");
         Self.C("get_viewport").C("get_texture").C("get_image").C("save_png", a_5.C("substr", Gv.I(7L)));
         Self.C("get_tree").C("quit");
       }
@@ -6966,7 +6966,7 @@ public partial class S_main : GdNode {
     detail_rect = Gd.Ctor("Rect2");
     detail_sig = Gv.S("");
     hud.C("toast", Gv.S("Překresluji halu…"));
-    _bake();
+    _ = _bake();
     hud.C("toast", (Gv.S("Hala: ") + (((dark).T() ? Gv.S("tmavá") : Gv.S("světlá")))));
     return Gv.Null;
   }
@@ -7001,8 +7001,8 @@ public partial class S_main : GdNode {
         sv.C("add_child", il);
         Self.C("add_child", sv);
         sv = sv.S("canvas_transform", Gd.Ctor("Transform2D", Gv.F(0.0), Gd.Ctor("Vector2", BAKE_SCALE, BAKE_SCALE), Gv.F(0.0), ((-origin) * BAKE_SCALE)));
-        Gd.StaticGet("RenderingServer", "frame_post_draw");
-        Gd.StaticGet("RenderingServer", "frame_post_draw");
+        _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
+        _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
         Gv img = sv.C("get_texture").C("get_image");
         img.C("generate_mipmaps");
         Gv spr = Gd.New("Sprite2D");
@@ -7091,8 +7091,8 @@ public partial class S_main : GdNode {
     il = il.S("clip", grow);
     il.C("queue_redraw");
     sv = sv.S("render_target_update_mode", Gd.StaticGet("SubViewport", "UPDATE_ONCE"));
-    Gd.StaticGet("RenderingServer", "frame_post_draw");
-    Gd.StaticGet("RenderingServer", "frame_post_draw");
+    _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
+    _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
     if (Gv.Eq(detail_spr, Gv.Null)) {
       detail_spr = Gd.New("Sprite2D");
       detail_spr = detail_spr.S("centered", Gv.B(false));
@@ -7380,7 +7380,7 @@ public partial class S_main : GdNode {
   public Gv vessel_color(Gv it = default(Gv)) {
     Gv S = sim.G("S");
     Gv b = it.C("get", Gv.S("bind"));
-    Gv col = Gd.Color(1, 1, 1, 1);
+    Gv col = Gv.Col(0, 0, 0, 1);
     {
       Gv _t1 = b;
       if (Gv.Eq(_t1, Gv.S("rvp")) || Gv.Eq(_t1, Gv.S("mp")) || Gv.Eq(_t1, Gv.S("wp"))) {

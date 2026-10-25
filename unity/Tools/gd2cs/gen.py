@@ -239,7 +239,7 @@ class Gen:
         if t == 'Array' or t.startswith('Array[') or t.startswith('Packed'): return 'Gd.NewArray()'
         if t == 'Dictionary': return 'Gd.NewDict()'
         if t == 'Vector2': return 'Gv.Vec(0, 0)'
-        if t == 'Color': return 'Gd.Color(1, 1, 1, 1)'
+        if t == 'Color': return 'Gv.Col(0, 0, 0, 1)'
         return 'Gv.Null'
 
     def conv(self, typ, expr):
@@ -356,6 +356,7 @@ class Gen:
             return [P + 'Gv %s = %s;' % (cs, val)]
         if k == 'expr':
             e = s[1]
+            if e[0] != 'call': return [P + '_ = ' + self.ex(e, ci, sc, fc, stmt=True) + ';']
             return [P + self.ex(e, ci, sc, fc, stmt=True) + ';']
         if k == 'assign':
             return [P + self.assign(s, ci, sc, fc)]

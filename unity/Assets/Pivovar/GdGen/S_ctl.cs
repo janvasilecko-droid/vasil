@@ -445,8 +445,8 @@ public partial class S_ctl : GdNode {
     refresh();
     foreach (Gv a_2 in (Gd.Static("OS", "get_cmdline_user_args")).Iter()) {
       if ((a_2.C("begins_with", Gv.S("--scroll="))).T()) {
-        Self.C("get_tree").G("process_frame");
-        Self.C("get_tree").G("process_frame");
+        _ = Self.C("get_tree").G("process_frame");
+        _ = Self.C("get_tree").G("process_frame");
         sc = sc.S("scroll_vertical", Gd.Dyn("int", a_2.C("substr", Gv.I(9L))));
         dirty();
       }
@@ -548,7 +548,7 @@ public partial class S_ctl : GdNode {
     box.C("add_theme_constant_override", Gv.S("separation"), Gv.I(8L));
     _fit_width(box, Gv.F(266.0));
     if (Gv.In(Gv.S("--paneldebug"), Gd.Static("OS", "get_cmdline_user_args"))) {
-      Self.C("get_tree").G("process_frame");
+      _ = Self.C("get_tree").G("process_frame");
       Gd.print((Gv.S("PANEL box min %s, sv %s") % Gd.Arr(box.C("get_combined_minimum_size"), sv.G("size"))));
       _dbg_wide(box, Gv.I(0L));
     }
