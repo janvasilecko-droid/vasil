@@ -49,14 +49,7 @@ namespace Pivovar
             return null;
         }
 
-        void ClampAt(Transform parent, Vector3 p, Vector3 dir, float rad)
-        {
-            Quaternion q = Quaternion.FromToRotation(Vector3.up, dir.normalized);
-            foreach (float off in new float[] { -0.014f, 0.014f })
-                MakeOriented(parent, MeshKit.Cylinder(rad * 1.75f, 0.012f, 20), steelP, p + dir.normalized * off, q);
-            MakeOriented(parent, MeshKit.Cylinder(rad * 1.6f, 0.012f, 20), rubber, p, q);
-            MakeOriented(parent, MeshKit.Cylinder(rad * 1.95f, 0.02f, 20), steelB, p, q);
-        }
+        void ClampAt(Transform parent, Vector3 p, Vector3 dir, float rad) { RealClamp(parent, p, dir, rad); }
 
         void MakeOriented(Transform parent, Mesh mesh, Material mat, Vector3 unityPos, Quaternion q)
         {
@@ -163,60 +156,9 @@ namespace Pivovar
             }
         }
 
-        void BuildValve(PlanItem it)
-        {
-            var n = new GameObject("klapka " + it.Id).transform; n.SetParent(root, false);
-            partObjs[it.Id] = n.gameObject;
-            n.localPosition = Pp(it.X, it.Y, ZP);
-            n.localRotation = Quaternion.Euler(0f, 0f, -(float)it.Num("rot", 0));
-            float rp = 0.028f;
-            CylX(n, rp * 1.5f, 0.085f, steelB, Vector3.zero);
-            foreach (float s in new float[] { -1f, 1f })
-            {
-                CylX(n, rp * 1.95f, 0.016f, steelP, new Vector3(s * 0.052f, 0, 0));
-                CylX(n, rp * 1.7f, 0.022f, steelP, new Vector3(s * 0.075f, 0, 0));
-            }
-            Cyl(n, 0.026f, 0.075f, steelP, new Vector3(0, 0.082f, 0), Vector3.zero, 16);
-            var stem = new GameObject("páka").transform; stem.SetParent(n, false);
-            stem.localPosition = new Vector3(0, 0.125f, 0);
-            stem.rotation = Quaternion.identity;   // páka zůstává svisle bez ohledu na natočení potrubí
-            Cyl(stem, 0.028f, 0.02f, steelP, Vector3.zero, Vector3.zero, 16);
-            Box(stem, new Vector3(0.12f, 0.008f, 0.022f), steelP, new Vector3(0.06f, 0.012f, 0), Vector3.zero);
-            Box(stem, new Vector3(0.07f, 0.022f, 0.03f), HdrpUtil.Lit(new Color(0.12f, 0.13f, 0.15f), 0f, 0.4f), new Vector3(0.155f, 0.012f, 0), Vector3.zero);
-            object oo; bool open = !(it.D.TryGetValue("open", out oo) && oo is bool && !(bool)oo);
-            string kind = it.Str("kind", "klapka");
-            Color dc = open ? new Color(0.2f, 0.85f, 0.3f) : new Color(0.9f, 0.2f, 0.15f);
-            Material dot = HdrpUtil.Lit(dc, 0f, 0.4f);
-            HdrpUtil.SetEmissive(dot, dc, 300f);
-            Cyl(stem, 0.007f, 0.004f, dot, new Vector3(0.155f, 0.025f, 0), Vector3.zero, 10);
-            stem.localRotation = Quaternion.Euler(0f, open ? 0f : 90f, 0f);   // páka podél trubky = otevřeno, napříč = zavřeno
-            if (kind == "belimo")
-            {
-                Box(n, new Vector3(0.13f, 0.1f, 0.09f), orange, new Vector3(0, 0.22f, 0), Vector3.zero);
-                Box(n, new Vector3(0.05f, 0.02f, 0.02f), dark, new Vector3(0, 0.27f, 0.05f), Vector3.zero);
-            }
-            else if (kind == "kulovy")
-            {
-                Add(n, MeshKit.Sphere(0.05f, 20, 12), steelP, Vector3.zero, Vector3.zero, "koule");
-            }
-        }
+        void BuildValve(PlanItem it) { RealValve(it); }
 
-        void BuildPump(PlanItem it)
-        {
-            var n = new GameObject("čerpadlo " + it.Id).transform; n.SetParent(root, false);
-            partObjs[it.Id] = n.gameObject;
-            n.localPosition = Pp(it.X, it.Y, ZP);
-            CylZ(n, 0.135f, 0.085f, steelB, new Vector3(0, 0, 0), 36);
-            CylZ(n, 0.06f, 0.07f, steelP, new Vector3(0, 0, -0.085f), 24);
-            Cyl(n, 0.04f, 0.17f, steelP, new Vector3(0, 0.15f, 0), Vector3.zero, 20);
-            Cyl(n, 0.052f, 0.018f, steelP, new Vector3(0, 0.245f, 0), Vector3.zero, 24);
-            CylZ(n, 0.09f, 0.09f, steelB, new Vector3(0, 0, 0.08f), 28);
-            CylZ(n, 0.105f, 0.34f, steelB, new Vector3(0, 0, 0.30f), 36);
-            for (int k = 0; k < 7; k++) CylZ(n, 0.112f, 0.012f, steelP, new Vector3(0, 0, 0.16f + k * 0.045f), 36);
-            Box(n, new Vector3(0.28f, 0.03f, 0.5f), steelB, new Vector3(0, -0.13f, 0.2f), Vector3.zero);
-            var rot = HdrpUtil.Lit(new Color(0.2f, 0.85f, 0.3f), 0f, 0.4f);
-            HdrpUtil.SetEmissive(rot, new Color(0.2f, 0.85f, 0.3f), 200f);
-        }
+        void BuildPump(PlanItem it) { RealPump(it); }
 
         void BuildDeco(PlanItem it)
         {

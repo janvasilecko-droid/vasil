@@ -21,7 +21,7 @@ namespace Pivovar
             {
                 case "W": return Key.W; case "A": return Key.A; case "S": return Key.S; case "D": return Key.D;
                 case "Q": return Key.Q; case "V": return Key.V; case "E": return Key.E; case "F": return Key.F; case "X": return Key.X;
-                case "Shift": return Key.LeftShift; default: return Key.None;
+                case "Shift": return Key.LeftShift; case "Ctrl": return Key.LeftCtrl; default: return Key.None;
             }
         }
         public static bool Held(string k) { var kb = Keyboard.current; return kb != null && kb[Map(k)].isPressed; }
@@ -39,7 +39,7 @@ namespace Pivovar
             {
                 case "W": return KeyCode.W; case "A": return KeyCode.A; case "S": return KeyCode.S; case "D": return KeyCode.D;
                 case "Q": return KeyCode.Q; case "V": return KeyCode.V; case "E": return KeyCode.E; case "F": return KeyCode.F; case "X": return KeyCode.X;
-                case "Shift": return KeyCode.LeftShift; default: return KeyCode.None;
+                case "Shift": return KeyCode.LeftShift; case "Ctrl": return KeyCode.LeftControl; default: return KeyCode.None;
             }
         }
         public static bool Held(string k) { return Input.GetKey(Map(k)); }

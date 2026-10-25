@@ -225,6 +225,17 @@ namespace Pivovar
             v.shellFull = AddRaw(pv, MeshKit.Lathe(prof, 64, 0f, Mathf.PI * 2f, new Vector2(8f, 1.6f)), inox, pos, Vector3.zero, "plášť");
             // řez: v přední části chybí pás (jako v 3D z Godotu: z > 0.04 r a |x| < 0.8 r)
             v.shellCut = AddRaw(pv, MeshKit.Lathe(prof, 64, Mathf.PI - 0.6435f, Mathf.PI * 2f + 0.6435f, new Vector2(8f, 1.6f)), inox, pos, Vector3.zero, "plášť řez");
+            {
+                int iBot = cone ? 1 : 14, sc = prof.Count;
+                var bot = new List<Vector2>(); var wal = new List<Vector2>();
+                for (int i = 0; i < sc; i++)
+                {
+                    Vector2 q = new Vector2(prof[i].x * 0.985f, prof[i].y);
+                    if (i <= iBot) bot.Add(q);
+                    if (i >= iBot) wal.Add(q);
+                }
+                if (it.Bind != "lv" && it.Bind != "hlt") RealInterior(v, bot, wal, pos);
+            }
             v.ApplyCut(cutaway);
 
             // kapalina
@@ -258,22 +269,13 @@ namespace Pivovar
             Cyl(pv, r * 1.02f, 0.05f, steelB, new Vector3(cx, by + hcyl + 0.01f, zc), Vector3.zero, 64);
             Add(pv, MeshKit.Torus(r * 1.012f, 0.022f, 64, 8), steelP, new Vector3(cx, by + hcyl + 0.012f, zc), Vector3.zero, "lem víka");
 
-            // nohy
+            // nohy: tlusté nerezové trubky s přírubou a patní deskou (podle fotek)
             float[] la = cone ? new float[] { 0.8f, 2.4f, 3.9f, 5.5f } : new float[] { 0.55f, 2.1f, 3.7f, 5.3f };
             foreach (float a in la)
             {
                 float k = cone ? 0.9f : 0.86f;
                 float lx = cx + Mathf.Cos(a) * r * k, lz = zc + Mathf.Sin(a) * r * k;
-                if (cone)
-                {
-                    Cyl(pv, 0.05f, hb * 0.95f, steelP, new Vector3(lx, yb + hb * 0.45f, lz), Vector3.zero, 12);
-                    Cyl(pv, 0.09f, 0.02f, steelB, new Vector3(lx, yb + 0.01f, lz), Vector3.zero, 20);
-                }
-                else
-                {
-                    Cyl(pv, 0.045f, 0.28f, steelP, new Vector3(lx, yb + 0.14f, lz), Vector3.zero, 12);
-                    Cyl(pv, 0.085f, 0.02f, steelB, new Vector3(lx, yb + 0.01f, lz), Vector3.zero, 20);
-                }
+                RealLeg(pv, lx, lz, yb, cone ? hb * 0.97f : hb * 0.95f, cone ? 0.085f : 0.10f, true);
             }
 
             // průlez (v řezu na zadní straně)
@@ -309,8 +311,7 @@ namespace Pivovar
             {
                 float rho = r * 0.42f; float px = cx + Mathf.Cos(0.9f) * rho, pz = zc + Mathf.Sin(0.9f) * rho; float ly = LidY(by, hcyl, r, ht, rho);
                 Cyl(pv, 0.06f, 0.16f, steelP, new Vector3(px, ly + 0.07f, pz), Vector3.zero, 16);
-                Cyl(pv, 0.022f, 0.55f, steelP, new Vector3(px, ly - 0.25f, pz), Vector3.zero, 10);
-                Add(pv, MeshKit.Sphere(0.06f), steelP, new Vector3(px, ly - 0.55f, pz), Vector3.zero, "CIP koule");
+                RealSprayArm(pv, px, ly, pz, -Mathf.Sign(Mathf.Cos(0.9f)));
             }
             {
                 float rho2 = r * 0.62f; float vx = cx + Mathf.Cos(2.3f) * rho2, vz = zc + Mathf.Sin(2.3f) * rho2; float vy = LidY(by, hcyl, r, ht, rho2);
@@ -330,7 +331,7 @@ namespace Pivovar
                 rotor.localPosition = new Vector3(cx, by + 0.3f, -zc);
                 for (int a = 0; a < 2; a++)
                 {
-                    var blade = Box(rotor, new Vector3(r * 1.5f, 0.05f, 0.22f), steelP, Vector3.zero, new Vector3(0f, -(a * 90f + 17f), -10f));
+                    var blade = Box(rotor, new Vector3(r * 1.5f, 0.05f, 0.22f), mDarkSteel, Vector3.zero, new Vector3(0f, -(a * 90f + 17f), -10f));
                 }
                 spinners.Add(rotor);
                 Cyl(pv, 0.2f, 0.55f, HdrpUtil.Lit(new Color(0.12f, 0.32f, 0.62f), 0.5f, 0.55f), new Vector3(cx, by + hcyl + ht + 0.3f, zc), Vector3.zero, 28);
@@ -346,24 +347,8 @@ namespace Pivovar
                 st.transform.localPosition = new Vector3(sxp, syp + 1.75f, -zc);
                 var sp = st.AddComponent<SteamPuffs>(); sp.strength = 1f; sp.height = 2.6f;
             }
-            // vnitřek scezováku: síto a hrabla
-            if (shape == "lauter")
-            {
-                Material ds = HdrpUtil.Lit(new Color(0.7f, 0.72f, 0.76f), 0.9f, 0.55f);
-                Cyl(pv, r * 0.97f, 0.03f, ds, new Vector3(cx, by + 0.18f, zc), Vector3.zero, 56);
-                for (int k = 1; k < 7; k++) Cyl(pv, r * 0.97f * k / 7f, 0.004f, steelP, new Vector3(cx, by + 0.2f, zc), Vector3.zero, 56);
-                var arms = new GameObject("hrabla").transform; arms.SetParent(pv, false);
-                arms.localPosition = new Vector3(cx, by + 0.45f, -zc);
-                Cyl(pv, 0.05f, hcyl * 0.8f, steelP, new Vector3(cx, by + hcyl * 0.4f + 0.3f, zc), Vector3.zero, 12);
-                for (int a = 0; a < 2; a++)
-                {
-                    var arm = new GameObject("rameno").transform; arm.SetParent(arms, false); arm.localRotation = Quaternion.Euler(0, a * 180f, 0);
-                    Box(arm, new Vector3(r * 1.85f, 0.05f, 0.08f), steelB, Vector3.zero, Vector3.zero);
-                    for (int k = 1; k < 7; k++)
-                        Box(arm, new Vector3(0.025f, 0.36f, 0.22f), steelP, new Vector3(-r * 0.9f + k * r * 0.26f, -0.12f, 0f), new Vector3(0, 0, 12.6f));
-                }
-                spinners.Add(arms);
-            }
+            // vnitřek scezováku podle fotek
+            if (shape == "lauter") RealLauterInside(pv, cx, by, zc, r, hcyl);
             vessels.Add(v);
         }
 

@@ -51,7 +51,7 @@ namespace Pivovar
                     target += Vector3.right * (-d.x * k) + Vector3.up * (-d.y * k);
                 }
                 // kolečko: přiblížení k ukazateli myši
-                float sc2 = Inp.Scroll();
+                float sc2 = ValveControl.WheelBusy ? 0f : Inp.Scroll();
                 if (Mathf.Abs(sc2) > 0.001f)
                 {
                     Vector2 mp = Inp.MousePos();

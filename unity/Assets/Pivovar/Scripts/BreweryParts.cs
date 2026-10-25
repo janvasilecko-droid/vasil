@@ -61,11 +61,7 @@ namespace Pivovar
             return n;
         }
 
-        void Flange(Transform n, float dx, float r = 0.052f)
-        {
-            CylX(n, r, 0.016f, steelP, new Vector3(dx, 0, 0), 24);
-            CylX(n, r * 0.92f, 0.006f, rubber, new Vector3(dx + (dx < 0 ? 0.011f : -0.011f), 0, 0), 24);
-        }
+        void Flange(Transform n, float dx, float r = 0.052f) { RealFlange(n, dx, r); }
 
         /// <summary>Kosmetické vložky z plánu, které nejsou trubka ani nádoba.</summary>
         void BuildExtras()

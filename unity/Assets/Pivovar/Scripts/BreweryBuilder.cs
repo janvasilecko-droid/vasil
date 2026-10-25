@@ -44,6 +44,7 @@ namespace Pivovar
             planPath = path;
             Build();
             gameObject.AddComponent<PlanEditor>().Init(this);
+            gameObject.AddComponent<ValveControl>().Init(this);
             Debug.Log("Pivovar: postaveno – nádob " + vessels.Count + ", trubek " + flows.Count + ". Ovládání: pravé tlačítko otáčí, kolečko přibližuje, F = tok v potrubí, X = řez/celé nádoby.");
         }
 
@@ -224,14 +225,14 @@ namespace Pivovar
         void BuildHall()
         {
             float x0 = -12f, x1 = 46f, depth = 30f, hgt = 8f;
-            Texture2D tiles = TileTexture();
-            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.88f, false);
+            Texture2D tiles = FloorTexture(), wtiles = WallTileTexture();
+            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.55f, false);
             if (fm.HasProperty("_BaseColorMap")) { fm.SetTexture("_BaseColorMap", tiles); fm.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 1.2f, depth / 1.2f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 0.2f, depth)), fm, new Vector3((x0 + x1) * 0.5f, -0.1f, 0f), Vector3.zero, "podlaha");
 
             Material wall = HdrpUtil.Lit(new Color(0.86f, 0.86f, 0.84f), 0f, 0.25f, false);
             Material tileWall = HdrpUtil.Lit(new Color(0.95f, 0.96f, 0.97f), 0f, 0.85f, false);
-            if (tileWall.HasProperty("_BaseColorMap")) { tileWall.SetTexture("_BaseColorMap", tiles); tileWall.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 0.6f, 3.2f / 0.6f)); }
+            if (tileWall.HasProperty("_BaseColorMap")) { tileWall.SetTexture("_BaseColorMap", wtiles); tileWall.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 0.6f, 3.2f / 0.6f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 3.2f, 0.3f)), tileWall, new Vector3((x0 + x1) * 0.5f, 1.6f, -depth * 0.5f), Vector3.zero, "obklad", false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, hgt - 3.2f, 0.3f)), wall, new Vector3((x0 + x1) * 0.5f, 3.2f + (hgt - 3.2f) * 0.5f, -depth * 0.5f), Vector3.zero, "stena", false);
             Add(root, MeshKit.Box(new Vector3(0.3f, hgt, depth)), wall, new Vector3(x0, hgt * 0.5f, 0f), Vector3.zero, "stena L", false);
@@ -266,18 +267,42 @@ namespace Pivovar
             Add(root, MeshKit.Box(new Vector3(x1 - x0 - 2f, 0.02f, 0.22f)), HdrpUtil.Lit(new Color(0.12f, 0.12f, 0.13f), 0.8f, 0.5f, false), new Vector3((x0 + x1) * 0.5f, 0.01f, 2.6f), Vector3.zero, "zlab", false);
         }
 
-        static Texture2D TileTexture()
+        // podlaha: velké šedobéžové dlaždice 0,4 m s tmavou spárou a nepravidelným odstínem (jako na fotkách)
+        static Texture2D FloorTexture()
+        {
+            const int n = 512;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, true, false);
+            var rnd = new System.Random(11);
+            float[] tint = new float[9]; for (int i = 0; i < 9; i++) tint[i] = (float)rnd.NextDouble();
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    int cx = x / (n / 3), cy = y / (n / 3);
+                    int lx = x % (n / 3), ly = y % (n / 3);
+                    bool edge = lx < 4 || ly < 4;
+                    float k = tint[cy * 3 + cx];
+                    float noise = 0.04f * Mathf.Sin(x * 0.9f + y * 0.31f) * Mathf.Cos(y * 0.7f - x * 0.13f) + 0.03f * Mathf.Sin(x * 0.05f + k * 9f);
+                    Color baseC = Color.Lerp(new Color(0.55f, 0.53f, 0.50f), new Color(0.66f, 0.62f, 0.55f), k);
+                    Color c = edge ? new Color(0.30f, 0.29f, 0.27f) : baseC * (1f + noise);
+                    c.a = 1f; t.SetPixel(x, y, c);
+                }
+            t.wrapMode = TextureWrapMode.Repeat; t.filterMode = FilterMode.Trilinear; t.anisoLevel = 8;
+            t.Apply(true);
+            return t;
+        }
+
+        // obklad: bílé dlaždice 0,2 × 0,3 m se světlou spárou
+        static Texture2D WallTileTexture()
         {
             const int n = 256;
             var t = new Texture2D(n, n, TextureFormat.RGBA32, true, false);
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
-                    bool edge = (x % 128 < 2) || (y % 128 < 2);
-                    float v = 0.85f + 0.06f * Mathf.Sin(x * 0.37f) * Mathf.Cos(y * 0.29f) + 0.04f * Mathf.Sin(x * 1.3f + y * 0.7f);
-                    Color c = edge ? new Color(0.42f, 0.42f, 0.40f) : new Color(0.80f, 0.79f, 0.75f) * (0.97f + 0.05f * (v - 0.85f) * 5f);
-                    c.a = 1f;
-                    t.SetPixel(x, y, c);
+                    bool edge = (x % (n / 3) < 2) || (y % (n / 2) < 2);
+                    float v = 0.93f + 0.02f * Mathf.Sin(x * 0.31f) * Mathf.Cos(y * 0.23f);
+                    Color c = edge ? new Color(0.62f, 0.62f, 0.60f) : new Color(v, v, v * 1.01f);
+                    c.a = 1f; t.SetPixel(x, y, c);
                 }
             t.wrapMode = TextureWrapMode.Repeat; t.filterMode = FilterMode.Trilinear; t.anisoLevel = 8;
             t.Apply(true);
