@@ -6977,44 +6977,13 @@ public partial class S_main : GdNode {
     tiles_root = Gd.New("Node2D");
     Self.C("add_child", tiles_root);
     Self.C("move_child", tiles_root, Gv.I(1L));
-    Gv px = (bounds.G("size") * BAKE_SCALE);
-    Gv nx = Gd.Dyn("int", Gd.ceil((px.G("x") / TILE)));
-    Gv ny = Gd.Dyn("int", Gd.ceil((px.G("y") / TILE)));
-    foreach (Gv ty in (ny).Iter()) {
-      foreach (Gv tx in (nx).Iter()) {
-        Gv tw = mini.Call(TILE, (Gd.Dyn("int", Gd.ceil(px.G("x"))) - (tx * TILE)));
-        Gv th = mini.Call(TILE, (Gd.Dyn("int", Gd.ceil(px.G("y"))) - (ty * TILE)));
-        if ((Gv.Le(tw, Gv.I(0L)) || Gv.Le(th, Gv.I(0L)))) {
-          continue;
-        }
-        Gv origin = (bounds.G("position") + (Gd.Ctor("Vector2", (tx * TILE), (ty * TILE)) / BAKE_SCALE));
-        Gv sv = Gd.New("SubViewport");
-        sv = sv.S("size", Gd.Ctor("Vector2i", tw, th));
-        sv = sv.S("transparent_bg", Gv.B(false));
-        sv = sv.S("render_target_update_mode", Gd.StaticGet("SubViewport", "UPDATE_ONCE"));
-        Gv sl = S_main_StaticLayer.New();
-        sl = sl.S("m", Self);
-        sv.C("add_child", sl);
-        Gv il = S_main_ItemLayer.New();
-        il = il.S("m", Self);
-        il = il.S("skip_valves", Gv.B(true));
-        sv.C("add_child", il);
-        Self.C("add_child", sv);
-        sv = sv.S("canvas_transform", Gd.Ctor("Transform2D", Gv.F(0.0), Gd.Ctor("Vector2", BAKE_SCALE, BAKE_SCALE), Gv.F(0.0), ((-origin) * BAKE_SCALE)));
-        _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
-        _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
-        Gv img = sv.C("get_texture").C("get_image");
-        img.C("generate_mipmaps");
-        Gv spr = Gd.New("Sprite2D");
-        spr = spr.S("texture", Gd.Static("ImageTexture", "create_from_image", img));
-        spr = spr.S("centered", Gv.B(false));
-        spr = spr.S("position", origin);
-        spr = spr.S("scale", (Gd.StaticGet("Vector2", "ONE") / BAKE_SCALE));
-        spr = spr.S("texture_filter", Gd.StaticGet("CanvasItem", "TEXTURE_FILTER_LINEAR_WITH_MIPMAPS"));
-        tiles_root.C("add_child", spr);
-        sv.C("queue_free");
-      }
-    }
+    Gv sl = S_main_StaticLayer.New();
+    sl = sl.S("m", Self);
+    tiles_root.C("add_child", sl);
+    Gv il = S_main_ItemLayer.New();
+    il = il.S("m", Self);
+    il = il.S("skip_valves", Gv.B(true));
+    tiles_root.C("add_child", il);
     return Gv.Null;
   }
   public Gv visible_world_rect() {
@@ -7025,92 +6994,12 @@ public partial class S_main : GdNode {
   }
   public Gv _detail_tick(Gv delta = default(Gv)) {
     delta = (delta).AsF();
-    if ((Gv.Ne(editor, Gv.Null) && (editor.G("on")).T())) {
-      return Gv.Null;
-    }
-    if (((Gv.Eq(tiles_root, Gv.Null) || Gv.Eq(cam, Gv.Null)) || Gv.Eq(tiles_root.C("get_child_count"), Gv.I(0L)))) {
-      return Gv.Null;
-    }
-    Gv z = (cam.G("zoom").G("x")).AsF();
-    Gv sig = (Gv.S("%d,%d,%.3f") % Gd.Arr(Gd.roundi((cam.G("position").G("x") * Gv.F(2.0))), Gd.roundi((cam.G("position").G("y") * Gv.F(2.0))), z));
-    if (Gv.Eq(sig, detail_sig)) {
-      detail_idle = (detail_idle + delta);
-    } else {
-      detail_idle = Gv.F(0.0);
-      detail_sig = sig;
-    }
-    if (Gv.Lt(z, Gv.F(1.1))) {
-      if (Gv.Ne(detail_spr, Gv.Null)) {
-        detail_spr = detail_spr.S("visible", Gv.B(false));
-      }
-      return Gv.Null;
-    }
-    if (((detail_busy).T() || Gv.Lt(detail_idle, Gv.F(0.35)))) {
-      return Gv.Null;
-    }
-    Gv vr = visible_world_rect();
-    Gv ok = Gv.B((((Gv.Ne(detail_spr, Gv.Null) && (detail_spr.G("visible")).T()) && (detail_rect.C("encloses", vr)).T()) && Gv.Ge(detail_scale, (Gd.minf(z, Gv.F(3.0)) * Gv.F(0.85)))));
-    if (!(ok).T()) {
-      _bake_detail(vr, z);
-    }
+    return Gv.Null;
     return Gv.Null;
   }
   public Gv _bake_detail(Gv vr = default(Gv), Gv z = default(Gv)) {
     z = (z).AsF();
-    detail_busy = Gv.B(true);
-    Gv t_start = Gd.Static("Time", "get_ticks_msec");
-    Gv grow = vr.C("grow_individual", (vr.G("size").G("x") * Gv.F(0.25)), (vr.G("size").G("y") * Gv.F(0.25)), (vr.G("size").G("x") * Gv.F(0.25)), (vr.G("size").G("y") * Gv.F(0.25)));
-    Gv sc = (Gd.clampf(z, Gv.F(1.0), Gv.F(3.0))).AsF();
-    while ((Gv.Gt((grow.G("size").G("x") * sc), Gv.F(3000.0)) || Gv.Gt((grow.G("size").G("y") * sc), Gv.F(2000.0)))) {
-      sc = ((sc * Gv.F(0.9))).AsF();
-    }
-    if ((detail_svs.C("is_empty")).T()) {
-      foreach (Gv i in (Gv.I(2L)).Iter()) {
-        Gv v = Gd.New("SubViewport");
-        v = v.S("transparent_bg", Gv.B(false));
-        v = v.S("render_target_update_mode", Gd.StaticGet("SubViewport", "UPDATE_DISABLED"));
-        Self.C("add_child", v);
-        Gv sl0 = S_main_StaticLayer.New();
-        sl0 = sl0.S("m", Self);
-        v.C("add_child", sl0);
-        Gv il0 = S_main_ItemLayer.New();
-        il0 = il0.S("m", Self);
-        il0 = il0.S("skip_valves", Gv.B(true));
-        v.C("add_child", il0);
-        detail_svs.C("append", v);
-      }
-    }
-    Gv back = (Gv.I(1L) - detail_cur);
-    Gv sv = detail_svs.I(back);
-    sv = sv.S("size", Gd.Ctor("Vector2i", Gd.ceili((grow.G("size").G("x") * sc)), Gd.ceili((grow.G("size").G("y") * sc))));
-    sv = sv.S("canvas_transform", Gd.Ctor("Transform2D", Gv.F(0.0), Gd.Ctor("Vector2", sc, sc), Gv.F(0.0), ((-grow.G("position")) * sc)));
-    Gv sl = sv.C("get_child", Gv.I(0L));
-    sl = sl.S("clip", grow);
-    sl.C("queue_redraw");
-    Gv il = sv.C("get_child", Gv.I(1L));
-    il = il.S("clip", grow);
-    il.C("queue_redraw");
-    sv = sv.S("render_target_update_mode", Gd.StaticGet("SubViewport", "UPDATE_ONCE"));
-    _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
-    _ = Gd.StaticGet("RenderingServer", "frame_post_draw");
-    if (Gv.Eq(detail_spr, Gv.Null)) {
-      detail_spr = Gd.New("Sprite2D");
-      detail_spr = detail_spr.S("centered", Gv.B(false));
-      detail_spr = detail_spr.S("texture_filter", Gd.StaticGet("CanvasItem", "TEXTURE_FILTER_LINEAR"));
-      Self.C("add_child", detail_spr);
-      Self.C("move_child", detail_spr, (tiles_root.C("get_index") + Gv.I(1L)));
-    }
-    detail_spr = detail_spr.S("texture", sv.C("get_texture"));
-    detail_spr = detail_spr.S("position", grow.G("position"));
-    detail_spr = detail_spr.S("scale", (Gd.StaticGet("Vector2", "ONE") / sc));
-    detail_spr = detail_spr.S("visible", Gv.B(true));
-    detail_rect = grow;
-    detail_scale = sc;
-    detail_cur = back;
-    detail_busy = Gv.B(false);
-    if (Gv.In(Gv.S("--detaildebug"), Gd.Static("OS", "get_cmdline_user_args"))) {
-      Gd.print((Gv.S("DETAIL doostřeno %dx%d px, měřítko %.2f, %d ms") % Gd.Arr(sv.G("size").G("x"), sv.G("size").G("y"), sc, (Gd.Static("Time", "get_ticks_msec") - t_start))));
-    }
+    return Gv.Null;
     return Gv.Null;
   }
   public Gv mf_ports(Gv mf = default(Gv)) {

@@ -317,6 +317,9 @@ namespace Pivovar.Gd
                 case "CanvasItem":
                     if (n.StartsWith("TEXTURE_FILTER") || n.StartsWith("TEXTURE_REPEAT")) return Gv.I(Math.Abs(n.GetHashCode() % 10));
                     break;
+                case "RenderingServer":
+                    if (n.StartsWith("frame_")) return Gv.O(((GdNode)Tree.Obj).Sig("process_frame"));
+                    break;
                 case "Input":
                     return Gv.I(0);
                 case "Control":

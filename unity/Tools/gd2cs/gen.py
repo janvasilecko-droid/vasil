@@ -1,7 +1,22 @@
 # Generátor C# z AST GDScriptu (gdparse.py). Výstup: třídy S_<soubor> postavené nad běhovou knihovnou Pivovar.Gd (Gv, Gd, GdObject, GdNode).
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(__file__))
+import gdparse
 from gdparse import parse_file, GdSyntax
+from unity_patches import PATCHES
+
+
+def apply_patches(stem, src):
+    import unity_patches
+    if stem == 'main': src = unity_patches.patch_main(src)
+    for old, new in PATCHES.get(stem, []):
+        if old not in src:
+            raise GdSyntax('patch pro %s nenalezl text: %r' % (stem, old[:60]))
+        src = src.replace(old, new, 1)
+    return src
+
+
+gdparse.PATCH_HOOK = apply_patches
 
 CS_KEYWORDS = set('''abstract as base bool break byte case catch char checked class const continue decimal default delegate do double else enum event
 explicit extern false finally fixed float for foreach goto if implicit in int interface internal is lock long namespace new null object operator out

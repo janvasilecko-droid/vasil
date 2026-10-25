@@ -703,8 +703,12 @@ class Parser:
         return ('expr', e)
 
 
+PATCH_HOOK = None   # callable(stem, src) -> src  (nastavuje gen.py)
+
 def parse_file(path):
     src = open(path, encoding='utf-8').read()
+    if PATCH_HOOK is not None:
+        src = PATCH_HOOK(path.rsplit('/', 1)[-1].rsplit('.', 1)[0], src)
     toks = lex(src, path)
     p = Parser(toks, path)
     name = path.rsplit('/', 1)[-1].rsplit('.', 1)[0]
