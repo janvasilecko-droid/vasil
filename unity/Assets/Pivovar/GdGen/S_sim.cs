@@ -40,6 +40,7 @@ public partial class S_sim : GdObject {
   public Gv _dead_acc;
   public static Gv PUMPS;
   public static Gv DN_REAL;
+  public Gv _mains_cache;
   static S_sim() {
     Physics = Gd.Script("physics");
     Training = Gd.Script("training");
@@ -48,7 +49,7 @@ public partial class S_sim : GdObject {
     LIQ = Gd.Arr(Gv.S("w"), Gv.S("sg"), Gv.S("dx"), Gv.S("ld"), Gv.S("f"), Gv.S("ns"), Gv.S("aA"), Gv.S("aB"), Gv.S("aBs"), Gv.S("smm"), Gv.S("dms"), Gv.S("alpha"), Gv.S("iso"), Gv.S("trubSus"), Gv.S("col"), Gv.S("fines"), Gv.S("air"));
     SOL = Gd.Arr(Gv.S("g"), Gv.S("su"), Gv.S("sc"), Gv.S("ni"));
     CELLK = Gd.Arr(Gv.S("w"), Gv.S("f"), Gv.S("n"), Gv.S("smm"), Gv.S("dms"), Gv.S("col"));
-    CFG_DEFAULT = Gd.Dict(Gv.S("rvpCap"), Gv.F(5000.0), Gv.S("rvpUA"), Gv.F(0.25), Gv.S("rvpSteel"), Gv.F(450.0), Gv.S("rvpDead"), Gv.F(20.0), Gv.S("mpCap"), Gv.F(6000.0), Gv.S("mpUA"), Gv.F(0.3), Gv.S("mpSteel"), Gv.F(600.0), Gv.S("mpDead"), Gv.F(60.0), Gv.S("wpCap"), Gv.F(5000.0), Gv.S("wpDead"), Gv.F(30.0), Gv.S("wpUA"), Gv.F(0.35), Gv.S("wpSteel"), Gv.F(550.0), Gv.S("skCap"), Gv.F(5000.0), Gv.S("skArea"), Gv.F(5.3), Gv.S("skUA"), Gv.F(0.2), Gv.S("skSteel"), Gv.F(500.0), Gv.S("skRetentionLkg"), Gv.F(1.0), Gv.S("spargeEndP"), Gv.F(1.0), Gv.S("ambientT"), Gv.F(20.0), Gv.S("skContactUA"), Gv.F(4.0), Gv.S("skPerm"), Gv.F(1.5e-11), Gv.S("skSuction"), Gv.F(20000.0), Gv.S("spCap"), Gv.F(6000.0), Gv.S("waterFlow"), Gv.F(250.0), Gv.S("maltRate"), Gv.F(40.0), Gv.S("mainsQ"), Gv.F(900.0), Gv.S("coolWaterT"), Gv.F(16.0), Gv.S("UA1"), Gv.F(25.0), Gv.S("UA2"), Gv.F(12.0), Gv.S("boilerKW"), Gv.F(650.0), Gv.S("hltCap"), Gv.F(12000.0), Gv.S("hltStart"), Gv.F(11000.0), Gv.S("hltT0"), Gv.F(83.0), Gv.S("hltSet"), Gv.F(83.0), Gv.S("lvVol"), Gv.F(10000.0), Gv.S("lvStart"), Gv.F(0.0), Gv.S("lvT0"), Gv.F(2.0), Gv.S("lvSet"), Gv.F(2.0), Gv.S("chillerKW"), Gv.F(45.0), Gv.S("pivLoad"), Gv.F(10.0), Gv.S("tbWater"), Gv.F(99.3), Gv.S("malt"), Gv.F(680.0), Gv.S("maltExtract"), Gv.F(80.0), Gv.S("maltMoist"), Gv.F(4.5), Gv.S("mill"), Gv.F(1.0), Gv.S("steamBar"), Gv.F(2.5), Gv.S("rvpUAst"), Gv.F(6.5), Gv.S("mpUAst"), Gv.F(4.5), Gv.S("hltUAst"), Gv.F(2.0), Gv.S("rvpJacketL"), Gv.F(2200.0), Gv.S("mpJacketL"), Gv.F(2500.0), Gv.S("targetEBC"), Gv.F(8.0), Gv.S("pitchT"), Gv.F(8.5), Gv.S("targetV"), Gv.F(40.0), Gv.S("preboilV"), Gv.F(4430.0), Gv.S("mashFilmK"), Gv.F(4.6), Gv.S("boilerWaterKg"), Gv.F(1500.0), Gv.S("plateRefQ"), Gv.F(80.0), Gv.S("betaAct"), Gv.F(4.5), Gv.S("kdAlpha63"), Gv.F(0.022), Gv.S("kdBeta63"), Gv.F(0.13), Gv.S("targetP"), Gv.F(12.0), Gv.S("targetIBU"), Gv.F(32.0), Gv.S("boilMin"), Gv.F(90.0), Gv.S("cipLyeMin"), Gv.F(1.0), Gv.S("cipAcidMin"), Gv.F(0.5), Gv.S("cpSteel"), Gv.F(0.5), Gv.S("hltSteel"), Gv.F(600.0), Gv.S("hltUA"), Gv.F(0.01), Gv.S("skMuP"), Gv.F(0.047), Gv.S("pipeLenScale"), Gv.F(0.4), Gv.S("bore25"), Gv.F(50.0), Gv.S("bore40"), Gv.F(50.0), Gv.S("bore50"), Gv.F(75.0), Gv.S("p1_H0"), Gv.F(32.0), Gv.S("p1_Qn"), Gv.F(400.0), Gv.S("p2_H0"), Gv.F(22.0), Gv.S("p2_Qn"), Gv.F(150.0), Gv.S("p3_H0"), Gv.F(26.0), Gv.S("p3_Qn"), Gv.F(200.0), Gv.S("skDpComp"), Gv.F(30000.0), Gv.S("skTeigRho"), Gv.F(350.0), Gv.S("skTeigK"), Gv.F(0.03), Gv.S("skCreepK"), Gv.F(0.0015), Gv.S("skDpCompact"), Gv.F(80.0), Gv.S("skCompK"), Gv.F(0.05), Gv.S("skDpChannel"), Gv.F(160.0), Gv.S("skChanK"), Gv.F(0.02));
+    CFG_DEFAULT = Gd.Dict(Gv.S("rvpCap"), Gv.F(5000.0), Gv.S("rvpUA"), Gv.F(0.25), Gv.S("rvpSteel"), Gv.F(450.0), Gv.S("rvpDead"), Gv.F(20.0), Gv.S("mpCap"), Gv.F(6000.0), Gv.S("mpUA"), Gv.F(0.3), Gv.S("mpSteel"), Gv.F(600.0), Gv.S("mpDead"), Gv.F(60.0), Gv.S("wpCap"), Gv.F(5000.0), Gv.S("wpDead"), Gv.F(30.0), Gv.S("wpUA"), Gv.F(0.35), Gv.S("wpSteel"), Gv.F(550.0), Gv.S("skCap"), Gv.F(5000.0), Gv.S("skArea"), Gv.F(5.3), Gv.S("skUA"), Gv.F(0.2), Gv.S("skSteel"), Gv.F(500.0), Gv.S("skRetentionLkg"), Gv.F(1.0), Gv.S("spargeEndP"), Gv.F(1.0), Gv.S("ambientT"), Gv.F(20.0), Gv.S("skContactUA"), Gv.F(4.0), Gv.S("skPerm"), Gv.F(1.5e-11), Gv.S("skSuction"), Gv.F(20000.0), Gv.S("spCap"), Gv.F(6000.0), Gv.S("waterFlow"), Gv.F(250.0), Gv.S("maltRate"), Gv.F(40.0), Gv.S("mainsQ"), Gv.F(900.0), Gv.S("mainsBar"), Gv.F(4.0), Gv.S("iboKeep"), Gv.F(0.44), Gv.S("coolWaterT"), Gv.F(16.0), Gv.S("UA1"), Gv.F(25.0), Gv.S("UA2"), Gv.F(12.0), Gv.S("boilerKW"), Gv.F(650.0), Gv.S("hltCap"), Gv.F(12000.0), Gv.S("hltStart"), Gv.F(11000.0), Gv.S("hltT0"), Gv.F(83.0), Gv.S("hltSet"), Gv.F(83.0), Gv.S("lvVol"), Gv.F(10000.0), Gv.S("lvStart"), Gv.F(0.0), Gv.S("lvT0"), Gv.F(2.0), Gv.S("lvSet"), Gv.F(2.0), Gv.S("chillerKW"), Gv.F(45.0), Gv.S("pivLoad"), Gv.F(10.0), Gv.S("tbWater"), Gv.F(99.3), Gv.S("malt"), Gv.F(680.0), Gv.S("maltExtract"), Gv.F(80.0), Gv.S("maltMoist"), Gv.F(4.5), Gv.S("mill"), Gv.F(1.0), Gv.S("steamBar"), Gv.F(2.5), Gv.S("rvpUAst"), Gv.F(6.5), Gv.S("mpUAst"), Gv.F(4.5), Gv.S("hltUAst"), Gv.F(2.0), Gv.S("rvpJacketL"), Gv.F(2200.0), Gv.S("mpJacketL"), Gv.F(2500.0), Gv.S("targetEBC"), Gv.F(8.0), Gv.S("pitchT"), Gv.F(8.5), Gv.S("targetV"), Gv.F(40.0), Gv.S("preboilV"), Gv.F(4430.0), Gv.S("mashFilmK"), Gv.F(4.6), Gv.S("boilerWaterKg"), Gv.F(1500.0), Gv.S("plateRefQ"), Gv.F(80.0), Gv.S("betaAct"), Gv.F(4.5), Gv.S("kdAlpha63"), Gv.F(0.022), Gv.S("kdBeta63"), Gv.F(0.13), Gv.S("targetP"), Gv.F(12.0), Gv.S("targetIBU"), Gv.F(32.0), Gv.S("boilMin"), Gv.F(90.0), Gv.S("cipLyeMin"), Gv.F(1.0), Gv.S("cipAcidMin"), Gv.F(0.5), Gv.S("cpSteel"), Gv.F(0.5), Gv.S("hltSteel"), Gv.F(600.0), Gv.S("hltUA"), Gv.F(0.01), Gv.S("skMuP"), Gv.F(0.047), Gv.S("pipeLenScale"), Gv.F(0.4), Gv.S("bore25"), Gv.F(50.0), Gv.S("bore40"), Gv.F(50.0), Gv.S("bore50"), Gv.F(75.0), Gv.S("p1_H0"), Gv.F(32.0), Gv.S("p1_Qn"), Gv.F(400.0), Gv.S("p2_H0"), Gv.F(22.0), Gv.S("p2_Qn"), Gv.F(150.0), Gv.S("p3_H0"), Gv.F(26.0), Gv.S("p3_Qn"), Gv.F(200.0), Gv.S("skDpComp"), Gv.F(30000.0), Gv.S("skTeigRho"), Gv.F(350.0), Gv.S("skTeigK"), Gv.F(0.03), Gv.S("skCreepK"), Gv.F(0.0015), Gv.S("skDpCompact"), Gv.F(80.0), Gv.S("skCompK"), Gv.F(0.05), Gv.S("skDpChannel"), Gv.F(160.0), Gv.S("skChanK"), Gv.F(0.02));
     HOPS = Gd.Arr(Gd.Dict(Gv.S("id"), Gv.S("zpc"), Gv.S("name"), Gv.S("Žatecký poloraný červeňák"), Gv.S("a"), Gv.F(3.5)), Gd.Dict(Gv.S("id"), Gv.S("sla"), Gv.S("name"), Gv.S("Sládek"), Gv.S("a"), Gv.F(6.5)), Gd.Dict(Gv.S("id"), Gv.S("pre"), Gv.S("name"), Gv.S("Premiant"), Gv.S("a"), Gv.F(8.0)), Gd.Dict(Gv.S("id"), Gv.S("kaz"), Gv.S("name"), Gv.S("Kazbek"), Gv.S("a"), Gv.F(5.5)), Gd.Dict(Gv.S("id"), Gv.S("agn"), Gv.S("name"), Gv.S("Agnus"), Gv.S("a"), Gv.F(10.0)));
     MALTS = Gd.Dict(Gv.S("plz"), Gd.Dict(Gv.S("name"), Gv.S("Plzeňský slad"), Gv.S("ext"), Gv.F(80.5), Gv.S("ebc"), Gv.F(3.5), Gv.S("enz"), Gv.F(1.0), Gv.S("unf"), Gv.F(0.0)), Gv.S("mni"), Gd.Dict(Gv.S("name"), Gv.S("Mnichovský slad"), Gv.S("ext"), Gv.F(79.0), Gv.S("ebc"), Gv.F(15.0), Gv.S("enz"), Gv.F(0.7), Gv.S("unf"), Gv.F(0.0)), Gv.S("kar"), Gd.Dict(Gv.S("name"), Gv.S("Karamelový slad"), Gv.S("ext"), Gv.F(75.0), Gv.S("ebc"), Gv.F(120.0), Gv.S("enz"), Gv.F(0.0), Gv.S("unf"), Gv.F(0.55)), Gv.S("plzS"), Gd.Dict(Gv.S("name"), Gv.S("Plzeňský slad Soufflet"), Gv.S("ext"), Gv.F(81.6), Gv.S("ebc"), Gv.F(4.0), Gv.S("enz"), Gv.F(1.0), Gv.S("unf"), Gv.F(0.0), Gv.S("moist"), Gv.F(4.5)), Gv.S("mniW"), Gd.Dict(Gv.S("name"), Gv.S("Mnichovský slad Weyermann typ 1"), Gv.S("ext"), Gv.F(78.0), Gv.S("ebc"), Gv.F(15.0), Gv.S("enz"), Gv.F(0.7), Gv.S("unf"), Gv.F(0.0), Gv.S("moist"), Gv.F(4.5)), Gv.S("cpl"), Gd.Dict(Gv.S("name"), Gv.S("Carapils Weyermann"), Gv.S("ext"), Gv.F(75.0), Gv.S("ebc"), Gv.F(4.5), Gv.S("enz"), Gv.F(0.0), Gv.S("unf"), Gv.F(0.35), Gv.S("moist"), Gv.F(7.0)), Gv.S("bar"), Gd.Dict(Gv.S("name"), Gv.S("Barvicí slad"), Gv.S("ext"), Gv.F(70.0), Gv.S("ebc"), Gv.F(1300.0), Gv.S("enz"), Gv.F(0.0), Gv.S("unf"), Gv.F(0.3)), Gv.S("vid"), Gd.Dict(Gv.S("name"), Gv.S("Vídeňský slad"), Gv.S("ext"), Gv.F(79.5), Gv.S("ebc"), Gv.F(8.0), Gv.S("enz"), Gv.F(0.9), Gv.S("unf"), Gv.F(0.0), Gv.S("moist"), Gv.F(4.5)));
     RECIPE = Gd.Dict(Gv.S("id"), Gv.S("125"), Gv.S("name"), Gv.S("12,5° Světlá (Zajíc)"), Gv.S("P"), Gv.F(12.5), Gv.S("IBU"), Gv.F(32.0), Gv.S("EBC"), Gv.F(9.0), Gv.S("grist"), Gd.Dict(Gv.S("plzS"), Gv.F(600.0), Gv.S("cpl"), Gv.F(75.0), Gv.S("mniW"), Gv.F(25.0)), Gv.S("water"), Gv.F(2000.0), Gv.S("boil"), Gv.F(80.0), Gv.S("pitch"), Gv.F(8.5), Gv.S("hops"), Gd.Arr(Gd.Dict(Gv.S("min"), Gv.F(0.0), Gv.S("hop"), Gv.S("sla"), Gv.S("kg"), Gv.F(4.2)), Gd.Dict(Gv.S("min"), Gv.F(40.0), Gv.S("hop"), Gv.S("zpc"), Gv.S("kg"), Gv.F(3.0)), Gd.Dict(Gv.S("min"), Gv.F(65.0), Gv.S("hop"), Gv.S("zpc"), Gv.S("kg"), Gv.F(3.0))));
@@ -57,7 +58,7 @@ public partial class S_sim : GdObject {
     PIPE_L_PER_M = Gv.F(2.0);
     PX_PER_M = Gv.F(100.0);
     CALIB_PATH = Gv.S("user://kalibrace.json");
-    CALIB_RANGE = Gd.Dict(Gv.S("rvpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("mpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("wpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("skCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("spCap"), Gd.Arr(Gv.F(1000.0), Gv.F(20000.0)), Gv.S("rvpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("mpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("wpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("skUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("hltUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("rvpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("mpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("wpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("skSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("hltSteel"), Gd.Arr(Gv.F(0.0), Gv.F(5000.0)), Gv.S("cpSteel"), Gd.Arr(Gv.F(0.4), Gv.F(0.6)), Gv.S("rvpUAst"), Gd.Arr(Gv.F(0.5), Gv.F(30.0)), Gv.S("mpUAst"), Gd.Arr(Gv.F(0.5), Gv.F(30.0)), Gv.S("hltUAst"), Gd.Arr(Gv.F(0.1), Gv.F(20.0)), Gv.S("rvpJacketL"), Gd.Arr(Gv.F(200.0), Gv.F(6000.0)), Gv.S("mpJacketL"), Gd.Arr(Gv.F(200.0), Gv.F(6000.0)), Gv.S("skArea"), Gd.Arr(Gv.F(1.0), Gv.F(20.0)), Gv.S("skPerm"), Gd.Arr(Gv.F(1e-13), Gv.F(1e-09)), Gv.S("skDpComp"), Gd.Arr(Gv.F(1000.0), Gv.F(200000.0)), Gv.S("skSuction"), Gd.Arr(Gv.F(0.0), Gv.F(60000.0)), Gv.S("skRetentionLkg"), Gd.Arr(Gv.F(0.5), Gv.F(3.0)), Gv.S("preboilV"), Gd.Arr(Gv.F(2000.0), Gv.F(5000.0)), Gv.S("mashFilmK"), Gd.Arr(Gv.F(0.0), Gv.F(30.0)), Gv.S("boilerWaterKg"), Gd.Arr(Gv.F(50.0), Gv.F(20000.0)), Gv.S("plateRefQ"), Gd.Arr(Gv.F(10.0), Gv.F(500.0)), Gv.S("betaAct"), Gd.Arr(Gv.F(0.1), Gv.F(50.0)), Gv.S("kdAlpha63"), Gd.Arr(Gv.F(0.001), Gv.F(1.0)), Gv.S("kdBeta63"), Gd.Arr(Gv.F(0.005), Gv.F(3.0)), Gv.S("skDpCompact"), Gd.Arr(Gv.F(10.0), Gv.F(500.0)), Gv.S("skDpChannel"), Gd.Arr(Gv.F(20.0), Gv.F(800.0)), Gv.S("skMuP"), Gd.Arr(Gv.F(0.0), Gv.F(0.1)), Gv.S("UA1"), Gd.Arr(Gv.F(1.0), Gv.F(200.0)), Gv.S("UA2"), Gd.Arr(Gv.F(1.0), Gv.F(200.0)), Gv.S("boilerKW"), Gd.Arr(Gv.F(50.0), Gv.F(3000.0)), Gv.S("steamBar"), Gd.Arr(Gv.F(0.2), Gv.F(8.0)), Gv.S("chillerKW"), Gd.Arr(Gv.F(5.0), Gv.F(500.0)), Gv.S("hltCap"), Gd.Arr(Gv.F(1000.0), Gv.F(30000.0)), Gv.S("lvVol"), Gd.Arr(Gv.F(1000.0), Gv.F(30000.0)), Gv.S("tbWater"), Gd.Arr(Gv.F(95.0), Gv.F(100.5)), Gv.S("ambientT"), Gd.Arr(Gv.F(-5.0), Gv.F(40.0)), Gv.S("coolWaterT"), Gd.Arr(Gv.F(1.0), Gv.F(30.0)), Gv.S("waterFlow"), Gd.Arr(Gv.F(10.0), Gv.F(600.0)), Gv.S("mainsQ"), Gd.Arr(Gv.F(100.0), Gv.F(2000.0)), Gv.S("maltRate"), Gd.Arr(Gv.F(5.0), Gv.F(200.0)), Gv.S("pipeLenScale"), Gd.Arr(Gv.F(0.05), Gv.F(3.0)), Gv.S("bore25"), Gd.Arr(Gv.F(15.0), Gv.F(120.0)), Gv.S("bore40"), Gd.Arr(Gv.F(15.0), Gv.F(120.0)), Gv.S("bore50"), Gd.Arr(Gv.F(15.0), Gv.F(150.0)), Gv.S("p1_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p2_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p3_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p1_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("p2_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("p3_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("maltExtract"), Gd.Arr(Gv.F(60.0), Gv.F(85.0)), Gv.S("maltMoist"), Gd.Arr(Gv.F(2.0), Gv.F(10.0)), Gv.S("cipLyeMin"), Gd.Arr(Gv.F(0.3), Gv.F(5.0)), Gv.S("cipAcidMin"), Gd.Arr(Gv.F(0.1), Gv.F(5.0)));
+    CALIB_RANGE = Gd.Dict(Gv.S("rvpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("mpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("wpCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("skCap"), Gd.Arr(Gv.F(1000.0), Gv.F(10000.0)), Gv.S("spCap"), Gd.Arr(Gv.F(1000.0), Gv.F(20000.0)), Gv.S("rvpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("mpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("wpUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("skUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("hltUA"), Gd.Arr(Gv.F(0.0), Gv.F(3.0)), Gv.S("rvpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("mpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("wpSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("skSteel"), Gd.Arr(Gv.F(0.0), Gv.F(3000.0)), Gv.S("hltSteel"), Gd.Arr(Gv.F(0.0), Gv.F(5000.0)), Gv.S("cpSteel"), Gd.Arr(Gv.F(0.4), Gv.F(0.6)), Gv.S("rvpUAst"), Gd.Arr(Gv.F(0.5), Gv.F(30.0)), Gv.S("mpUAst"), Gd.Arr(Gv.F(0.5), Gv.F(30.0)), Gv.S("hltUAst"), Gd.Arr(Gv.F(0.1), Gv.F(20.0)), Gv.S("rvpJacketL"), Gd.Arr(Gv.F(200.0), Gv.F(6000.0)), Gv.S("mpJacketL"), Gd.Arr(Gv.F(200.0), Gv.F(6000.0)), Gv.S("skArea"), Gd.Arr(Gv.F(1.0), Gv.F(20.0)), Gv.S("skPerm"), Gd.Arr(Gv.F(1e-13), Gv.F(1e-09)), Gv.S("skDpComp"), Gd.Arr(Gv.F(1000.0), Gv.F(200000.0)), Gv.S("skSuction"), Gd.Arr(Gv.F(0.0), Gv.F(60000.0)), Gv.S("skRetentionLkg"), Gd.Arr(Gv.F(0.5), Gv.F(3.0)), Gv.S("preboilV"), Gd.Arr(Gv.F(2000.0), Gv.F(5000.0)), Gv.S("mashFilmK"), Gd.Arr(Gv.F(0.0), Gv.F(30.0)), Gv.S("boilerWaterKg"), Gd.Arr(Gv.F(50.0), Gv.F(20000.0)), Gv.S("plateRefQ"), Gd.Arr(Gv.F(10.0), Gv.F(500.0)), Gv.S("betaAct"), Gd.Arr(Gv.F(0.1), Gv.F(50.0)), Gv.S("kdAlpha63"), Gd.Arr(Gv.F(0.001), Gv.F(1.0)), Gv.S("kdBeta63"), Gd.Arr(Gv.F(0.005), Gv.F(3.0)), Gv.S("skDpCompact"), Gd.Arr(Gv.F(10.0), Gv.F(500.0)), Gv.S("skDpChannel"), Gd.Arr(Gv.F(20.0), Gv.F(800.0)), Gv.S("skMuP"), Gd.Arr(Gv.F(0.0), Gv.F(0.1)), Gv.S("UA1"), Gd.Arr(Gv.F(1.0), Gv.F(200.0)), Gv.S("UA2"), Gd.Arr(Gv.F(1.0), Gv.F(200.0)), Gv.S("boilerKW"), Gd.Arr(Gv.F(50.0), Gv.F(3000.0)), Gv.S("steamBar"), Gd.Arr(Gv.F(0.2), Gv.F(8.0)), Gv.S("chillerKW"), Gd.Arr(Gv.F(5.0), Gv.F(500.0)), Gv.S("hltCap"), Gd.Arr(Gv.F(1000.0), Gv.F(30000.0)), Gv.S("lvVol"), Gd.Arr(Gv.F(1000.0), Gv.F(30000.0)), Gv.S("tbWater"), Gd.Arr(Gv.F(95.0), Gv.F(100.5)), Gv.S("ambientT"), Gd.Arr(Gv.F(-5.0), Gv.F(40.0)), Gv.S("coolWaterT"), Gd.Arr(Gv.F(1.0), Gv.F(30.0)), Gv.S("waterFlow"), Gd.Arr(Gv.F(10.0), Gv.F(600.0)), Gv.S("mainsQ"), Gd.Arr(Gv.F(100.0), Gv.F(2000.0)), Gv.S("mainsBar"), Gd.Arr(Gv.F(0.5), Gv.F(10.0)), Gv.S("iboKeep"), Gd.Arr(Gv.F(0.2), Gv.F(1.0)), Gv.S("maltRate"), Gd.Arr(Gv.F(5.0), Gv.F(200.0)), Gv.S("pipeLenScale"), Gd.Arr(Gv.F(0.05), Gv.F(3.0)), Gv.S("bore25"), Gd.Arr(Gv.F(15.0), Gv.F(120.0)), Gv.S("bore40"), Gd.Arr(Gv.F(15.0), Gv.F(120.0)), Gv.S("bore50"), Gd.Arr(Gv.F(15.0), Gv.F(150.0)), Gv.S("p1_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p2_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p3_H0"), Gd.Arr(Gv.F(3.0), Gv.F(80.0)), Gv.S("p1_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("p2_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("p3_Qn"), Gd.Arr(Gv.F(20.0), Gv.F(1500.0)), Gv.S("maltExtract"), Gd.Arr(Gv.F(60.0), Gv.F(85.0)), Gv.S("maltMoist"), Gd.Arr(Gv.F(2.0), Gv.F(10.0)), Gv.S("cipLyeMin"), Gd.Arr(Gv.F(0.3), Gv.F(5.0)), Gv.S("cipAcidMin"), Gd.Arr(Gv.F(0.1), Gv.F(5.0)));
     HA_REF = Gv.F(25.0);
     PUMPS = Gd.Dict(Gv.S("p1"), Gd.Dict(Gv.S("H0"), Gv.F(32.0), Gv.S("Qn"), Gv.F(400.0)), Gv.S("p2"), Gd.Dict(Gv.S("H0"), Gv.F(22.0), Gv.S("Qn"), Gv.F(150.0)), Gv.S("p3"), Gd.Dict(Gv.S("H0"), Gv.F(26.0), Gv.S("Qn"), Gv.F(200.0)));
     DN_REAL = Gd.Dict(Gv.F(25.0), Gv.F(50.0), Gv.F(40.0), Gv.F(50.0), Gv.F(50.0), Gv.F(75.0));
@@ -81,6 +82,7 @@ public partial class S_sim : GdObject {
     prof_on = Gv.B(false);
     prof = Gd.Dict();
     _dead_acc = Gd.Dict();
+    _mains_cache = Gd.Dict();
   }
   public Gv vessel() {
     Gv v = Gd.Dict(Gv.S("T"), Gv.F(18.0), Gv.S("heat"), Gv.F(0.0), Gv.S("stir"), Gv.B(false), Gv.S("hz"), Gv.F(35.0), Gv.S("burn"), Gv.F(0.0), Gv.S("evapKgMin"), Gv.F(0.0), Gv.S("boiling"), Gv.B(false), Gv.S("boilMin"), Gv.F(0.0), Gv.S("coag"), Gv.F(0.0), Gv.S("trubSet"), Gv.F(0.0), Gv.S("trubHB"), Gv.F(0.0), Gv.S("whirlMin"), Gv.F(0.0), Gv.S("foam"), Gv.F(0.0), Gv.S("turbSum"), Gv.F(0.0), Gv.S("turbVol"), Gv.F(0.0), Gv.S("grainBoiling"), Gv.B(false), Gv.S("grainBoilMin"), Gv.F(0.0), Gv.S("settleMin"), Gv.F(0.0), Gv.S("Tsens"), Gv.F(18.0), Gv.S("Twall"), Gv.F(18.0), Gv.S("whirlNow"), Gv.B(false), Gv.S("boilStartT"), Gv.F(0.0), Gv.S("Pin"), Gv.F(0.0), Gv.S("vort"), Gv.F(0.0), Gv.S("virt"), Gv.B(false));
@@ -586,7 +588,7 @@ public partial class S_sim : GdObject {
     Gv qs = (sk.C("get", Gv.S("qSlow"), Gv.F(0.0))).AsF();
     Gv surge = ((Q - qs)).AsF();
     Gv dts = ((m * Gv.F(60.0))).AsF();
-    sk = sk.SI(Gv.S("qSlow"), (qs + (((Q - qs)) * Gd.minf(Gv.F(1.0), (dts / Gv.F(8.0))))));
+    sk = sk.SI(Gv.S("qSlow"), (qs + (((Q - qs)) * ((Gv.F(1.0) - Gd.exp(((-dts) / Gv.F(8.0))))))));
     sk = sk.SI(Gv.S("tearT"), Gd.maxf(Gv.F(0.0), (sk.C("get", Gv.S("tearT"), Gv.F(0.0)) - dts)));
     if (Gv.Gt(sk.G("g"), Gv.I(1L))) {
       Gv mu0 = (skViscosity(sk.G("T"), sk.G("outP0"))).AsF();
@@ -747,6 +749,12 @@ public partial class S_sim : GdObject {
     sk = sk.S("cells", sk.G("cells").SI(Gv.I(0L), sk.G("cells").I(Gv.I(0L)).S("w", (sk.G("cells").I(Gv.I(0L)).G("w") + L))));
     return Gv.Null;
   }
+  public Gv first_order(Gv k = default(Gv), Gv m = default(Gv)) {
+    k = (k).AsF();
+    m = (m).AsF();
+    return ((Gv.F(1.0) - Gd.exp((-Gd.minf(Gv.F(50.0), Gd.maxf(Gv.F(0.0), (k * m))))))).AsF();
+    return Gv.Null;
+  }
   public Gv react(Gv v = default(Gv), Gv m = default(Gv)) {
     m = (m).AsF();
     if (Gv.Lt(v.G("w"), Gv.I(1L))) {
@@ -755,26 +763,26 @@ public partial class S_sim : GdObject {
     Gv T = (v.G("T")).AsF();
     Gv Vm3 = Gd.maxf(Gv.F(0.05), (liqVol(v) / Gv.F(1000.0)));
     if (Gv.Gt(v.G("ni"), Gv.I(0L))) {
-      Gv d = ((v.G("ni") * Gd.minf(Gv.F(1.0), ((Gv.F(0.08) * m) * ((Gv.F(0.5) + (T / Gv.F(60.0)))))))).AsF();
+      Gv d = ((v.G("ni") * first_order((Gv.F(0.08) * ((Gv.F(0.5) + (T / Gv.F(60.0))))), m))).AsF();
       v = v.S("ni", (v.G("ni") - d));
       v = v.S("f", (v.G("f") + (Gv.F(0.5) * d)));
       v = v.S("ns", (v.G("ns") + (Gv.F(0.5) * d)));
     }
     if (Gv.Gt(v.G("su"), Gv.I(0L))) {
-      Gv d2 = ((v.G("su") * Gd.minf(Gv.F(1.0), ((Gv.F(0.3) * m) / ((Gv.F(1.0) + Gd.exp(((-((T - Gv.F(62.0)))) / Gv.F(1.3))))))))).AsF();
+      Gv d2 = ((v.G("su") * first_order((Gv.F(0.3) / ((Gv.F(1.0) + Gd.exp(((-((T - Gv.F(62.0)))) / Gv.F(1.3)))))), m))).AsF();
       v = v.S("su", (v.G("su") - d2));
       v = v.S("sg", (v.G("sg") + d2));
     }
     if (Gv.Gt(v.G("sc"), Gv.I(0L))) {
       Gv k = (Gv.Ge(T, Gv.I(95L)) ? Gv.F(0.08) : ((Gv.Gt(T, Gv.I(70L)) ? Gv.F(0.004) : Gv.F(0.0))));
-      Gv d3 = ((v.G("sc") * Gd.minf(Gv.F(1.0), (k * m)))).AsF();
+      Gv d3 = ((v.G("sc") * first_order(k, m))).AsF();
       v = v.S("sc", (v.G("sc") - d3));
       v = v.S("sg", (v.G("sg") + d3));
     }
     Gv phf = S.C("get", Gv.S("phF"), Gd.StaticGet("Vector2", "ONE"));
     if ((Gv.Gt(v.G("aA"), Gv.F(0.01)) && Gv.Gt(v.G("sg"), Gv.I(0L)))) {
       Gv r = (((((Gv.F(0.0015) * ((v.G("aA") / Vm3))) * Gd.exp((-Gd.pow((((T - Gv.F(72.0))) / Gv.F(9.0)), Gv.I(2L))))) * m) * phf.G("x"))).AsF();
-      Gv d4 = ((v.G("sg") * Gd.minf(Gv.F(1.0), r))).AsF();
+      Gv d4 = ((v.G("sg") * ((Gv.F(1.0) - Gd.exp((-Gd.minf(Gv.F(50.0), r))))))).AsF();
       Gv ldf = ((Gv.F(0.1) + (Gv.F(0.2) * Gd.clampf((((T - Gv.F(60.0))) / Gv.F(15.0)), Gv.F(0.0), Gv.F(1.0))))).AsF();
       v = v.S("sg", (v.G("sg") - d4));
       v = v.S("dx", (v.G("dx") + (((Gv.F(1.0) - ldf)) * d4)));
@@ -783,8 +791,8 @@ public partial class S_sim : GdObject {
     Gv aBt = ((v.G("aB") + v.G("aBs"))).AsF();
     if (Gv.Gt(aBt, Gv.F(0.01))) {
       Gv r2 = ((((((Gv.F(0.0016) * S.G("cfg").C("get", Gv.S("betaAct"), Gv.F(4.5))) * ((aBt / Vm3))) * Gd.exp((-Gd.pow((((T - Gv.F(63.0))) / Gv.F(7.0)), Gv.I(2L))))) * m) * phf.G("y"))).AsF();
-      Gv d5 = ((v.G("dx") * Gd.minf(Gv.F(1.0), r2))).AsF();
-      Gv d6 = ((v.G("sg") * Gd.minf(Gv.F(1.0), (Gv.F(0.25) * r2)))).AsF();
+      Gv d5 = ((v.G("dx") * ((Gv.F(1.0) - Gd.exp((-Gd.minf(Gv.F(50.0), r2))))))).AsF();
+      Gv d6 = ((v.G("sg") * ((Gv.F(1.0) - Gd.exp((-Gd.minf(Gv.F(50.0), (Gv.F(0.25) * r2)))))))).AsF();
       v = v.S("dx", (v.G("dx") - d5));
       v = v.S("sg", (v.G("sg") - d6));
       v = v.S("f", (v.G("f") + (d5 + d6)));
@@ -1263,7 +1271,7 @@ public partial class S_sim : GdObject {
       spd = spd.SI(Gv.S("lidL0"), spd.G("L"));
       spd = spd.SI(Gv.S("press"), Gv.F(0.0));
     } else {
-      spd = spd.SI(Gv.S("lidL0"), (spd.G("lidL0") + (((spd.G("L") - spd.G("lidL0"))) * Gd.minf(Gv.F(1.0), (dt / Gv.F(900.0))))));
+      spd = spd.SI(Gv.S("lidL0"), (spd.G("lidL0") + (((spd.G("L") - spd.G("lidL0"))) * ((Gv.F(1.0) - Gd.exp(((-dt) / Gv.F(900.0))))))));
       spd = spd.SI(Gv.S("press"), ((Gv.F(1013.0) * Gd.maxf(Gv.F(0.0), (spd.G("L") - spd.G("lidL0")))) / Gd.maxf(Gv.F(50.0), (S.G("cfg").G("spCap") - spd.G("L")))));
     }
     Gv c = S.G("cfg");
@@ -1464,7 +1472,7 @@ public partial class S_sim : GdObject {
         risk = ((risk * Gv.F(0.3))).AsF();
       }
     }
-    S = S.S("tannin", (S.G("tannin") + (((risk - S.G("tannin"))) * Gd.minf(Gv.F(1.0), (dt / Gv.F(120.0))))));
+    S = S.S("tannin", (S.G("tannin") + (((risk - S.G("tannin"))) * ((Gv.F(1.0) - Gd.exp(((-dt) / Gv.F(120.0))))))));
     if (Gv.Gt(S.G("tannin"), Gv.F(0.6))) {
       once((Gv.S("tannin%d") % tb(Gv.I(1800L))), (Gv.S("Riziko vyluhování tříslovin (odhad podle pH %s, teploty %s °C a zředění sladiny %s °P) – uber teplotu vody nebo pH, nebo zastav vyslazování.") % Gd.Arr(fmt1(ph_), fmt0(Tw_), fmt1(sk.G("outP")))), Gv.S("warn"));
     }
@@ -1528,7 +1536,7 @@ public partial class S_sim : GdObject {
         Gv kk = (Gv.Gt((sol(v) + v.G("sg")), Gv.I(20L)) ? Gv.F(0.8) : Gv.F(1.0));
         Gv om = ((((rpm / Gv.F(60.0)) * Gd.K("TAU")) * Gv.F(0.6)) * kk);
         Gv tgt = Gd.minf(Gv.F(0.15), ((((om * om) * Gv.F(1.19)) * Gv.F(1.19)) / ((Gv.F(4.0) * Gv.F(9.81)))));
-        v = v.S("vort", (v.G("vort") + (((tgt - v.G("vort"))) * Gd.minf(Gv.F(1.0), (dt / Gv.F(20.0))))));
+        v = v.S("vort", (v.G("vort") + (((tgt - v.G("vort"))) * ((Gv.F(1.0) - Gd.exp(((-dt) / Gv.F(20.0))))))));
       }
       Gv cap = ((Gv.Eq(n, Gv.S("rvp")) ? c.G("rvpCap") : c.G("mpCap"))).AsF();
       if (Gv.Gt(vol(v), cap)) {
@@ -2027,7 +2035,7 @@ public partial class S_sim : GdObject {
     Gv P = (((Gv.F(100.0) * e) / ((e + sp.G("w"))))).AsF();
     Gv rho = ((Gv.F(1.0) + (Gv.F(0.004) * P))).AsF();
     Gv V20 = ((((sp.G("w") + e)) / rho)).AsF();
-    Gv rep = Gd.Dict(Gv.S("V"), (V20 / Gv.F(100.0)), Gv.S("P"), P, Gv.S("IBU"), (((sp.G("iso") * Gv.F(1000.0)) / V20) * Gv.F(0.44)), Gv.S("T"), (sp.G("H") / sp.G("L")), Gv.S("EBC"), (sp.G("col") / Gd.maxf(Gv.F(1.0), sp.G("L"))), Gv.S("att"), (Gv.Gt(e, Gv.I(0L)) ? ((((sp.G("f") / e)) / Gv.F(0.81)) * Gv.F(100.0)) : Gv.F(0.0)), Gv.S("dms"), ((sp.G("dms") * Gv.F(1000000.0)) / V20), Gv.S("yield"), ((e / Gd.maxf(Gv.F(1.0), S.G("malt").G("added"))) * Gv.F(100.0)));
+    Gv rep = Gd.Dict(Gv.S("V"), (V20 / Gv.F(100.0)), Gv.S("P"), P, Gv.S("IBU"), (((sp.G("iso") * Gv.F(1000.0)) / V20) * Gd.Dyn("float", S.G("cfg").C("get", Gv.S("iboKeep"), Gv.F(0.44)))), Gv.S("T"), (sp.G("H") / sp.G("L")), Gv.S("EBC"), (sp.G("col") / Gd.maxf(Gv.F(1.0), sp.G("L"))), Gv.S("att"), (Gv.Gt(e, Gv.I(0L)) ? ((((sp.G("f") / e)) / Gv.F(0.81)) * Gv.F(100.0)) : Gv.F(0.0)), Gv.S("dms"), ((sp.G("dms") * Gv.F(1000000.0)) / V20), Gv.S("yield"), ((e / Gd.maxf(Gv.F(1.0), S.G("malt").G("added"))) * Gv.F(100.0)));
     rep.C("merge", yields());
     return rep;
     return Gv.Null;
@@ -3270,7 +3278,7 @@ public partial class S_sim : GdObject {
     Gv m = (dt / Gv.F(60.0));
     Gv c = S.G("cfg");
     Gv _n0 = Gd.Static("Time", "get_ticks_usec");
-    Gv kcool = Gd.minf(Gv.F(1.0), (dt / Gv.F(1800.0)));
+    Gv kcool = ((Gv.F(1.0) - Gd.exp(((-dt) / Gv.F(1800.0)))));
     foreach (Gv e__it in (net.G("edges")).Iter()) {
       Gv e = e__it;
       if (((!(e.G("flow")).T() && Gv.Gt(e.G("c").G("w"), Gv.F(0.01))) && !(e.G("steam")).T())) {
@@ -3520,27 +3528,24 @@ public partial class S_sim : GdObject {
       foreach (Gv lk in (r_3.G("leaks")).Iter()) {
         outs.C("append", Gd.Dict(Gv.S("lk"), lk, Gv.S("path"), path_to(r_3, lk.G("k"))));
       }
-      Gv sw = Gv.F(0.0);
       Gv nOpen = Gv.I(0L);
       foreach (Gv o__it in (outs).Iter()) {
         Gv o = o__it;
         o = o.S("f", path_pct(o.G("path")));
-        o = o.S("w", (o.G("f") / Gd.sqrt((Gv.F(1.0) + (path_len(o.G("path")) / Gv.F(3000.0))))));
-        sw = (sw + o.G("w"));
         if (Gv.Gt(o.G("f"), Gv.I(0L))) {
           nOpen = (nOpen + Gv.I(1L));
         }
       }
+      Gv mains_q = mains_solve(outs, src_2);
       if (Gv.Gt(nOpen, Gv.I(1L))) {
         once((Gv.S("mainsplit%d") % tb(Gv.I(900L))), (Gv.S("Voda z řadu teče do %d míst naráz – tlak se dělí, do každého teče méně.") % nOpen));
       }
-      foreach (Gv o_2 in (outs).Iter()) {
+      foreach (Gv oi in (outs.C("size")).Iter()) {
+        Gv o_2 = outs.I(oi);
         if (Gv.Le(o_2.G("f"), Gv.I(0L))) {
           continue;
         }
-        Gv mq = (Gd.Dyn("float", S.G("cfg").C("get", Gv.S("mainsQ"), Gv.F(900.0)))).AsF();
-        Gv cap0 = (((((((o_2.C("has", Gv.S("d"))).T() && Gv.Eq(o_2.G("d").G("att").G("bind"), Gv.S("lv"))) ? Gv.F(0.9) : Gv.F(0.8))) * mq) * o_2.G("f"))).AsF();
-        Gv q = Gd.minf(cap0, ((mq * o_2.G("w")) / Gd.maxf(Gv.F(1e-06), sw)));
+        Gv q = (mains_q.I(oi)).AsF();
         if (Gv.Lt(q, Gv.F(0.3))) {
           continue;
         }
@@ -4498,6 +4503,69 @@ public partial class S_sim : GdObject {
     return Gd.Dict();
     return Gv.Null;
   }
+  public Gv mains_solve(Gv outs = default(Gv), Gv src = default(Gv)) {
+    Gv res = Gd.Arr();
+    foreach (Gv _i in (outs.C("size")).Iter()) {
+      res.C("append", Gv.F(0.0));
+    }
+    Gv c = S.G("cfg");
+    Gv Pbar = (Gd.Dyn("float", c.C("get", Gv.S("mainsBar"), Gv.F(4.0)))).AsF();
+    Gv Qmax = (Gd.maxf(Gv.F(10.0), Gd.Dyn("float", c.C("get", Gv.S("mainsQ"), Gv.F(900.0))))).AsF();
+    Gv Hm = (((Pbar * Gv.F(100000.0)) / ((Gv.F(1000.0) * Gv.F(9.81))))).AsF();
+    Gv Tw = (S.G("cool").G("waterT")).AsF();
+    Gv ysrc = (Gv.F(0.0)).AsF();
+    Gv st = starts_of(src.G("id"));
+    if (((st.C("size")).T() && (net.G("nodes").C("has", st.I(Gv.I(0L)))).T())) {
+      ysrc = (net.G("nodes").I(st.I(Gv.I(0L))).G("y")).AsF();
+    }
+    Gv sig = (Gv.S("%.3f|%.1f|%.1f|%.0f|%.2f|%d") % Gd.Arr(Pbar, Qmax, Tw, ysrc, Gd.Dyn("float", c.C("get", Gv.S("pipeLenScale"), Gv.F(0.4))), outs.C("size")));
+    Gv hst = Gd.Arr();
+    foreach (Gv o in (outs).Iter()) {
+      Gv last = ((o.G("path").C("size")).T() ? o.G("path").I((o.G("path").C("size") - Gv.I(1L))) : Gv.Null);
+      Gv hs = (Gv.F(0.0)).AsF();
+      if (((Gv.Ne(last, Gv.Null) && (last.C("has", Gv.S("to"))).T()) && (net.G("nodes").C("has", last.G("to"))).T())) {
+        hs = ((((ysrc - net.G("nodes").I(last.G("to")).G("y"))) / PX_PER_M)).AsF();
+      }
+      hst.C("append", hs);
+      sig = (sig + (Gv.S("|%.3f,%d,%.1f,%.1f,%.1f") % Gd.Arr(o.G("f"), o.G("path").C("size"), path_len(o.G("path")), hs, ((Gd.Dyn("float", c.C("get", Gv.S("bore50"), Gv.F(75.0))) + Gd.Dyn("float", c.C("get", Gv.S("bore25"), Gv.F(50.0)))) + Gd.Dyn("float", c.C("get", Gv.S("bore40"), Gv.F(50.0)))))));
+    }
+    if (((_mains_cache.C("has", Gv.S("sig"))).T() && Gv.Eq(_mains_cache.G("sig"), sig))) {
+      return _mains_cache.G("q").C("duplicate");
+    }
+    Gv mu = (skViscosity(Tw, Gv.F(0.0))).AsF();
+    Gv open_ = Gd.Arr();
+    foreach (Gv i in (outs.C("size")).Iter()) {
+      res = res.SI(i, Gv.F(0.0));
+      if (Gv.Gt(outs.I(i).G("f"), Gv.F(0.0))) {
+        open_.C("append", i);
+      }
+    }
+    if (Gv.Gt(open_.C("size"), Gv.I(0L))) {
+      Gv qof = Gd.Fn((_a) => { Gv i_2 = Gd.A(_a, 0); Gv Hn = Gd.A(_a, 1); Gv need = ((Hn - hst.I(i_2))).AsF(); if (Gv.Le(need, Gv.F(0.0))) {   return (Gv.F(0.0)).AsF(); } Gv lo = (Gv.F(0.0)).AsF(); Gv hi = ((Qmax * Gv.F(1.5))).AsF(); if (Gv.Lt(path_head(outs.I(i_2).G("path"), hi, Gv.F(1.0), mu), need)) {   return (hi).AsF(); } foreach (Gv k in (Gv.I(22L)).Iter()) {   Gv mid = ((((lo + hi)) / Gv.F(2.0))).AsF();   if (Gv.Gt(path_head(outs.I(i_2).G("path"), mid, Gv.F(1.0), mu), need)) {     hi = (mid).AsF();   } else {     lo = (mid).AsF();   } } return ((((lo + hi)) / Gv.F(2.0))).AsF(); return Gv.Null; });
+      Gv lo2 = (Gv.F(0.0)).AsF();
+      Gv hi2 = (Hm).AsF();
+      foreach (Gv k2 in (Gv.I(26L)).Iter()) {
+        Gv Hn_2 = ((((lo2 + hi2)) / Gv.F(2.0))).AsF();
+        Gv Qt = (Gv.F(0.0)).AsF();
+        foreach (Gv i_3 in (open_).Iter()) {
+          Qt = ((Qt + qof.C("call", i_3, Hn_2))).AsF();
+        }
+        Gv Hs = ((Hm * ((Gv.F(1.0) - Gd.minf(Gv.F(1.0), (((Qt / Qmax)) * ((Qt / Qmax)))))))).AsF();
+        if (Gv.Gt(Hs, Hn_2)) {
+          lo2 = (Hn_2).AsF();
+        } else {
+          hi2 = (Hn_2).AsF();
+        }
+      }
+      Gv Hf = ((((lo2 + hi2)) / Gv.F(2.0))).AsF();
+      foreach (Gv i_4 in (open_).Iter()) {
+        res = res.SI(i_4, qof.C("call", i_4, Hf));
+      }
+    }
+    _mains_cache = Gd.Dict(Gv.S("sig"), sig, Gv.S("q"), res.C("duplicate"));
+    return res;
+    return Gv.Null;
+  }
   public Gv path_head(Gv path = default(Gv), Gv Q = default(Gv), Gv rho = default(Gv), Gv mu = default(Gv)) {
     Q = (Q).AsF();
     rho = (rho).AsF();
@@ -4727,6 +4795,7 @@ public partial class S_sim : GdObject {
     case "_dead_acc": return this._dead_acc;
     case "PUMPS": return S_sim.PUMPS;
     case "DN_REAL": return S_sim.DN_REAL;
+    case "_mains_cache": return this._mains_cache;
     default: return base.Get(n); } }
   public override Gv Set(string n, Gv v) { switch (n) {
     case "S": this.S = v; return v;
@@ -4747,6 +4816,7 @@ public partial class S_sim : GdObject {
     case "prof_on": this.prof_on = v; return v;
     case "prof": this.prof = v; return v;
     case "_dead_acc": this._dead_acc = v; return v;
+    case "_mains_cache": this._mains_cache = v; return v;
     default: return base.Set(n, v); } }
   public override Gv Invoke(string n, Gv[] a) { switch (n) {
     case "vessel": return vessel();
@@ -4797,6 +4867,7 @@ public partial class S_sim : GdObject {
     case "sanSpray": return sanSpray(Gd.A(a, 0));
     case "skWallHeat": return skWallHeat(Gd.A(a, 0));
     case "skAddWater": return skAddWater(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2));
+    case "first_order": return first_order(Gd.A(a, 0), Gd.A(a, 1));
     case "react": return react(Gd.A(a, 0), Gd.A(a, 1));
     case "thick_factor": return thick_factor(Gd.A(a, 0));
     case "film_hA": return film_hA(Gd.A(a, 0));
@@ -4872,6 +4943,7 @@ public partial class S_sim : GdObject {
     case "pump_warn": return pump_warn(Gd.A(a, 0));
     case "_pump_prime_idle": return _pump_prime_idle(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2));
     case "_src_fluid": return _src_fluid(Gd.A(a, 0));
+    case "mains_solve": return mains_solve(Gd.A(a, 0), Gd.A(a, 1));
     case "path_head": return path_head(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2), Gd.A(a, 3));
     case "bore_mm": return bore_mm(Gd.A(a, 0));
     case "pump_point": return pump_point(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2), Gd.A(a, 3), Gd.A(a, 4), Gd.A(a, 5), Gd.A(a, 6), Gd.A(a, 7));

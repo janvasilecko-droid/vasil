@@ -65,11 +65,11 @@ func fer_step(dt: float) -> void:
 	var dS: float = minf(f.Sf, (0.2 * a * f.X * f.Sf / (6.0 + f.Sf)) * h)
 	f.X += maxf(0.0, mu * f.X * h)
 	f.Sf -= dS; f.E += dS / 2.0665; f.CO2 = f.get("CO2", 0.0) + dS * 0.9565 / 2.0665; f.XB = f.get("XB", 0.0) + dS * 0.11 / 2.0665   # Balling
-	f.T += dS * 0.6 * 1000.0 / 4100.0 - (f.T - f.set) * minf(1.0, 0.25 * h)
+	f.T += dS * 0.6 * 1000.0 / 4100.0 - (f.T - f.set) * (1.0 - exp(-0.25 * h))
 	f.AL += mu * f.X * h * 0.9
 	var k1: float = 0.012 * exp(0.11 * (f.T - 12.0))
-	var conv: float = f.AL * minf(1.0, k1 * h); f.AL -= conv; f.D += conv * 1000.0
-	f.D -= f.D * minf(1.0, 0.06 * a * minf(1.0, f.X / 1.5) * h)
+	var conv: float = f.AL * (1.0 - exp(-k1 * h)); f.AL -= conv; f.D += conv * 1000.0
+	f.D -= f.D * (1.0 - exp(-0.06 * a * minf(1.0, f.X / 1.5) * h))
 	f.t += dt
 	if f.D < 100 and f.Sf < 0.25 * f.S0: sim.once("dia_ok", "Diacetyl %d ppb – pod prahem chuti (≈ 100 ppb), hlavní kvašení končí. Můžeš chladit na ležení." % roundi(f.D))
 	if f.Sf < 0.3 * f.S0 and f.D > 150 and f.set < 10: sim.once("dia_rest", "Diacetyl %d ppb je vysoko a kvašení končí – zvaž diacetylovou pauzu (12–14 °C na 1–2 dny)." % roundi(f.D), "warn")
@@ -114,7 +114,7 @@ func cip_step(dt: float) -> void:
 	if c.done.get(key, 0.0) >= need and not c.done.has(key + "!"):
 		c.done[key + "!"] = 1
 		var nxt: String = {"voda": "pokračuj louhem", "louh": "proplach vodou a kyselina", "kyselina": "proplach vodou, nádoba je čistá"}.get(c.medium, "")
-		sim.logm("CIP %s: %s %d min hotovo ✔ – %s." % [cip_name(c.target), c.medium, roundi(need), nxt])
+		sim.logm("CIP %s: %s – podmínky postupu (teplota, koncentrace, čas %d min) splněny, %s. Je to jen SIMULOVANÝ výsledek postupu; mikrobiologickou čistotu simulace neověřuje (v praxi: ATP/otěr, vodivost a pH posledního proplachu)." % [cip_name(c.target), c.medium, roundi(need), nxt])
 
 func cip_status() -> String:
 	var c = sim.S.cip; var parts := []
@@ -123,7 +123,7 @@ func cip_status() -> String:
 		for md in ["voda", "louh", "kyselina"]:
 			if c.done.has(t[0] + ":" + md + "!"): st += {"voda": "V", "louh": "L", "kyselina": "K"}[md]
 		if st != "": parts.append("%s %s" % [t[1], st])
-	return ("hotovo: " + ", ".join(PackedStringArray(parts))) if parts.size() else "zatím nic nesanitováno"
+	return ("postup splněn (simulace): " + ", ".join(PackedStringArray(parts))) if parts.size() else "zatím nic neprovedeno"
 
 # ---------- nácvik poruch a drobné provozní výstrahy ----------
 const MINOR := [
@@ -233,7 +233,7 @@ func scorecard() -> Array:
 	var cd: Dictionary = S.get("cip", {}).get("done", {})
 	var lye_ok: = false
 	for k in cd: if String(k).ends_with(":louh!"): lye_ok = true
-	sc.call("Sanitace – horký louh ≥ 75 °C 20 min", "splněno" if lye_ok else "neprovedeno", "splněno", 100.0 if lye_ok else 0.0)
+	sc.call("Postup CIP – horký louh ≥ 75 °C 20 min (dodržení postupu, ne ověřená čistota)", "podmínky splněny" if lye_ok else "neprovedeno", "podmínky splněny", 100.0 if lye_ok else 0.0)
 	var hrs: float = S.t / 3600.0
 	sc.call("Časová efektivita várky", "%s h" % sim.fmt1(hrs), "≤ 10 h", 100.0 - maxf(0.0, hrs - 10.0) * 15.0 if rep != null else 50.0)
 	return out

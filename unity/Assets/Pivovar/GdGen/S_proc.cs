@@ -114,13 +114,13 @@ public partial class S_proc : GdObject {
     f = f.S("E", (f.G("E") + (dS / Gv.F(2.0665))));
     f = f.S("CO2", (f.C("get", Gv.S("CO2"), Gv.F(0.0)) + ((dS * Gv.F(0.9565)) / Gv.F(2.0665))));
     f = f.S("XB", (f.C("get", Gv.S("XB"), Gv.F(0.0)) + ((dS * Gv.F(0.11)) / Gv.F(2.0665))));
-    f = f.S("T", (f.G("T") + ((((dS * Gv.F(0.6)) * Gv.F(1000.0)) / Gv.F(4100.0)) - (((f.G("T") - f.G("set"))) * Gd.minf(Gv.F(1.0), (Gv.F(0.25) * h))))));
+    f = f.S("T", (f.G("T") + ((((dS * Gv.F(0.6)) * Gv.F(1000.0)) / Gv.F(4100.0)) - (((f.G("T") - f.G("set"))) * ((Gv.F(1.0) - Gd.exp((Gv.F(-0.25) * h))))))));
     f = f.S("AL", (f.G("AL") + (((mu * f.G("X")) * h) * Gv.F(0.9))));
     Gv k1 = ((Gv.F(0.012) * Gd.exp((Gv.F(0.11) * ((f.G("T") - Gv.F(12.0))))))).AsF();
-    Gv conv = ((f.G("AL") * Gd.minf(Gv.F(1.0), (k1 * h)))).AsF();
+    Gv conv = ((f.G("AL") * ((Gv.F(1.0) - Gd.exp(((-k1) * h)))))).AsF();
     f = f.S("AL", (f.G("AL") - conv));
     f = f.S("D", (f.G("D") + (conv * Gv.F(1000.0))));
-    f = f.S("D", (f.G("D") - (f.G("D") * Gd.minf(Gv.F(1.0), (((Gv.F(0.06) * a) * Gd.minf(Gv.F(1.0), (f.G("X") / Gv.F(1.5)))) * h)))));
+    f = f.S("D", (f.G("D") - (f.G("D") * ((Gv.F(1.0) - Gd.exp((((Gv.F(-0.06) * a) * Gd.minf(Gv.F(1.0), (f.G("X") / Gv.F(1.5)))) * h)))))));
     f = f.S("t", (f.G("t") + dt));
     if ((Gv.Lt(f.G("D"), Gv.I(100L)) && Gv.Lt(f.G("Sf"), (Gv.F(0.25) * f.G("S0"))))) {
       get_sim().C("once", Gv.S("dia_ok"), (Gv.S("Diacetyl %d ppb – pod prahem chuti (≈ 100 ppb), hlavní kvašení končí. Můžeš chladit na ležení.") % Gd.roundi(f.G("D"))));
@@ -200,7 +200,7 @@ public partial class S_proc : GdObject {
     if ((Gv.Ge(c.G("done").C("get", key, Gv.F(0.0)), need) && !(c.G("done").C("has", (key + Gv.S("!")))).T())) {
       c = c.S("done", c.G("done").SI((key + Gv.S("!")), Gv.I(1L)));
       Gv nxt = Gd.Dict(Gv.S("voda"), Gv.S("pokračuj louhem"), Gv.S("louh"), Gv.S("proplach vodou a kyselina"), Gv.S("kyselina"), Gv.S("proplach vodou, nádoba je čistá")).C("get", c.G("medium"), Gv.S(""));
-      get_sim().C("logm", (Gv.S("CIP %s: %s %d min hotovo ✔ – %s.") % Gd.Arr(cip_name(c.G("target")), c.G("medium"), Gd.roundi(need), nxt)));
+      get_sim().C("logm", (Gv.S("CIP %s: %s – podmínky postupu (teplota, koncentrace, čas %d min) splněny, %s. Je to jen SIMULOVANÝ výsledek postupu; mikrobiologickou čistotu simulace neověřuje (v praxi: ATP/otěr, vodivost a pH posledního proplachu).") % Gd.Arr(cip_name(c.G("target")), c.G("medium"), Gd.roundi(need), nxt)));
     }
     return Gv.Null;
   }
@@ -218,7 +218,7 @@ public partial class S_proc : GdObject {
         parts.C("append", (Gv.S("%s %s") % Gd.Arr(t.I(Gv.I(1L)), st)));
       }
     }
-    return ((parts.C("size")).T() ? ((Gv.S("hotovo: ") + Gv.S(", ").C("join", Gd.Ctor("PackedStringArray", parts)))) : Gv.S("zatím nic nesanitováno"));
+    return ((parts.C("size")).T() ? ((Gv.S("postup splněn (simulace): ") + Gv.S(", ").C("join", Gd.Ctor("PackedStringArray", parts)))) : Gv.S("zatím nic neprovedeno"));
     return Gv.Null;
   }
   public Gv faults_step(Gv dt = default(Gv)) {
@@ -402,7 +402,7 @@ public partial class S_proc : GdObject {
         lye_ok = Gv.B(true);
       }
     }
-    sc.C("call", Gv.S("Sanitace – horký louh ≥ 75 °C 20 min"), ((lye_ok).T() ? Gv.S("splněno") : Gv.S("neprovedeno")), Gv.S("splněno"), ((lye_ok).T() ? Gv.F(100.0) : Gv.F(0.0)));
+    sc.C("call", Gv.S("Postup CIP – horký louh ≥ 75 °C 20 min (dodržení postupu, ne ověřená čistota)"), ((lye_ok).T() ? Gv.S("podmínky splněny") : Gv.S("neprovedeno")), Gv.S("podmínky splněny"), ((lye_ok).T() ? Gv.F(100.0) : Gv.F(0.0)));
     Gv hrs = ((S.G("t") / Gv.F(3600.0))).AsF();
     sc.C("call", Gv.S("Časová efektivita várky"), (Gv.S("%s h") % get_sim().C("fmt1", hrs)), Gv.S("≤ 10 h"), (Gv.Ne(rep, Gv.Null) ? (Gv.F(100.0) - (Gd.maxf(Gv.F(0.0), (hrs - Gv.F(10.0))) * Gv.F(15.0))) : Gv.F(50.0)));
     return out_;

@@ -21,6 +21,8 @@ func run(t) -> void:
 	_steel_tests()
 	_calib_tests()
 	_ferm_cip_tests()
+	_mains_tests()
+	_reference_tests()
 
 func _open(a: String, b: String, pumps: Array, where := -1) -> void:
 	var vv = sim.route_valves(a, b, pumps, where)
@@ -450,3 +452,183 @@ func _physics_lit_tests() -> void:
 	S.rvp.heat = 0.0; S.hlt.heat = 0.0
 	for i in 600: sim.sim_step(1.0)
 	T.chk("LIT kotel: při odběru nad výkon tlak páry klesá a po odlehčení se vrátí", p_low < S.cfg.steamBar - 0.3 and S.boiler.p > p_low + 0.2, "%.2f → %.2f bar" % [p_low, S.boiler.p])
+
+
+# ---------- 12. vodovodní řad = zdroj tlaku (ne pevný limit průtoku) ----------
+func _mains_outs(src) -> Array:
+	var r = sim.bfs(sim.starts_of(src.id))
+	var outs := []
+	for d in r.hits:
+		if d.att.bind != "vodovod": outs.append({"d": d, "path": sim.path_to(r, d.k)})
+	for o in outs: o["f"] = sim.path_pct(o.path)
+	return outs
+
+func _mains_tests() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	var src = null
+	for it in sim.items_by_bind("vodovod"):
+		if it.get("shape") == "inlet": src = it
+	if src == null:
+		T.chk("AUDIT řad: zdroj vody z řadu existuje", false); return
+	_open("vodovod", "lv", [])
+	src["on"] = true
+	var outs: Array = _mains_outs(src)
+	var iLv := -1
+	for i in outs.size():
+		if outs[i].d.att.bind == "lv": iLv = i
+	if iLv < 0 or outs[iLv].f <= 0.0:
+		T.chk("AUDIT řad: cesta řad → ledovka je otevřená", false); return
+	var Q1: float = sim.mains_solve(outs, src)[iLv]
+	var Qmax: float = c.mainsQ; var Hm: float = c.mainsBar*1.0e5/(1000.0*9.81)
+	# 1) rovnováha tlaků v uzlu: H zdroje při průtoku ΣQ = ztráta trasy + výška
+	var mu: float = sim.skViscosity(S.cool.waterT, 0.0)
+	var Qt := 0.0
+	for q in sim.mains_solve(outs, src): Qt += q
+	var Hs: float = Hm*(1.0 - pow(Qt/Qmax, 2))
+	var path = outs[iLv].path
+	var last = path[path.size() - 1]
+	var ysrc: float = sim.net.nodes[sim.starts_of(src.id)[0]].y
+	var hst: float = (ysrc - sim.net.nodes[last.to].y)/100.0
+	var Hn: float = sim.path_head(path, Q1, 1.0, mu) + hst
+	T.chk("AUDIT řad: tlak zdroje při odběru = ztráta trasy + výška (bilance tlaku v uzlu)", absf(Hs - Hn) < 0.02*maxf(1.0, Hs), "zdroj %.2f m, trasa %.2f m, Q %.0f L/min" % [Hs, Hn, Q1])
+	T.chk("AUDIT řad: průtok je kladný a nepřekročí kapacitu přívodu", Q1 > 20.0 and Qt <= Qmax*1.001, "%.0f L/min z max %.0f" % [Q1, Qmax])
+	# 2) vyšší tlak řadu → víc vody, ale podlinárně (turbulence: Q ~ √ΔH)
+	c.mainsBar = 8.0
+	var Q2: float = sim.mains_solve(outs, src)[iLv]
+	c.mainsBar = 4.0
+	T.chk("AUDIT řad: dvojnásobný tlak dá víc vody, ale méně než dvojnásobek", Q2 > Q1*1.05 and Q2 < Q1*1.99, "%.0f → %.0f L/min" % [Q1, Q2])
+	# 3) přivřená klapka na trase = větší ztráta, menší průtok; plně zavřená = nula
+	var vv = sim.route_valves("vodovod", "lv", [])
+	var thr = null
+	for id in vv:
+		var it2 = sim.net.byId.get(id)
+		if it2 != null and it2.type == "valve": thr = it2; break
+	if thr != null:
+		thr["part"] = 20.0
+		var outs2: Array = _mains_outs(src)
+		var Q3: float = 0.0
+		for i in outs2.size(): if outs2[i].d.att.bind == "lv": Q3 = sim.mains_solve(outs2, src)[i]
+		thr.erase("part")
+		T.chk("AUDIT řad: přivřená klapka (20 %) sníží průtok, ale voda dál teče", Q3 < Q1*0.9 and Q3 > 0.0, "%.0f → %.0f L/min" % [Q1, Q3])
+	# 4) nezávislost na pořadí/cachování: opakované řešení dává stejný výsledek
+	var Q4: float = sim.mains_solve(outs, src)[iLv]
+	T.chk("AUDIT řad: opakované řešení je deterministické", absf(Q4 - Q1) < 1e-9)
+	# 5) zachování hmoty při plnění: přírůstek vody v ledovce nesmí překročit průtok × čas a musí se jím blížit
+	S.lv.w = 1000.0
+	var w0: float = S.lv.w
+	for i in 30: sim.net_step(1.0)
+	var dw: float = S.lv.w - w0
+	var exp_: float = Q1/60.0*30.0
+	T.chk("AUDIT řad: do ledovky za 30 s přiteče nejvýš průtok × čas a řádově tolik", dw > 0.6*exp_ and dw < 1.02*exp_, "%.0f L, řešení tlaku dává %.0f L" % [dw, exp_])
+	src["on"] = false
+
+
+# ---------- 13. referenční testy s NEZÁVISLÝM výpočtem (uzavřené vzorce z učebnic, ne kopie kódu) ----------
+func _rel(a: float, b: float) -> float:
+	return absf(a - b)/maxf(1e-12, absf(b))
+
+func _mkv(Tc: float) -> Dictionary:
+	var v = sim.vessel(); v.w = 1000.0; v.T = Tc; v.Tsens = Tc
+	return v
+
+func _reference_tests() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	# --- A) přesné reakce 1. řádu: nezávislost na kroku a shoda s analytickým e^(-kt) ---
+	var f5: float = sim.first_order(5.0, 1.0)
+	T.chk("REF reakce 1. řádu: k = 5 /min, 1 min → 1 − e^−5 (dřív min(1, k·m) = 100 %)", absf(f5 - (1.0 - exp(-5.0))) < 1e-12 and f5 < 1.0, "%.5f" % f5)
+	var rest := 1.0
+	for i in 600: rest *= 1.0 - sim.first_order(0.3, 1.0/60.0)
+	T.chk("REF reakce 1. řádu: 600 krátkých kroků = jeden dlouhý (přesné řešení)", absf((1.0 - rest) - sim.first_order(0.3, 10.0)) < 1e-9, "%.9f" % (1.0 - rest))
+	# --- B) amylasa α při 63 °C: A(t) = A0·e^(−0,022·t) (Marc 1983, k(63 °C) z cfg) ---
+	var va = _mkv(63.0); va.aA = 10.0
+	var vb = _mkv(63.0); vb.aA = 10.0
+	sim.react(va, 30.0)
+	for i in 1800: sim.react(vb, 1.0/60.0)
+	var Aref: float = 10.0*exp(-c.kdAlpha63*30.0)
+	T.chk("REF α-amylasa 63 °C, 30 min: A = A0·e^(−k·t)", _rel(va.aA, Aref) < 1e-6, "%.4f vs %.4f" % [va.aA, Aref])
+	T.chk("REF α-amylasa: krok 30 min a 1 s dávají totéž", _rel(va.aA, vb.aA) < 1e-6, "%.5f / %.5f" % [va.aA, vb.aA])
+	# --- C) SMM → DMS při 100 °C, pH 5,2: SMM(t) = SMM0·e^(−0,01824·t) (Dickenson 1979) ---
+	S["pH"] = 5.2
+	var vs1 = _mkv(100.0); vs1.smm = 10.0
+	var vs2 = _mkv(100.0); vs2.smm = 10.0
+	sim.react(vs1, 60.0)
+	for i in 3600: sim.react(vs2, 1.0/60.0)
+	var Sref: float = 10.0*exp(-0.01824*60.0)
+	T.chk("REF SMM při 100 °C, pH 5,2, 60 min: e^(−0,01824·t)", _rel(vs1.smm, Sref) < 2e-3, "%.4f vs %.4f" % [vs1.smm, Sref])
+	T.chk("REF SMM: krok 60 min a 1 s dávají totéž", _rel(vs1.smm, vs2.smm) < 1e-6 and _rel(vs1.dms, vs2.dms) < 1e-6, "DMS %.5f / %.5f" % [vs1.dms, vs2.dms])
+	T.chk("REF SMM → DMS: hmota se zachovává (SMM + DMS ≤ počáteční, zbytek se odpaří)", vs1.smm + vs1.dms <= 10.0 + 1e-9)
+	# --- D) izomerizace α-kyselin (Malowicki & Shellhammer 2005): α(t) = α0·e^(−k1·t), iso = k1·α0·(e^(−k1 t) − e^(−k2 t))/(k2 − k1) ---
+	var vh1 = _mkv(100.0); vh1.alpha = 100.0
+	var vh2 = _mkv(100.0); vh2.alpha = 100.0
+	sim.react(vh1, 60.0)
+	for i in 3600: sim.react(vh2, 1.0/60.0)
+	var TK: float = 373.15
+	var k1: float = 7.9e11*exp(-11858.0/TK); var k2: float = 4.1e12*exp(-12994.0/TK)
+	var isoRef: float = k1*100.0*(exp(-k1*60.0) - exp(-k2*60.0))/(k2 - k1)
+	T.chk("REF chmel 100 °C, 60 min: izo-α podle analytického řešení dvou následných reakcí", _rel(vh1.iso, isoRef) < 1e-6, "%.3f vs %.3f" % [vh1.iso, isoRef])
+	T.chk("REF chmel: α klesá jako e^(−k1·t) a krok nehraje roli", _rel(vh1.alpha, 100.0*exp(-k1*60.0)) < 1e-6 and _rel(vh1.iso, vh2.iso) < 1e-5, "iso %.4f / %.4f" % [vh1.iso, vh2.iso])
+	T.chk("REF chmel: využití izomerizací za 60 min varu je v rozumných mezích 10–45 %", vh1.iso > 10.0 and vh1.iso < 45.0, "%.1f %% α → iso" % vh1.iso)
+	# --- E) odpar a zahuštění: extrakt se při varu zachová, °Plato = 100·E/(E+W) ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var v = S.rvp; v.w = 4000.0; v.f = 450.0; v.T = c.tbWater; v.Tsens = c.tbWater; v.stir = true; v.heat = 0.85
+	var e0: float = sim.ext(v); var w0: float = v.w; var dr0: float = S.drainExt; var dl0: float = S.drainL
+	for i in 900: sim.sim_step(1.0)
+	var e1: float = sim.ext(v) + (S.drainExt - dr0)
+	var P1: float = 100.0*sim.ext(v)/(sim.ext(v) + v.w)
+	T.chk("REF var: extrakt (v nádobě + odtečený) se při odparu zachová", _rel(e1, e0) < 0.005, "%.2f → %.2f kg" % [e0, e1])
+	T.chk("REF var: vody ubývá (odpar) a °P = 100·E/(E+W) roste", v.w < w0 - 20.0 and P1 > 100.0*e0/(e0 + w0) + 0.3, "voda %.0f → %.0f kg, %.2f °P" % [w0, v.w, P1])
+	T.chk("REF var: plato() v modelu odpovídá 100·E/(E+W) (±0,3 °P)", absf(sim.plato(v) - P1) < 0.3, "%.2f vs %.2f" % [sim.plato(v), P1])
+	# --- F) výtěžnost: VV (kg extraktu/100 kg sladu) = účinnost × laboratorní extrakt/hmotnost sladu ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var mm := 1000.0; S.malt.added = mm
+	var elab: float = mm*(1.0 - c.maltMoist/100.0)*c.maltExtract/100.0
+	S.extIn = elab
+	S.flags["knock"] = {"P": 12.0, "e": 0.807*elab, "V": 71.0}
+	var Y: Dictionary = sim.yields()
+	T.chk("REF výtěžnost: laboratorní extrakt = slad·(1−vlhkost)·extrakt sušiny", _rel(Y.e_lab, elab) < 1e-9, "%.1f kg" % Y.e_lab)
+	T.chk("REF výtěžnost: VV_varna = účinnost × e_lab/m_slad (80,7 % účinnosti ≈ 61,7 kg/100 kg)", absf(Y.VV_varna - Y.ucinnost/100.0*Y.e_lab/Y.m_slad*100.0) < 1e-9 and absf(Y.VV_varna - 61.65) < 0.2, "VV %.2f, účinnost %.1f %%" % [Y.VV_varna, Y.ucinnost])
+	# --- G) čerpadlo: pracovní bod = průsečík křivky čerpadla a charakteristiky soustavy ---
+	var H0: float = c.get("p1_H0", 32.0); var Qn: float = c.get("p1_Qn", 400.0); var A: float = 0.25*H0/(Qn*Qn)
+	var pp: Dictionary = sim.pump_point("p1", 5000.0, 5.0, [], [], 1.0, 0.001, 0.0)
+	var Qref: float = sqrt((H0 - 5.0)/A)
+	T.chk("REF čerpadlo: konstantní statická výška 5 m → Q = √((H0−Hst)/A) (průsečík s parabolou)", _rel(pp.Q, Qref) < 1e-3, "%.1f vs %.1f L/min" % [pp.Q, Qref])
+	pp = sim.pump_point("p1", 300.0, 5.0, [], [], 1.0, 0.001, 0.0)
+	var hzRef: float = 50.0*sqrt((5.0 + A*300.0*300.0)/H0)
+	T.chk("REF čerpadlo: měnič drží 300 L/min při frekvenci dané afinitním zákonem H ~ n²", _rel(pp.Q, 300.0) < 1e-6 and _rel(pp.hz, hzRef) < 1e-3, "%.2f Hz vs %.2f Hz" % [pp.hz, hzRef])
+	pp = sim.pump_point("p1", 300.0, H0 + 5.0, [], [], 1.0, 0.001, 0.0)
+	T.chk("REF čerpadlo: výška nad uzavřenou výškou H0 → žádný průtok", pp.Q == 0.0, "%.1f L/min" % pp.Q)
+	# --- H) třecí ztráta v potrubí: laminárně Hagen–Poiseuille, turbulentně Colebrook ---
+	var D: float = sim.bore_mm(25.0)/1000.0; var Lm: float = 1000.0/100.0*c.pipeLenScale
+	var path := [{"e": {"dn": 25.0, "len": 1000.0}}]
+	var Ql: float = 5.0; var vl: float = Ql/60000.0/(PI*D*D/4.0)
+	var Hlam: float = 128.0*0.001*Lm*(Ql/60000.0)/(PI*pow(D, 4.0)*1000.0*9.81) + 0.4*vl*vl/(2.0*9.81)
+	var Hm1: float = sim.path_head(path, Ql, 1.0, 0.001)
+	T.chk("REF potrubí: laminární proudění odpovídá Hagen–Poiseuille (+ místní ztráta)", _rel(Hm1, Hlam) < 0.02, "%.5f vs %.5f m" % [Hm1, Hlam])
+	var Qt2: float = 500.0; var vt: float = Qt2/60000.0/(PI*D*D/4.0); var Ret: float = 1000.0*vt*D/0.001
+	var fc: float = 0.02
+	for i in 60: fc = pow(1.0/(-2.0*log(1.5e-05/(3.7*D) + 2.51/(Ret*sqrt(fc)))*0.4342944819), 2.0)
+	var Hturb: float = (fc*Lm/D + 0.4)*vt*vt/(2.0*9.81)
+	var Hm2: float = sim.path_head(path, Qt2, 1.0, 0.001)
+	T.chk("REF potrubí: turbulence – Swamee–Jain v modelu souhlasí s Colebrookem do 2 %", _rel(Hm2, Hturb) < 0.02, "%.3f vs %.3f m, f=%.4f" % [Hm2, Hturb, fc])
+	T.chk("REF potrubí: ztráta roste s průtokem (≈ Q²) a se zavřením klapky", sim.path_head(path, 2.0*Qt2, 1.0, 0.001) > 3.3*Hm2, "")
+	# --- I) výměník: ε-NTU protiproud, nezávislý uzavřený vzorec ---
+	var cases := [[2.0, 1.0, 0.5], [2.0, 4.0, 1.0], [1.0, 3.0, 3.0], [0.5, 2.0, 2.0]]
+	var okE := true; var det := ""
+	for cs in cases:
+		var UA: float = cs[0]; var Ch: float = cs[1]; var Cc: float = cs[2]
+		var cmin: float = minf(Ch, Cc); var cmax: float = maxf(Ch, Cc); var cr: float = cmin/cmax; var ntu: float = UA/cmin
+		var eref: float = ntu/(1.0 + ntu) if absf(1.0 - cr) < 1e-9 else (1.0 - exp(-ntu*(1.0 - cr)))/(1.0 - cr*exp(-ntu*(1.0 - cr)))
+		var em: float = Physics.exchanger_effectiveness(UA, Ch, Cc)
+		if absf(em - eref) > 1e-9: okE = false
+		det += "%.3f " % em
+	T.chk("REF výměník: ε-NTU protiproud souhlasí s uzavřeným vzorcem (Cr<1 i Cr=1)", okE, det)
+	var emax: float = Physics.exchanger_effectiveness(1000.0, 1.0, 2.0)
+	T.chk("REF výměník: nekonečně velká plocha → ε → 1, nulová plocha → 0", emax > 0.999 and Physics.exchanger_effectiveness(0.0, 1.0, 2.0) == 0.0, "%.5f" % emax)
+	# --- J) tepelná kapacita: ohřev bez ztrát stoupá lineárně – T = T0 + P·t/(m·c) ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var vh = S.rvp; vh.w = 2000.0; vh.T = 20.0; vh.Tsens = 20.0; vh.stir = true; vh.heat = 0.5
+	var Cth: float = sim.cC(vh) + sim.steelC(c.rvpSteel); var Ein := 0.0; var Lo := 0.0; var T0: float = vh.T
+	for i in 300:
+		sim.sim_step(1.0); Ein += vh.Pin; Lo += c.rvpUA*(vh.T - c.ambientT)
+	var Tref: float = T0 + (Ein - Lo)/Cth
+	T.chk("REF ohřev: T = T0 + (E_dodaná − E_ztracená)/C (C = voda + ocel, kJ/K)", absf(vh.T - Tref) < 0.6, "%.2f vs %.2f °C" % [vh.T, Tref])

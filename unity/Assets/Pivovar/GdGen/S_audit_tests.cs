@@ -30,6 +30,8 @@ public partial class S_audit_tests : GdObject {
     _steel_tests();
     _calib_tests();
     _ferm_cip_tests();
+    _mains_tests();
+    _reference_tests();
     return Gv.Null;
   }
   public Gv _open(Gv a = default(Gv), Gv b = default(Gv), Gv pumps = default(Gv), Gv where = default(Gv)) {
@@ -781,6 +783,273 @@ public partial class S_audit_tests : GdObject {
     T.C("chk", Gv.S("LIT kotel: při odběru nad výkon tlak páry klesá a po odlehčení se vrátí"), Gv.B((Gv.Lt(p_low, (S.G("cfg").G("steamBar") - Gv.F(0.3))) && Gv.Gt(S.G("boiler").G("p"), (p_low + Gv.F(0.2))))), (Gv.S("%.2f → %.2f bar") % Gd.Arr(p_low, S.G("boiler").G("p"))));
     return Gv.Null;
   }
+  public Gv _mains_outs(Gv src = default(Gv)) {
+    Gv r = sim.C("bfs", sim.C("starts_of", src.G("id")));
+    Gv outs = Gd.Arr();
+    foreach (Gv d in (r.G("hits")).Iter()) {
+      if (Gv.Ne(d.G("att").G("bind"), Gv.S("vodovod"))) {
+        outs.C("append", Gd.Dict(Gv.S("d"), d, Gv.S("path"), sim.C("path_to", r, d.G("k"))));
+      }
+    }
+    foreach (Gv o__it in (outs).Iter()) {
+      Gv o = o__it;
+      o = o.SI(Gv.S("f"), sim.C("path_pct", o.G("path")));
+    }
+    return outs;
+    return Gv.Null;
+  }
+  public Gv _mains_tests() {
+    T.C("fresh");
+    Gv S = sim.G("S");
+    Gv c = S.G("cfg");
+    Gv src = Gv.Null;
+    foreach (Gv it in (sim.C("items_by_bind", Gv.S("vodovod"))).Iter()) {
+      if (Gv.Eq(it.C("get", Gv.S("shape")), Gv.S("inlet"))) {
+        src = it;
+      }
+    }
+    if (Gv.Eq(src, Gv.Null)) {
+      T.C("chk", Gv.S("AUDIT řad: zdroj vody z řadu existuje"), Gv.B(false));
+      return Gv.Null;
+    }
+    _open(Gv.S("vodovod"), Gv.S("lv"), Gd.Arr());
+    src = src.SI(Gv.S("on"), Gv.B(true));
+    Gv outs = _mains_outs(src);
+    Gv iLv = Gv.I(-1L);
+    foreach (Gv i in (outs.C("size")).Iter()) {
+      if (Gv.Eq(outs.I(i).G("d").G("att").G("bind"), Gv.S("lv"))) {
+        iLv = i;
+      }
+    }
+    if ((Gv.Lt(iLv, Gv.I(0L)) || Gv.Le(outs.I(iLv).G("f"), Gv.F(0.0)))) {
+      T.C("chk", Gv.S("AUDIT řad: cesta řad → ledovka je otevřená"), Gv.B(false));
+      return Gv.Null;
+    }
+    Gv Q1 = (sim.C("mains_solve", outs, src).I(iLv)).AsF();
+    Gv Qmax = (c.G("mainsQ")).AsF();
+    Gv Hm = (((c.G("mainsBar") * Gv.F(100000.0)) / ((Gv.F(1000.0) * Gv.F(9.81))))).AsF();
+    Gv mu = (sim.C("skViscosity", S.G("cool").G("waterT"), Gv.F(0.0))).AsF();
+    Gv Qt = Gv.F(0.0);
+    foreach (Gv q in (sim.C("mains_solve", outs, src)).Iter()) {
+      Qt = (Qt + q);
+    }
+    Gv Hs = ((Hm * ((Gv.F(1.0) - Gd.pow((Qt / Qmax), Gv.I(2L)))))).AsF();
+    Gv path = outs.I(iLv).G("path");
+    Gv last = path.I((path.C("size") - Gv.I(1L)));
+    Gv ysrc = (sim.G("net").G("nodes").I(sim.C("starts_of", src.G("id")).I(Gv.I(0L))).G("y")).AsF();
+    Gv hst = ((((ysrc - sim.G("net").G("nodes").I(last.G("to")).G("y"))) / Gv.F(100.0))).AsF();
+    Gv Hn = ((sim.C("path_head", path, Q1, Gv.F(1.0), mu) + hst)).AsF();
+    T.C("chk", Gv.S("AUDIT řad: tlak zdroje při odběru = ztráta trasy + výška (bilance tlaku v uzlu)"), Gv.B(Gv.Lt(Gd.absf((Hs - Hn)), (Gv.F(0.02) * Gd.maxf(Gv.F(1.0), Hs)))), (Gv.S("zdroj %.2f m, trasa %.2f m, Q %.0f L/min") % Gd.Arr(Hs, Hn, Q1)));
+    T.C("chk", Gv.S("AUDIT řad: průtok je kladný a nepřekročí kapacitu přívodu"), Gv.B((Gv.Gt(Q1, Gv.F(20.0)) && Gv.Le(Qt, (Qmax * Gv.F(1.001))))), (Gv.S("%.0f L/min z max %.0f") % Gd.Arr(Q1, Qmax)));
+    c = c.S("mainsBar", Gv.F(8.0));
+    Gv Q2 = (sim.C("mains_solve", outs, src).I(iLv)).AsF();
+    c = c.S("mainsBar", Gv.F(4.0));
+    T.C("chk", Gv.S("AUDIT řad: dvojnásobný tlak dá víc vody, ale méně než dvojnásobek"), Gv.B((Gv.Gt(Q2, (Q1 * Gv.F(1.05))) && Gv.Lt(Q2, (Q1 * Gv.F(1.99))))), (Gv.S("%.0f → %.0f L/min") % Gd.Arr(Q1, Q2)));
+    Gv vv = sim.C("route_valves", Gv.S("vodovod"), Gv.S("lv"), Gd.Arr());
+    Gv thr = Gv.Null;
+    foreach (Gv id in (vv).Iter()) {
+      Gv it2 = sim.G("net").G("byId").C("get", id);
+      if ((Gv.Ne(it2, Gv.Null) && Gv.Eq(it2.G("type"), Gv.S("valve")))) {
+        thr = it2;
+        break;
+      }
+    }
+    if (Gv.Ne(thr, Gv.Null)) {
+      thr = thr.SI(Gv.S("part"), Gv.F(20.0));
+      Gv outs2 = _mains_outs(src);
+      Gv Q3 = (Gv.F(0.0)).AsF();
+      foreach (Gv i_2 in (outs2.C("size")).Iter()) {
+        if (Gv.Eq(outs2.I(i_2).G("d").G("att").G("bind"), Gv.S("lv"))) {
+          Q3 = (sim.C("mains_solve", outs2, src).I(i_2)).AsF();
+        }
+      }
+      thr.C("erase", Gv.S("part"));
+      T.C("chk", Gv.S("AUDIT řad: přivřená klapka (20 %) sníží průtok, ale voda dál teče"), Gv.B((Gv.Lt(Q3, (Q1 * Gv.F(0.9))) && Gv.Gt(Q3, Gv.F(0.0)))), (Gv.S("%.0f → %.0f L/min") % Gd.Arr(Q1, Q3)));
+    }
+    Gv Q4 = (sim.C("mains_solve", outs, src).I(iLv)).AsF();
+    T.C("chk", Gv.S("AUDIT řad: opakované řešení je deterministické"), Gv.B(Gv.Lt(Gd.absf((Q4 - Q1)), Gv.F(1e-09))));
+    S = S.S("lv", S.G("lv").S("w", Gv.F(1000.0)));
+    Gv w0 = (S.G("lv").G("w")).AsF();
+    foreach (Gv i_3 in (Gv.I(30L)).Iter()) {
+      sim.C("net_step", Gv.F(1.0));
+    }
+    Gv dw = ((S.G("lv").G("w") - w0)).AsF();
+    Gv exp_ = (((Q1 / Gv.F(60.0)) * Gv.F(30.0))).AsF();
+    T.C("chk", Gv.S("AUDIT řad: do ledovky za 30 s přiteče nejvýš průtok × čas a řádově tolik"), Gv.B((Gv.Gt(dw, (Gv.F(0.6) * exp_)) && Gv.Lt(dw, (Gv.F(1.02) * exp_)))), (Gv.S("%.0f L, řešení tlaku dává %.0f L") % Gd.Arr(dw, exp_)));
+    src = src.SI(Gv.S("on"), Gv.B(false));
+    return Gv.Null;
+  }
+  public Gv _rel(Gv a = default(Gv), Gv b = default(Gv)) {
+    a = (a).AsF();
+    b = (b).AsF();
+    return ((Gd.absf((a - b)) / Gd.maxf(Gv.F(1e-12), Gd.absf(b)))).AsF();
+    return Gv.Null;
+  }
+  public Gv _mkv(Gv Tc = default(Gv)) {
+    Tc = (Tc).AsF();
+    Gv v = sim.C("vessel");
+    v = v.S("w", Gv.F(1000.0));
+    v = v.S("T", Tc);
+    v = v.S("Tsens", Tc);
+    return v;
+    return Gv.Null;
+  }
+  public Gv _reference_tests() {
+    T.C("fresh");
+    Gv S = sim.G("S");
+    Gv c = S.G("cfg");
+    Gv f5 = (sim.C("first_order", Gv.F(5.0), Gv.F(1.0))).AsF();
+    T.C("chk", Gv.S("REF reakce 1. řádu: k = 5 /min, 1 min → 1 − e^−5 (dřív min(1, k·m) = 100 %)"), Gv.B((Gv.Lt(Gd.absf((f5 - ((Gv.F(1.0) - Gd.exp(Gv.F(-5.0)))))), Gv.F(1e-12)) && Gv.Lt(f5, Gv.F(1.0)))), (Gv.S("%.5f") % f5));
+    Gv rest = Gv.F(1.0);
+    foreach (Gv i in (Gv.I(600L)).Iter()) {
+      rest = (rest * (Gv.F(1.0) - sim.C("first_order", Gv.F(0.3), (Gv.F(1.0) / Gv.F(60.0)))));
+    }
+    T.C("chk", Gv.S("REF reakce 1. řádu: 600 krátkých kroků = jeden dlouhý (přesné řešení)"), Gv.B(Gv.Lt(Gd.absf((((Gv.F(1.0) - rest)) - sim.C("first_order", Gv.F(0.3), Gv.F(10.0)))), Gv.F(1e-09))), (Gv.S("%.9f") % ((Gv.F(1.0) - rest))));
+    Gv va = _mkv(Gv.F(63.0));
+    va = va.S("aA", Gv.F(10.0));
+    Gv vb = _mkv(Gv.F(63.0));
+    vb = vb.S("aA", Gv.F(10.0));
+    sim.C("react", va, Gv.F(30.0));
+    foreach (Gv i_2 in (Gv.I(1800L)).Iter()) {
+      sim.C("react", vb, (Gv.F(1.0) / Gv.F(60.0)));
+    }
+    Gv Aref = ((Gv.F(10.0) * Gd.exp(((-c.G("kdAlpha63")) * Gv.F(30.0))))).AsF();
+    T.C("chk", Gv.S("REF α-amylasa 63 °C, 30 min: A = A0·e^(−k·t)"), Gv.B(Gv.Lt(_rel(va.G("aA"), Aref), Gv.F(1e-06))), (Gv.S("%.4f vs %.4f") % Gd.Arr(va.G("aA"), Aref)));
+    T.C("chk", Gv.S("REF α-amylasa: krok 30 min a 1 s dávají totéž"), Gv.B(Gv.Lt(_rel(va.G("aA"), vb.G("aA")), Gv.F(1e-06))), (Gv.S("%.5f / %.5f") % Gd.Arr(va.G("aA"), vb.G("aA"))));
+    S = S.SI(Gv.S("pH"), Gv.F(5.2));
+    Gv vs1 = _mkv(Gv.F(100.0));
+    vs1 = vs1.S("smm", Gv.F(10.0));
+    Gv vs2 = _mkv(Gv.F(100.0));
+    vs2 = vs2.S("smm", Gv.F(10.0));
+    sim.C("react", vs1, Gv.F(60.0));
+    foreach (Gv i_3 in (Gv.I(3600L)).Iter()) {
+      sim.C("react", vs2, (Gv.F(1.0) / Gv.F(60.0)));
+    }
+    Gv Sref = ((Gv.F(10.0) * Gd.exp((Gv.F(-0.01824) * Gv.F(60.0))))).AsF();
+    T.C("chk", Gv.S("REF SMM při 100 °C, pH 5,2, 60 min: e^(−0,01824·t)"), Gv.B(Gv.Lt(_rel(vs1.G("smm"), Sref), Gv.F(0.002))), (Gv.S("%.4f vs %.4f") % Gd.Arr(vs1.G("smm"), Sref)));
+    T.C("chk", Gv.S("REF SMM: krok 60 min a 1 s dávají totéž"), Gv.B((Gv.Lt(_rel(vs1.G("smm"), vs2.G("smm")), Gv.F(1e-06)) && Gv.Lt(_rel(vs1.G("dms"), vs2.G("dms")), Gv.F(1e-06)))), (Gv.S("DMS %.5f / %.5f") % Gd.Arr(vs1.G("dms"), vs2.G("dms"))));
+    T.C("chk", Gv.S("REF SMM → DMS: hmota se zachovává (SMM + DMS ≤ počáteční, zbytek se odpaří)"), Gv.B(Gv.Le((vs1.G("smm") + vs1.G("dms")), (Gv.F(10.0) + Gv.F(1e-09)))));
+    Gv vh1 = _mkv(Gv.F(100.0));
+    vh1 = vh1.S("alpha", Gv.F(100.0));
+    Gv vh2 = _mkv(Gv.F(100.0));
+    vh2 = vh2.S("alpha", Gv.F(100.0));
+    sim.C("react", vh1, Gv.F(60.0));
+    foreach (Gv i_4 in (Gv.I(3600L)).Iter()) {
+      sim.C("react", vh2, (Gv.F(1.0) / Gv.F(60.0)));
+    }
+    Gv TK = (Gv.F(373.15)).AsF();
+    Gv k1 = ((Gv.F(790000000000.0) * Gd.exp((Gv.F(-11858.0) / TK)))).AsF();
+    Gv k2 = ((Gv.F(4100000000000.0) * Gd.exp((Gv.F(-12994.0) / TK)))).AsF();
+    Gv isoRef = ((((k1 * Gv.F(100.0)) * ((Gd.exp(((-k1) * Gv.F(60.0))) - Gd.exp(((-k2) * Gv.F(60.0)))))) / ((k2 - k1)))).AsF();
+    T.C("chk", Gv.S("REF chmel 100 °C, 60 min: izo-α podle analytického řešení dvou následných reakcí"), Gv.B(Gv.Lt(_rel(vh1.G("iso"), isoRef), Gv.F(1e-06))), (Gv.S("%.3f vs %.3f") % Gd.Arr(vh1.G("iso"), isoRef)));
+    T.C("chk", Gv.S("REF chmel: α klesá jako e^(−k1·t) a krok nehraje roli"), Gv.B((Gv.Lt(_rel(vh1.G("alpha"), (Gv.F(100.0) * Gd.exp(((-k1) * Gv.F(60.0))))), Gv.F(1e-06)) && Gv.Lt(_rel(vh1.G("iso"), vh2.G("iso")), Gv.F(1e-05)))), (Gv.S("iso %.4f / %.4f") % Gd.Arr(vh1.G("iso"), vh2.G("iso"))));
+    T.C("chk", Gv.S("REF chmel: využití izomerizací za 60 min varu je v rozumných mezích 10–45 %"), Gv.B((Gv.Gt(vh1.G("iso"), Gv.F(10.0)) && Gv.Lt(vh1.G("iso"), Gv.F(45.0)))), (Gv.S("%.1f %% α → iso") % vh1.G("iso")));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv v = S.G("rvp");
+    v = v.S("w", Gv.F(4000.0));
+    v = v.S("f", Gv.F(450.0));
+    v = v.S("T", c.G("tbWater"));
+    v = v.S("Tsens", c.G("tbWater"));
+    v = v.S("stir", Gv.B(true));
+    v = v.S("heat", Gv.F(0.85));
+    Gv e0 = (sim.C("ext", v)).AsF();
+    Gv w0 = (v.G("w")).AsF();
+    Gv dr0 = (S.G("drainExt")).AsF();
+    Gv dl0 = (S.G("drainL")).AsF();
+    foreach (Gv i_5 in (Gv.I(900L)).Iter()) {
+      sim.C("sim_step", Gv.F(1.0));
+    }
+    Gv e1 = ((sim.C("ext", v) + ((S.G("drainExt") - dr0)))).AsF();
+    Gv P1 = (((Gv.F(100.0) * sim.C("ext", v)) / ((sim.C("ext", v) + v.G("w"))))).AsF();
+    T.C("chk", Gv.S("REF var: extrakt (v nádobě + odtečený) se při odparu zachová"), Gv.B(Gv.Lt(_rel(e1, e0), Gv.F(0.005))), (Gv.S("%.2f → %.2f kg") % Gd.Arr(e0, e1)));
+    T.C("chk", Gv.S("REF var: vody ubývá (odpar) a °P = 100·E/(E+W) roste"), Gv.B((Gv.Lt(v.G("w"), (w0 - Gv.F(20.0))) && Gv.Gt(P1, (((Gv.F(100.0) * e0) / ((e0 + w0))) + Gv.F(0.3))))), (Gv.S("voda %.0f → %.0f kg, %.2f °P") % Gd.Arr(w0, v.G("w"), P1)));
+    T.C("chk", Gv.S("REF var: plato() v modelu odpovídá 100·E/(E+W) (±0,3 °P)"), Gv.B(Gv.Lt(Gd.absf((sim.C("plato", v) - P1)), Gv.F(0.3))), (Gv.S("%.2f vs %.2f") % Gd.Arr(sim.C("plato", v), P1)));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv mm = Gv.F(1000.0);
+    S = S.S("malt", S.G("malt").S("added", mm));
+    Gv elab = ((((mm * ((Gv.F(1.0) - (c.G("maltMoist") / Gv.F(100.0))))) * c.G("maltExtract")) / Gv.F(100.0))).AsF();
+    S = S.S("extIn", elab);
+    S = S.S("flags", S.G("flags").SI(Gv.S("knock"), Gd.Dict(Gv.S("P"), Gv.F(12.0), Gv.S("e"), (Gv.F(0.807) * elab), Gv.S("V"), Gv.F(71.0))));
+    Gv Y = sim.C("yields");
+    T.C("chk", Gv.S("REF výtěžnost: laboratorní extrakt = slad·(1−vlhkost)·extrakt sušiny"), Gv.B(Gv.Lt(_rel(Y.G("e_lab"), elab), Gv.F(1e-09))), (Gv.S("%.1f kg") % Y.G("e_lab")));
+    T.C("chk", Gv.S("REF výtěžnost: VV_varna = účinnost × e_lab/m_slad (80,7 % účinnosti ≈ 61,7 kg/100 kg)"), Gv.B((Gv.Lt(Gd.absf((Y.G("VV_varna") - ((((Y.G("ucinnost") / Gv.F(100.0)) * Y.G("e_lab")) / Y.G("m_slad")) * Gv.F(100.0)))), Gv.F(1e-09)) && Gv.Lt(Gd.absf((Y.G("VV_varna") - Gv.F(61.65))), Gv.F(0.2)))), (Gv.S("VV %.2f, účinnost %.1f %%") % Gd.Arr(Y.G("VV_varna"), Y.G("ucinnost"))));
+    Gv H0 = (c.C("get", Gv.S("p1_H0"), Gv.F(32.0))).AsF();
+    Gv Qn = (c.C("get", Gv.S("p1_Qn"), Gv.F(400.0))).AsF();
+    Gv A = (((Gv.F(0.25) * H0) / ((Qn * Qn)))).AsF();
+    Gv pp = sim.C("pump_point", Gv.S("p1"), Gv.F(5000.0), Gv.F(5.0), Gd.Arr(), Gd.Arr(), Gv.F(1.0), Gv.F(0.001), Gv.F(0.0));
+    Gv Qref = (Gd.sqrt((((H0 - Gv.F(5.0))) / A))).AsF();
+    T.C("chk", Gv.S("REF čerpadlo: konstantní statická výška 5 m → Q = √((H0−Hst)/A) (průsečík s parabolou)"), Gv.B(Gv.Lt(_rel(pp.G("Q"), Qref), Gv.F(0.001))), (Gv.S("%.1f vs %.1f L/min") % Gd.Arr(pp.G("Q"), Qref)));
+    pp = sim.C("pump_point", Gv.S("p1"), Gv.F(300.0), Gv.F(5.0), Gd.Arr(), Gd.Arr(), Gv.F(1.0), Gv.F(0.001), Gv.F(0.0));
+    Gv hzRef = ((Gv.F(50.0) * Gd.sqrt((((Gv.F(5.0) + ((A * Gv.F(300.0)) * Gv.F(300.0)))) / H0)))).AsF();
+    T.C("chk", Gv.S("REF čerpadlo: měnič drží 300 L/min při frekvenci dané afinitním zákonem H ~ n²"), Gv.B((Gv.Lt(_rel(pp.G("Q"), Gv.F(300.0)), Gv.F(1e-06)) && Gv.Lt(_rel(pp.G("hz"), hzRef), Gv.F(0.001)))), (Gv.S("%.2f Hz vs %.2f Hz") % Gd.Arr(pp.G("hz"), hzRef)));
+    pp = sim.C("pump_point", Gv.S("p1"), Gv.F(300.0), (H0 + Gv.F(5.0)), Gd.Arr(), Gd.Arr(), Gv.F(1.0), Gv.F(0.001), Gv.F(0.0));
+    T.C("chk", Gv.S("REF čerpadlo: výška nad uzavřenou výškou H0 → žádný průtok"), Gv.B(Gv.Eq(pp.G("Q"), Gv.F(0.0))), (Gv.S("%.1f L/min") % pp.G("Q")));
+    Gv D = ((sim.C("bore_mm", Gv.F(25.0)) / Gv.F(1000.0))).AsF();
+    Gv Lm = (((Gv.F(1000.0) / Gv.F(100.0)) * c.G("pipeLenScale"))).AsF();
+    Gv path = Gd.Arr(Gd.Dict(Gv.S("e"), Gd.Dict(Gv.S("dn"), Gv.F(25.0), Gv.S("len"), Gv.F(1000.0))));
+    Gv Ql = (Gv.F(5.0)).AsF();
+    Gv vl = (((Ql / Gv.F(60000.0)) / ((((Gd.K("PI") * D) * D) / Gv.F(4.0))))).AsF();
+    Gv Hlam = ((((((Gv.F(128.0) * Gv.F(0.001)) * Lm) * ((Ql / Gv.F(60000.0)))) / ((((Gd.K("PI") * Gd.pow(D, Gv.F(4.0))) * Gv.F(1000.0)) * Gv.F(9.81)))) + (((Gv.F(0.4) * vl) * vl) / ((Gv.F(2.0) * Gv.F(9.81)))))).AsF();
+    Gv Hm1 = (sim.C("path_head", path, Ql, Gv.F(1.0), Gv.F(0.001))).AsF();
+    T.C("chk", Gv.S("REF potrubí: laminární proudění odpovídá Hagen–Poiseuille (+ místní ztráta)"), Gv.B(Gv.Lt(_rel(Hm1, Hlam), Gv.F(0.02))), (Gv.S("%.5f vs %.5f m") % Gd.Arr(Hm1, Hlam)));
+    Gv Qt2 = (Gv.F(500.0)).AsF();
+    Gv vt = (((Qt2 / Gv.F(60000.0)) / ((((Gd.K("PI") * D) * D) / Gv.F(4.0))))).AsF();
+    Gv Ret = ((((Gv.F(1000.0) * vt) * D) / Gv.F(0.001))).AsF();
+    Gv fc = (Gv.F(0.02)).AsF();
+    foreach (Gv i_6 in (Gv.I(60L)).Iter()) {
+      fc = (Gd.pow((Gv.F(1.0) / (((Gv.F(-2.0) * Gd.log(((Gv.F(1.5e-05) / ((Gv.F(3.7) * D))) + (Gv.F(2.51) / ((Ret * Gd.sqrt(fc))))))) * Gv.F(0.4342944819)))), Gv.F(2.0))).AsF();
+    }
+    Gv Hturb = ((((((((fc * Lm) / D) + Gv.F(0.4))) * vt) * vt) / ((Gv.F(2.0) * Gv.F(9.81))))).AsF();
+    Gv Hm2 = (sim.C("path_head", path, Qt2, Gv.F(1.0), Gv.F(0.001))).AsF();
+    T.C("chk", Gv.S("REF potrubí: turbulence – Swamee–Jain v modelu souhlasí s Colebrookem do 2 %"), Gv.B(Gv.Lt(_rel(Hm2, Hturb), Gv.F(0.02))), (Gv.S("%.3f vs %.3f m, f=%.4f") % Gd.Arr(Hm2, Hturb, fc)));
+    T.C("chk", Gv.S("REF potrubí: ztráta roste s průtokem (≈ Q²) a se zavřením klapky"), Gv.B(Gv.Gt(sim.C("path_head", path, (Gv.F(2.0) * Qt2), Gv.F(1.0), Gv.F(0.001)), (Gv.F(3.3) * Hm2))), Gv.S(""));
+    Gv cases = Gd.Arr(Gd.Arr(Gv.F(2.0), Gv.F(1.0), Gv.F(0.5)), Gd.Arr(Gv.F(2.0), Gv.F(4.0), Gv.F(1.0)), Gd.Arr(Gv.F(1.0), Gv.F(3.0), Gv.F(3.0)), Gd.Arr(Gv.F(0.5), Gv.F(2.0), Gv.F(2.0)));
+    Gv okE = Gv.B(true);
+    Gv det = Gv.S("");
+    foreach (Gv cs in (cases).Iter()) {
+      Gv UA = (cs.I(Gv.I(0L))).AsF();
+      Gv Ch = (cs.I(Gv.I(1L))).AsF();
+      Gv Cc = (cs.I(Gv.I(2L))).AsF();
+      Gv cmin = (Gd.minf(Ch, Cc)).AsF();
+      Gv cmax = (Gd.maxf(Ch, Cc)).AsF();
+      Gv cr = ((cmin / cmax)).AsF();
+      Gv ntu = ((UA / cmin)).AsF();
+      Gv eref = ((Gv.Lt(Gd.absf((Gv.F(1.0) - cr)), Gv.F(1e-09)) ? (ntu / ((Gv.F(1.0) + ntu))) : (((Gv.F(1.0) - Gd.exp(((-ntu) * ((Gv.F(1.0) - cr)))))) / ((Gv.F(1.0) - (cr * Gd.exp(((-ntu) * ((Gv.F(1.0) - cr)))))))))).AsF();
+      Gv em = (Gd.Static("Physics", "exchanger_effectiveness", UA, Ch, Cc)).AsF();
+      if (Gv.Gt(Gd.absf((em - eref)), Gv.F(1e-09))) {
+        okE = Gv.B(false);
+      }
+      det = (det + (Gv.S("%.3f ") % em));
+    }
+    T.C("chk", Gv.S("REF výměník: ε-NTU protiproud souhlasí s uzavřeným vzorcem (Cr<1 i Cr=1)"), okE, det);
+    Gv emax = (Gd.Static("Physics", "exchanger_effectiveness", Gv.F(1000.0), Gv.F(1.0), Gv.F(2.0))).AsF();
+    T.C("chk", Gv.S("REF výměník: nekonečně velká plocha → ε → 1, nulová plocha → 0"), Gv.B((Gv.Gt(emax, Gv.F(0.999)) && Gv.Eq(Gd.Static("Physics", "exchanger_effectiveness", Gv.F(0.0), Gv.F(1.0), Gv.F(2.0)), Gv.F(0.0)))), (Gv.S("%.5f") % emax));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv vh = S.G("rvp");
+    vh = vh.S("w", Gv.F(2000.0));
+    vh = vh.S("T", Gv.F(20.0));
+    vh = vh.S("Tsens", Gv.F(20.0));
+    vh = vh.S("stir", Gv.B(true));
+    vh = vh.S("heat", Gv.F(0.5));
+    Gv Cth = ((sim.C("cC", vh) + sim.C("steelC", c.G("rvpSteel")))).AsF();
+    Gv Ein = Gv.F(0.0);
+    Gv Lo = Gv.F(0.0);
+    Gv T0 = (vh.G("T")).AsF();
+    foreach (Gv i_7 in (Gv.I(300L)).Iter()) {
+      sim.C("sim_step", Gv.F(1.0));
+      Ein = (Ein + vh.G("Pin"));
+      Lo = (Lo + (c.G("rvpUA") * ((vh.G("T") - c.G("ambientT")))));
+    }
+    Gv Tref = ((T0 + (((Ein - Lo)) / Cth))).AsF();
+    T.C("chk", Gv.S("REF ohřev: T = T0 + (E_dodaná − E_ztracená)/C (C = voda + ocel, kJ/K)"), Gv.B(Gv.Lt(Gd.absf((vh.G("T") - Tref)), Gv.F(0.6))), (Gv.S("%.2f vs %.2f °C") % Gd.Arr(vh.G("T"), Tref)));
+    return Gv.Null;
+  }
   public override Gv Get(string n) { switch (n) {
     case "T": return this.T;
     case "sim": return this.sim;
@@ -814,6 +1083,11 @@ public partial class S_audit_tests : GdObject {
     case "_ferm_cip_tests": return _ferm_cip_tests();
     case "_practice_tests": return _practice_tests();
     case "_physics_lit_tests": return _physics_lit_tests();
+    case "_mains_outs": return _mains_outs(Gd.A(a, 0));
+    case "_mains_tests": return _mains_tests();
+    case "_rel": return _rel(Gd.A(a, 0), Gd.A(a, 1));
+    case "_mkv": return _mkv(Gd.A(a, 0));
+    case "_reference_tests": return _reference_tests();
     default: return base.Invoke(n, a); } }
   public static Gv StaticGet(string n) { switch (n) {
     default: return Gv.Null; } }

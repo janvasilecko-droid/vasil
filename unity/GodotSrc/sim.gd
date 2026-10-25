@@ -18,7 +18,7 @@ const CFG_DEFAULT: = {
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
     "skCap": 5000.0, "skArea": 5.3, "skUA": 0.2, "skSteel": 500.0, "skRetentionLkg": 1.0, "spargeEndP": 1.0, "ambientT": 20.0, "skContactUA": 4.0, "skPerm": 1.5e-11, "skSuction": 20000.0, 
     "spCap": 6000.0, 
-    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, 
+    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, "mainsBar": 4.0, "iboKeep": 0.44, 
     "coolWaterT": 16.0, "UA1": 25.0, "UA2": 12.0, 
     "boilerKW": 650.0, "hltCap": 12000.0, "hltStart": 11000.0, "hltT0": 83.0, "hltSet": 83.0, 
     "lvVol": 10000.0, "lvStart": 0.0, "lvT0": 2.0, "lvSet": 2.0, "chillerKW": 45.0, "pivLoad": 10.0, 
@@ -105,7 +105,7 @@ const CALIB_RANGE: = {
     "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1],
     "UA1": [1.0, 200.0], "UA2": [1.0, 200.0], "boilerKW": [50.0, 3000.0], "steamBar": [0.2, 8.0], "chillerKW": [5.0, 500.0],
     "hltCap": [1000.0, 30000.0], "lvVol": [1000.0, 30000.0], "tbWater": [95.0, 100.5], "ambientT": [-5.0, 40.0], "coolWaterT": [1.0, 30.0],
-    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
+    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
     "p1_H0": [3.0, 80.0], "p2_H0": [3.0, 80.0], "p3_H0": [3.0, 80.0], "p1_Qn": [20.0, 1500.0], "p2_Qn": [20.0, 1500.0], "p3_Qn": [20.0, 1500.0],
     "maltExtract": [60.0, 85.0], "maltMoist": [2.0, 10.0], "cipLyeMin": [0.3, 5.0], "cipAcidMin": [0.1, 5.0],
 }
@@ -410,7 +410,7 @@ func skDraw(dem: float, m: float) -> Dictionary:
     var qs: float = sk.get("qSlow", 0.0)
     var surge: float = Q - qs
     var dts: float = m * 60.0
-    sk["qSlow"] = qs + (Q - qs) * minf(1.0, dts / 8.0)
+    sk["qSlow"] = qs + (Q - qs) * (1.0 - exp(-dts / 8.0))
     sk["tearT"] = maxf(0.0, sk.get("tearT", 0.0) - dts)
     if sk.g > 1:
         # tlakový rozdíl na loži při skutečném průtoku (Darcy) – podle něj se mláto slehává
@@ -508,30 +508,35 @@ func skAddWater(L: float, T: float, low: = false) -> void :
     sk.T = (C1 * sk.T + Cw1 * T) / (C1 + Cw1);sk.cells[0].w += L
 
 
+## Podíl látky, která zreaguje reakcí 1. řádu s konstantou k [1/min] za čas m [min]: 1 − e^(−k·m).
+## Přesné řešení dc/dt = −k·c, takže výsledek NEZÁVISÍ na délce kroku (dřív min(1, k·m) = explicitní Euler, chyba O((k·m)²)).
+func first_order(k: float, m: float) -> float:
+    return 1.0 - exp(-minf(50.0, maxf(0.0, k * m)))
+
 func react(v, m: float) -> void :
     if v.w < 1: return
     var T: float = v.T; var Vm3 = maxf(0.05, liqVol(v) / 1000.0)
 
     if v.ni > 0:
-        var d: float = v.ni * minf(1.0, 0.08 * m * (0.5 + T / 60.0));v.ni -= d;v.f += 0.5 * d;v.ns += 0.5 * d
+        var d: float = v.ni * first_order(0.08 * (0.5 + T / 60.0), m);v.ni -= d;v.f += 0.5 * d;v.ns += 0.5 * d
 
     if v.su > 0:
-        var d2: float = v.su * minf(1.0, 0.3 * m / (1.0 + exp( - (T - 62.0) / 1.3)));v.su -= d2;v.sg += d2
+        var d2: float = v.su * first_order(0.3 / (1.0 + exp( - (T - 62.0) / 1.3)), m);v.su -= d2;v.sg += d2
     if v.sc > 0:
         var k = 0.08 if T >= 95 else (0.004 if T > 70 else 0.0)
-        var d3: float = v.sc * minf(1.0, k * m);v.sc -= d3;v.sg += d3
+        var d3: float = v.sc * first_order(k, m);v.sc -= d3;v.sg += d3
 
     var phf: Vector2 = S.get("phF", Vector2.ONE)
     if v.aA > 0.01 and v.sg > 0:
         var r: float = 0.0015 * (v.aA / Vm3) * exp( - pow((T - 72.0) / 9.0, 2)) * m * phf.x
-        var d4: float = v.sg * minf(1.0, r)
+        var d4: float = v.sg * (1.0 - exp(-minf(50.0, r)))
         var ldf: float = 0.1 + 0.2 * clampf((T - 60.0) / 15.0, 0.0, 1.0)
         v.sg -= d4;v.dx += (1.0 - ldf) * d4;v.ld += ldf * d4
 
     var aBt: float = v.aB + v.aBs
     if aBt > 0.01:
         var r2: float = 0.0016 * S.cfg.get("betaAct", 4.5) * (aBt / Vm3) * exp( - pow((T - 63.0) / 7.0, 2)) * m * phf.y
-        var d5: float = v.dx * minf(1.0, r2); var d6: float = v.sg * minf(1.0, 0.25 * r2)
+        var d5: float = v.dx * (1.0 - exp(-minf(50.0, r2))); var d6: float = v.sg * (1.0 - exp(-minf(50.0, 0.25 * r2)))
         v.dx -= d5;v.sg -= d6;v.f += d5 + d6
 
     # tepelná inaktivace amyláz – Arrhenius podle Marc et al. 1983 (konstanty fitované na rmutování):
@@ -804,7 +809,7 @@ func sim_step(dt: float) -> void :
     if spd.get("lidOpen", false) or not spd.has("lidL0"):
         spd["lidL0"] = spd.L;spd["press"] = 0.0
     else:
-        spd["lidL0"] = spd.lidL0 + (spd.L - spd.lidL0) * minf(1.0, dt / 900.0)   # těsnost víčka není dokonalá – přetlak pomalu povolí
+        spd["lidL0"] = spd.lidL0 + (spd.L - spd.lidL0) * (1.0 - exp(-dt / 900.0))   # těsnost víčka není dokonalá – přetlak pomalu povolí
         spd["press"] = 1013.0 * maxf(0.0, spd.L - spd.lidL0) / maxf(50.0, S.cfg.spCap - spd.L)
     var c = S.cfg; var m = dt / 60.0; var rvp = S.rvp; var mp = S.mp; var sk = S.sk; var h = S.hlt; var lv = S.lv
 
@@ -912,7 +917,7 @@ func sim_step(dt: float) -> void :
     if sk.drawn and sk.g > 1:
         risk = clampf(0.5 * clampf((ph_ - 5.7) / 0.4, 0.0, 1.0) + 0.3 * clampf((Tw_ - 76.0) / 8.0, 0.0, 1.0) + 0.2 * dil, 0.0, 1.0)
         if ph_ < 5.7 and Tw_ < 78.0: risk *= 0.3
-    S.tannin += (risk - S.tannin) * minf(1.0, dt / 120.0)
+    S.tannin += (risk - S.tannin) * (1.0 - exp(-dt / 120.0))
     if S.tannin > 0.6: once("tannin%d" % tb(1800), "Riziko vyluhování tříslovin (odhad podle pH %s, teploty %s °C a zředění sladiny %s °P) – uber teplotu vody nebo pH, nebo zastav vyslazování." % [fmt1(ph_), fmt0(Tw_), fmt1(sk.outP)], "warn")
     sk.Qact = 0.0;sk.drawn = false;S.skFillNow = false
     mp.whirlNow = false;S.wp.whirlNow = false;S.cool.Tout = null;S.cool.T1 = null
@@ -945,7 +950,7 @@ func sim_step(dt: float) -> void :
             var kk = 0.8 if (sol(v) + v.sg > 20) else 1.0
             var om = rpm / 60.0 * TAU * 0.6 * kk
             var tgt = minf(0.15, om * om * 1.19 * 1.19 / (4.0 * 9.81))
-            v.vort = v.vort + (tgt - v.vort) * minf(1.0, dt / 20.0)
+            v.vort = v.vort + (tgt - v.vort) * (1.0 - exp(-dt / 20.0))
         var cap: float = c.rvpCap if n == "rvp" else c.mpCap
         if vol(v) > cap:
             var ov = takePart(v, vol(v) - cap, 1.0);S.drainL += vol(ov);S.drainExt += ext(ov) + ov.su + ov.sc + ov.ni
@@ -1216,7 +1221,7 @@ func spReport():
     var sp = S.sp; var e: float = sp.f + sp.n
     if sp.L < 10: return null
     var P: float = 100.0 * e / (e + sp.w); var rho: float = 1.0 + 0.004 * P; var V20: float = (sp.w + e) / rho
-    var rep: = {"V": V20 / 100.0, "P": P, "IBU": sp.iso * 1000.0 / V20 * 0.44, "T": sp.H / sp.L, "EBC": sp.col / maxf(1.0, sp.L), 
+    var rep: = {"V": V20 / 100.0, "P": P, "IBU": sp.iso * 1000.0 / V20 * float(S.cfg.get("iboKeep", 0.44)), "T": sp.H / sp.L, "EBC": sp.col / maxf(1.0, sp.L), 
         "att": (sp.f / e) / 0.81 * 100.0 if e > 0 else 0.0, "dms": sp.dms * 1000000.0 / V20, "yield": e / maxf(1.0, S.malt.added) * 100.0}
     rep.merge(yields())
     return rep
@@ -1924,7 +1929,7 @@ func net_step(dt: float) -> void :
     var m = dt / 60.0; var c = S.cfg
     var _n0: = Time.get_ticks_usec()
 
-    var kcool = minf(1.0, dt / 1800.0)
+    var kcool = (1.0 - exp(-dt / 1800.0))
     for e in net.edges:
         if not e.flow and e.c.w > 0.01 and not e.steam:
             e.c.T += (c.ambientT - e.c.T) * kcool
@@ -2051,16 +2056,16 @@ func net_step(dt: float) -> void :
         for d in r.hits:
             if d.att.bind != "vodovod": outs.append({"d": d, "path": path_to(r, d.k)})
         for lk in r.leaks: outs.append({"lk": lk, "path": path_to(r, lk.k)})
-        var sw = 0.0; var nOpen = 0
+        var nOpen = 0
         for o in outs:
-            o.f = path_pct(o.path);o.w = o.f / sqrt(1.0 + path_len(o.path) / 3000.0);sw += o.w
+            o.f = path_pct(o.path)
             if o.f > 0: nOpen += 1
+        var mains_q: Array = mains_solve(outs, src)
         if nOpen > 1: once("mainsplit%d" % tb(900), "Voda z řadu teče do %d míst naráz – tlak se dělí, do každého teče méně." % nOpen)
-        for o in outs:
+        for oi in outs.size():
+            var o = outs[oi]
             if o.f <= 0: continue
-            var mq: float = float(S.cfg.get("mainsQ", 900.0))
-            var cap0: float = (0.9 if (o.has("d") and o.d.att.bind == "lv") else 0.8) * mq * o.f   # řad s dobrým tlakem: ~6–7 l/s do jednoho místa (na protlačky a proplach), dělí se mezi víc míst
-            var q = minf(cap0, mq * o.w / maxf(1e-06, sw))
+            var q: float = mains_q[oi]      # průtok z řešení tlaku řadu × odpor přívodu × odpor trasy (viz mains_solve)
             if q < 0.3: continue
             if o.has("lk"):
                 var pl = lp();pl.w = q * m;pl.T = S.cool.waterT;spill(r, o.lk, pl, q, m, "Voda z řadu");continue
@@ -2609,6 +2614,63 @@ func _src_fluid(b: String) -> Dictionary:
 ## čerpadla: H₀ při 50 Hz [m], jmenovitý průtok [L/min] (modelové hodnoty, nejsou z typových štítků)
 const PUMPS: = {"p1": {"H0": 32.0, "Qn": 400.0}, "p2": {"H0": 22.0, "Qn": 150.0}, "p3": {"H0": 26.0, "Qn": 200.0}}
 const DN_REAL: = {25.0: 50.0, 40.0: 50.0, 50.0: 75.0}   # DN v plánku → skutečné (Vasil: silné DN75, ostatní DN50)
+
+## Vodovodní řad jako ZDROJ TLAKU (ne jako pevný limit průtoku).
+## Charakteristika přívodu: H_zdroj(Q) = H_řad · (1 − (Q/Q_max)²), kde H_řad = p_řad/(ρg) [m] (statický tlak řadu, cfg mainsBar)
+## a Q_max [L/min] je průtok při volném výtoku bez další trasy (cfg mainsQ; měří se kbelíkem/vodoměrem na výtoku u řadu).
+## Do uzlu se napojí paralelně otevřené větve; každá má odpor path_head(Q) (Darcy–Weisbach + místní ztráty + případné přiškrcení klapky)
+## a statický rozdíl výšek. Společná výška uzlu H_n se najde půlením intervalu z podmínky H_zdroj(ΣQ_i) = H_n.
+## Škrcení klapkou tu působí JEN přes místní ztrátu K(p) v path_head (žádný další „faktor průtoku“ – jinak by se počítalo dvakrát).
+## Vrací průtoky [L/min] ve stejném pořadí jako outs (0 pro zavřenou větev). Výsledek se pamatuje, dokud se nezmění tvar sítě/škrcení/parametry.
+var _mains_cache: Dictionary = {}
+func mains_solve(outs: Array, src: Dictionary) -> Array:
+    var res: Array = []
+    for _i in outs.size(): res.append(0.0)
+    var c = S.cfg
+    var Pbar: float = float(c.get("mainsBar", 4.0)); var Qmax: float = maxf(10.0, float(c.get("mainsQ", 900.0)))
+    var Hm: float = Pbar * 1.0e5 / (1000.0 * 9.81)
+    var Tw: float = S.cool.waterT
+    var ysrc: float = 0.0
+    var st = starts_of(src.id)
+    if st.size() and net.nodes.has(st[0]): ysrc = net.nodes[st[0]].y
+    var sig: String = "%.3f|%.1f|%.1f|%.0f|%.2f|%d" % [Pbar, Qmax, Tw, ysrc, float(c.get("pipeLenScale", 0.4)), outs.size()]
+    var hst: Array = []
+    for o in outs:
+        var last = o.path[o.path.size() - 1] if o.path.size() else null
+        var hs: float = 0.0
+        if last != null and last.has("to") and net.nodes.has(last.to): hs = (ysrc - net.nodes[last.to].y) / PX_PER_M
+        hst.append(hs)
+        sig += "|%.3f,%d,%.1f,%.1f,%.1f" % [o.f, o.path.size(), path_len(o.path), hs, float(c.get("bore50", 75.0)) + float(c.get("bore25", 50.0)) + float(c.get("bore40", 50.0))]
+    if _mains_cache.has("sig") and _mains_cache.sig == sig: return _mains_cache.q.duplicate()
+    var mu: float = skViscosity(Tw, 0.0)
+    var open_: Array = []
+    for i in outs.size():
+        res[i] = 0.0
+        if outs[i].f > 0.0: open_.append(i)
+    if open_.size() > 0:
+        var qof = func(i: int, Hn: float) -> float:
+            # průtok větve i při výšce uzlu Hn: path_head(Q) + Hst = Hn (path_head roste s Q)
+            var need: float = Hn - hst[i]
+            if need <= 0.0: return 0.0
+            var lo: float = 0.0; var hi: float = Qmax * 1.5
+            if path_head(outs[i].path, hi, 1.0, mu) < need: return hi
+            for k in 22:
+                var mid: float = (lo + hi) / 2.0
+                if path_head(outs[i].path, mid, 1.0, mu) > need: hi = mid
+                else: lo = mid
+            return (lo + hi) / 2.0
+        var lo2: float = 0.0; var hi2: float = Hm
+        for k2 in 26:
+            var Hn: float = (lo2 + hi2) / 2.0
+            var Qt: float = 0.0
+            for i in open_: Qt += qof.call(i, Hn)
+            var Hs: float = Hm * (1.0 - minf(1.0, (Qt / Qmax) * (Qt / Qmax)))
+            if Hs > Hn: lo2 = Hn
+            else: hi2 = Hn
+        var Hf: float = (lo2 + hi2) / 2.0
+        for i in open_: res[i] = qof.call(i, Hf)
+    _mains_cache = {"sig": sig, "q": res.duplicate()}
+    return res
 
 ## tlaková ztráta trasy [m sloupce] při průtoku Q [L/min]
 func path_head(path: Array, Q: float, rho: float, mu: float) -> float:
