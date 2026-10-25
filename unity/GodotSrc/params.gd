@@ -45,6 +45,7 @@ const META: = {
 	"skChanK": ["1/min", "ESTIMATED", "×3", "rychlost tvorby kanálků"],
 	"spCap": ["L", "ESTIMATED", "±10 %", "objem spilky"],
 	"waterFlow": ["L/min", "ESTIMATED", "±30 %", "průtok čerpadla horké vody C4 do pánve – změřit vodoměrem / časem napouštění"],
+	"mainsQ": ["L/min", "ESTIMATED", "±40 %", "největší průtok vody z řadu (tlak řadu): do jednoho místa ~80 %, dělí se mezi víc míst – změřit vodoměrem / časem napuštění ledovky"],
 	"maltRate": ["kg/min", "ESTIMATED", "±30 %", "výkon šrotovníku / vystírání"],
 	"coolWaterT": ["°C", "ESTIMATED", "8–18 °C podle ročního období", "teplota vody z řadu"],
 	"UA1": ["kW/K", "ESTIMATED", "±40 %", "1. stupeň deskového chladiče (voda) – změřit vstupy/výstupy a průtoky"],

@@ -91,11 +91,86 @@ namespace Pivovar.GdUnity
             LastTris = tris; LastItems = items.Count; LastBatches = batches;
         }
 
+        // ---------- ořez trojúhelníků na obdélník (clip_contents, ScrollContainer, SubViewport) ----------
+        static Vertex Lerp(Vertex a, Vertex b, float t)
+        {
+            Vertex r = new Vertex();
+            r.position = Vector3.Lerp(a.position, b.position, t);
+            r.uv = Vector2.Lerp(a.uv, b.uv, t);
+            r.tint = Color32.Lerp(a.tint, b.tint, t);
+            return r;
+        }
+
+        static int ClipEdge(Vertex[] src, int n, Vertex[] dst, int axis, float val, bool keepGreater)
+        {
+            int m = 0;
+            for (int i = 0; i < n; i++)
+            {
+                Vertex a = src[i], b = src[(i + 1) % n];
+                float av = axis == 0 ? a.position.x : a.position.y, bv = axis == 0 ? b.position.x : b.position.y;
+                bool ain = keepGreater ? av >= val : av <= val, bin = keepGreater ? bv >= val : bv <= val;
+                if (ain) dst[m++] = a;
+                if (ain != bin)
+                {
+                    float t = (val - av) / (bv - av);
+                    dst[m++] = Lerp(a, b, t);
+                }
+            }
+            return m;
+        }
+
+        void EmitClipped(MeshGenerationContext mgc, Texture2D tex, List<float> v, int vc, List<int> idx, RenderItem it, bool textured)
+        {
+            var all = new Vertex[vc]; FillVerts(all, v, vc, it.m, it, textured);
+            float x0 = (float)it.clip[0], y0 = (float)it.clip[1], x1 = (float)it.clip[2], y1 = (float)it.clip[3];
+            var lv = new List<Vertex>(); var li = new List<ushort>();
+            var pa = new Vertex[16]; var pb = new Vertex[16];
+            for (int i = 0; i + 2 < idx.Count; i += 3)
+            {
+                Vertex A = all[idx[i]], B = all[idx[i + 1]], C = all[idx[i + 2]];
+                float minx = Mathf.Min(A.position.x, Mathf.Min(B.position.x, C.position.x)), maxx = Mathf.Max(A.position.x, Mathf.Max(B.position.x, C.position.x));
+                float miny = Mathf.Min(A.position.y, Mathf.Min(B.position.y, C.position.y)), maxy = Mathf.Max(A.position.y, Mathf.Max(B.position.y, C.position.y));
+                if (maxx < x0 || minx > x1 || maxy < y0 || miny > y1) continue;
+                int n;
+                if (minx >= x0 && maxx <= x1 && miny >= y0 && maxy <= y1) { pa[0] = A; pa[1] = B; pa[2] = C; n = 3; }
+                else
+                {
+                    pa[0] = A; pa[1] = B; pa[2] = C; n = 3;
+                    n = ClipEdge(pa, n, pb, 0, x0, true); if (n < 3) continue;
+                    n = ClipEdge(pb, n, pa, 0, x1, false); if (n < 3) continue;
+                    n = ClipEdge(pa, n, pb, 1, y0, true); if (n < 3) continue;
+                    n = ClipEdge(pb, n, pa, 1, y1, false); if (n < 3) continue;
+                }
+                if (lv.Count + n > 64000)
+                {
+                    FlushClipped(mgc, tex, lv, li); lv.Clear(); li.Clear();
+                }
+                int bs = lv.Count;
+                for (int k = 0; k < n; k++) lv.Add(pa[k]);
+                for (int k = 1; k + 1 < n; k++)
+                {
+                    Vertex a = pa[0], b = pa[k], c = pa[k + 1];
+                    double area = (b.position.x - a.position.x) * (c.position.y - a.position.y) - (c.position.x - a.position.x) * (b.position.y - a.position.y);
+                    bool cw = area > 0; if (FlipWinding) cw = !cw;
+                    li.Add((ushort)bs); li.Add((ushort)(bs + (cw ? k : k + 1))); li.Add((ushort)(bs + (cw ? k + 1 : k)));
+                }
+            }
+            FlushClipped(mgc, tex, lv, li);
+        }
+
+        static void FlushClipped(MeshGenerationContext mgc, Texture2D tex, List<Vertex> lv, List<ushort> li)
+        {
+            if (lv.Count == 0 || li.Count == 0) return;
+            var wd = mgc.Allocate(lv.Count, li.Count, tex);
+            wd.SetAllVertices(new Unity.Collections.NativeArray<Vertex>(lv.ToArray(), Unity.Collections.Allocator.Temp));
+            wd.SetAllIndices(new Unity.Collections.NativeArray<ushort>(li.ToArray(), Unity.Collections.Allocator.Temp));
+        }
+
         void EmitBatch(MeshGenerationContext mgc, RenderItem it, TessBatch b)
         {
             Texture2D tex = b.tex != null ? TexOf(b.tex) : null;
             var m = it.m; var v = b.v; int vc = b.VCount; var idx = b.idx;
-            var clip = it.clip;
+            if (it.clip != null) { EmitClipped(mgc, tex, v, vc, idx, it, b.tex != null); return; }
             if (vc <= 65000)
             {
                 if (vbuf.Length < vc) vbuf = new Vertex[vc];
@@ -164,6 +239,7 @@ namespace Pivovar.GdUnity
             {
                 double X, Y; it.m.Apply(r.x, r.y, out X, out Y);
                 double size = r.size * sc; if (size < 2) continue;
+                if (it.clip != null && (Y < it.clip[1] || Y - size > it.clip[3] || X > it.clip[2] || Y > it.clip[3] + size * 0.3)) continue;
                 double top = Y - GdFontProvider.AscentPx(size);
                 var col = new Color(r.r * it.mr, r.g * it.mg, r.b * it.mb, r.a * it.ma);
                 mgc.DrawText(r.text, new Vector2((float)X, (float)top), (float)size, col, fa);

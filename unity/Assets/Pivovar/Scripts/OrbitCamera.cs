@@ -31,6 +31,7 @@ namespace Pivovar
 
         void LateUpdate()
         {
+            if (SimSync.Slaved) return;   // hybridní režim: kameru vede Godot (SimSync)
             if (!init || lastFlat != Flat) { init = true; lastFlat = Flat; ApplyProjection(); }
             if (!PlanEditor.Typing && Inp.Pressed("V"))
             {

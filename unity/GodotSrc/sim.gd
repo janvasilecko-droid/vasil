@@ -18,7 +18,7 @@ const CFG_DEFAULT: = {
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
     "skCap": 5000.0, "skArea": 5.3, "skUA": 0.2, "skSteel": 500.0, "skRetentionLkg": 1.0, "spargeEndP": 1.0, "ambientT": 20.0, "skContactUA": 4.0, "skPerm": 1.5e-11, "skSuction": 20000.0, 
     "spCap": 6000.0, 
-    "waterFlow": 250.0, "maltRate": 40.0, 
+    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, 
     "coolWaterT": 16.0, "UA1": 25.0, "UA2": 12.0, 
     "boilerKW": 650.0, "hltCap": 12000.0, "hltStart": 11000.0, "hltT0": 83.0, "hltSet": 83.0, 
     "lvVol": 10000.0, "lvStart": 0.0, "lvT0": 2.0, "lvSet": 2.0, "chillerKW": 45.0, "pivLoad": 10.0, 
@@ -105,7 +105,7 @@ const CALIB_RANGE: = {
     "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1],
     "UA1": [1.0, 200.0], "UA2": [1.0, 200.0], "boilerKW": [50.0, 3000.0], "steamBar": [0.2, 8.0], "chillerKW": [5.0, 500.0],
     "hltCap": [1000.0, 30000.0], "lvVol": [1000.0, 30000.0], "tbWater": [95.0, 100.5], "ambientT": [-5.0, 40.0], "coolWaterT": [1.0, 30.0],
-    "waterFlow": [10.0, 600.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
+    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
     "p1_H0": [3.0, 80.0], "p2_H0": [3.0, 80.0], "p3_H0": [3.0, 80.0], "p1_Qn": [20.0, 1500.0], "p2_Qn": [20.0, 1500.0], "p3_Qn": [20.0, 1500.0],
     "maltExtract": [60.0, 85.0], "maltMoist": [2.0, 10.0], "cipLyeMin": [0.3, 5.0], "cipAcidMin": [0.1, 5.0],
 }
@@ -2058,8 +2058,9 @@ func net_step(dt: float) -> void :
         if nOpen > 1: once("mainsplit%d" % tb(900), "Voda z řadu teče do %d míst naráz – tlak se dělí, do každého teče méně." % nOpen)
         for o in outs:
             if o.f <= 0: continue
-            var cap0: float = (450.0 if (o.has("d") and o.d.att.bind == "lv") else 400.0) * o.f   # řad s dobrým tlakem: ~6–7 l/s do jednoho místa (na protlačky a proplach), dělí se mezi víc míst
-            var q = minf(cap0, 500.0 * o.w / maxf(1e-06, sw))
+            var mq: float = float(S.cfg.get("mainsQ", 900.0))
+            var cap0: float = (0.9 if (o.has("d") and o.d.att.bind == "lv") else 0.8) * mq * o.f   # řad s dobrým tlakem: ~6–7 l/s do jednoho místa (na protlačky a proplach), dělí se mezi víc míst
+            var q = minf(cap0, mq * o.w / maxf(1e-06, sw))
             if q < 0.3: continue
             if o.has("lk"):
                 var pl = lp();pl.w = q * m;pl.T = S.cool.waterT;spill(r, o.lk, pl, q, m, "Voda z řadu");continue

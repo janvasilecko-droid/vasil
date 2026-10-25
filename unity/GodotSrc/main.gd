@@ -620,6 +620,7 @@ func _simtest() -> void :
 
 const USER_PLAN: = "user://plan_upravy.json"
 var plan_user: = false
+var o3: = false   # přehled nad 3D scénou (Unity): svět se nekreslí, jen kartičky, stavy a ovládání
 var editor = null
 var v3 = null
 var practice = null
@@ -2839,24 +2840,25 @@ class LiveNode extends ItemLayer:
                 var tt: float = Time.get_ticks_msec() / 1000.0
                 var pulse: float = 0.5 + 0.5 * sin(tt * 5.0)
                 # jemná záře podle stavu (zelená = jede, modrá = zavodňuje)
-                draw_circle(Vector2.ZERO, 34.0 + 3.0 * pulse, Color(col, 0.07 + 0.06 * pulse))
-                # průhledné okénko na hlavě čerpadla: vidět točící se oběžné kolo
-                draw_circle(Vector2.ZERO, 20.5, Color("0b0e11"))
-                draw_circle(Vector2.ZERO, 19.0, Color(0.16, 0.19, 0.22))
-                var nb: = 6
-                for k in nb:
-                    var a: float = spin + TAU * k / nb
-                    # rozmazaná stopa lopatky (motion blur) – čím rychleji, tím delší
-                    var trail: float = 0.9
-                    for j in 7:
-                        var f: float = float(j) / 6.0
-                        draw_arc(Vector2.ZERO, 11.5, a - trail * (1.0 - f), a - trail * (1.0 - f) + trail / 6.0 + 0.02, 6, Color(0.78, 0.86, 0.93, 0.05 + 0.28 * f), 14.0, true)
-                    var q0: = Vector2(cos(a), sin(a)); var q1: = Vector2(cos(a + 0.35), sin(a + 0.35))
-                    draw_polyline(PackedVector2Array([q0 * 4.0, q1 * 11.0, Vector2(cos(a + 0.7), sin(a + 0.7)) * 18.0]), Color("e4eaee"), 2.6, true)
-                draw_circle(Vector2.ZERO, 5.0, Color("9aa6af")); draw_circle(Vector2.ZERO, 3.2, Color("dfe6ea")); draw_circle(Vector2(-1, -1), 1.2, Color.WHITE)
-                # sklíčko: odlesk + kroužek těsnění
-                draw_arc(Vector2.ZERO, 20.0, 0, TAU, 40, Color("6c7780"), 2.0, true)
-                draw_arc(Vector2.ZERO, 15.0, PI * 1.15, PI * 1.55, 12, Color(1, 1, 1, 0.45), 2.5, true)
+                if not m.o3: draw_circle(Vector2.ZERO, 34.0 + 3.0 * pulse, Color(col, 0.07 + 0.06 * pulse))
+                if not m.o3:
+                    # průhledné okénko na hlavě čerpadla: vidět točící se oběžné kolo
+                    draw_circle(Vector2.ZERO, 20.5, Color("0b0e11"))
+                    draw_circle(Vector2.ZERO, 19.0, Color(0.16, 0.19, 0.22))
+                    var nb: = 6
+                    for k in nb:
+                        var a: float = spin + TAU * k / nb
+                        # rozmazaná stopa lopatky (motion blur) – čím rychleji, tím delší
+                        var trail: float = 0.9
+                        for j in 7:
+                            var f: float = float(j) / 6.0
+                            draw_arc(Vector2.ZERO, 11.5, a - trail * (1.0 - f), a - trail * (1.0 - f) + trail / 6.0 + 0.02, 6, Color(0.78, 0.86, 0.93, 0.05 + 0.28 * f), 14.0, true)
+                        var q0: = Vector2(cos(a), sin(a)); var q1: = Vector2(cos(a + 0.35), sin(a + 0.35))
+                        draw_polyline(PackedVector2Array([q0 * 4.0, q1 * 11.0, Vector2(cos(a + 0.7), sin(a + 0.7)) * 18.0]), Color("e4eaee"), 2.6, true)
+                    draw_circle(Vector2.ZERO, 5.0, Color("9aa6af")); draw_circle(Vector2.ZERO, 3.2, Color("dfe6ea")); draw_circle(Vector2(-1, -1), 1.2, Color.WHITE)
+                    # sklíčko: odlesk + kroužek těsnění
+                    draw_arc(Vector2.ZERO, 20.0, 0, TAU, 40, Color("6c7780"), 2.0, true)
+                    draw_arc(Vector2.ZERO, 15.0, PI * 1.15, PI * 1.55, 12, Color(1, 1, 1, 0.45), 2.5, true)
                 # LED stavu na motoru + šipka směru toku
                 draw_circle(Vector2(30, -38), 3.6, Color("0d1013")); draw_circle(Vector2(30, -38), 2.6, col.lightened(0.15 + 0.2 * pulse))
                 var b2: String = it.get("bind", "")

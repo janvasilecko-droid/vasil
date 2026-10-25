@@ -17,6 +17,9 @@ namespace Pivovar
         public ParticleSystem bubbles;
         float boil;
         public float by, hcyl, r, cx, z;
+        public SteamPuffs steam;          // pára nad rvp (řídí simulace)
+        public float hy, hrr;             // ležatá nádoba: osa (y) a poloměr kapaliny
+        public Vector3 hpos;
         public bool cone;
         float fill;
 
@@ -154,7 +157,8 @@ namespace Pivovar
             Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.35f);
             HdrpUtil.SetEmissive(lm, new Color(LiquidColor(it.Bind).r, LiquidColor(it.Bind).g, LiquidColor(it.Bind).b), 260f);
             v.liqMat = lm;
-            AddRaw(pv, MeshKit.Cylinder(rr * 0.98f, w * 0.98f, 40), lm, pos, new Vector3(0, 0, 90f), "kapalina");
+            v.liqCyl = AddRaw(pv, MeshKit.Cylinder(rr * 0.98f, w * 0.98f, 40), lm, pos, new Vector3(0, 0, 90f), "kapalina");
+            v.hy = yb; v.hrr = rr; v.hpos = pos;
             v.ApplyCut(cutaway);
             for (int s = -1; s <= 1; s += 2)
                 Box(pv, new Vector3(0.2f, rr * 0.9f, rr * 1.6f), inox, new Vector3(cx + s * w * 0.35f, rr * 0.45f, zc), Vector3.zero);
@@ -333,7 +337,7 @@ namespace Pivovar
                 {
                     var blade = Box(rotor, new Vector3(r * 1.5f, 0.05f, 0.22f), mDarkSteel, Vector3.zero, new Vector3(0f, -(a * 90f + 17f), -10f));
                 }
-                spinners.Add(rotor);
+                AddSpinner(rotor, it.Bind);
                 Cyl(pv, 0.2f, 0.55f, HdrpUtil.Lit(new Color(0.12f, 0.32f, 0.62f), 0.5f, 0.55f), new Vector3(cx, by + hcyl + ht + 0.3f, zc), Vector3.zero, 28);
                 Cyl(pv, 0.28f, 0.12f, steelB, new Vector3(cx, by + hcyl + ht + 0.02f, zc), Vector3.zero, 28);
             }
@@ -345,10 +349,10 @@ namespace Pivovar
                 Cyl(pv, 0.24f, 0.12f, steelP, new Vector3(sxp, syp + 1.65f, zc), Vector3.zero, 24);
                 var st = new GameObject("pára"); st.transform.SetParent(pv, false);
                 st.transform.localPosition = new Vector3(sxp, syp + 1.75f, -zc);
-                var sp = st.AddComponent<SteamPuffs>(); sp.strength = 1f; sp.height = 2.6f;
+                var sp = st.AddComponent<SteamPuffs>(); sp.strength = 1f; sp.height = 2.6f; v.steam = sp;
             }
             // vnitřek scezováku podle fotek
-            if (shape == "lauter") RealLauterInside(pv, cx, by, zc, r, hcyl);
+            if (shape == "lauter") RealLauterInside(pv, cx, by, zc, r, hcyl, it.Bind);
             vessels.Add(v);
         }
 

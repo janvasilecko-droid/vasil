@@ -1784,26 +1784,30 @@ public partial class S_main_LiveNode : S_main_ItemLayer {
         Gv col = (Gv.Eq(st, Gv.I(2L)) ? Gd.Ctor("Color", Gv.S("2fbf5b")) : ((Gv.Eq(st, Gv.I(3L)) ? Gd.Ctor("Color", Gv.S("2f8fe0")) : Gd.Ctor("Color", Gv.S("f39a2b")))));
         Gv tt = ((Gd.Static("Time", "get_ticks_msec") / Gv.F(1000.0))).AsF();
         Gv pulse = ((Gv.F(0.5) + (Gv.F(0.5) * Gd.sin((tt * Gv.F(5.0)))))).AsF();
-        Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), (Gv.F(34.0) + (Gv.F(3.0) * pulse)), Gd.Ctor("Color", col, (Gv.F(0.07) + (Gv.F(0.06) * pulse))));
-        Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(20.5), Gd.Ctor("Color", Gv.S("0b0e11")));
-        Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(19.0), Gd.Ctor("Color", Gv.F(0.16), Gv.F(0.19), Gv.F(0.22)));
-        Gv nb = Gv.I(6L);
-        foreach (Gv k in (nb).Iter()) {
-          Gv a = ((spin + ((Gd.K("TAU") * k) / nb))).AsF();
-          Gv trail = (Gv.F(0.9)).AsF();
-          foreach (Gv j in (Gv.I(7L)).Iter()) {
-            Gv f = ((Gd.Dyn("float", j) / Gv.F(6.0))).AsF();
-            Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(11.5), (a - (trail * ((Gv.F(1.0) - f)))), (((a - (trail * ((Gv.F(1.0) - f)))) + (trail / Gv.F(6.0))) + Gv.F(0.02)), Gv.I(6L), Gd.Ctor("Color", Gv.F(0.78), Gv.F(0.86), Gv.F(0.93), (Gv.F(0.05) + (Gv.F(0.28) * f))), Gv.F(14.0), Gv.B(true));
-          }
-          Gv q0 = Gd.Ctor("Vector2", Gd.cos(a), Gd.sin(a));
-          Gv q1 = Gd.Ctor("Vector2", Gd.cos((a + Gv.F(0.35))), Gd.sin((a + Gv.F(0.35))));
-          Self.C("draw_polyline", Gd.Ctor("PackedVector2Array", Gd.Arr((q0 * Gv.F(4.0)), (q1 * Gv.F(11.0)), (Gd.Ctor("Vector2", Gd.cos((a + Gv.F(0.7))), Gd.sin((a + Gv.F(0.7)))) * Gv.F(18.0)))), Gd.Ctor("Color", Gv.S("e4eaee")), Gv.F(2.6), Gv.B(true));
+        if (!(m.G("o3")).T()) {
+          Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), (Gv.F(34.0) + (Gv.F(3.0) * pulse)), Gd.Ctor("Color", col, (Gv.F(0.07) + (Gv.F(0.06) * pulse))));
         }
-        Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(5.0), Gd.Ctor("Color", Gv.S("9aa6af")));
-        Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(3.2), Gd.Ctor("Color", Gv.S("dfe6ea")));
-        Self.C("draw_circle", Gd.Ctor("Vector2", Gv.I(-1L), Gv.I(-1L)), Gv.F(1.2), Gd.StaticGet("Color", "WHITE"));
-        Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(20.0), Gv.I(0L), Gd.K("TAU"), Gv.I(40L), Gd.Ctor("Color", Gv.S("6c7780")), Gv.F(2.0), Gv.B(true));
-        Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(15.0), (Gd.K("PI") * Gv.F(1.15)), (Gd.K("PI") * Gv.F(1.55)), Gv.I(12L), Gd.Ctor("Color", Gv.I(1L), Gv.I(1L), Gv.I(1L), Gv.F(0.45)), Gv.F(2.5), Gv.B(true));
+        if (!(m.G("o3")).T()) {
+          Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(20.5), Gd.Ctor("Color", Gv.S("0b0e11")));
+          Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(19.0), Gd.Ctor("Color", Gv.F(0.16), Gv.F(0.19), Gv.F(0.22)));
+          Gv nb = Gv.I(6L);
+          foreach (Gv k in (nb).Iter()) {
+            Gv a = ((spin + ((Gd.K("TAU") * k) / nb))).AsF();
+            Gv trail = (Gv.F(0.9)).AsF();
+            foreach (Gv j in (Gv.I(7L)).Iter()) {
+              Gv f = ((Gd.Dyn("float", j) / Gv.F(6.0))).AsF();
+              Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(11.5), (a - (trail * ((Gv.F(1.0) - f)))), (((a - (trail * ((Gv.F(1.0) - f)))) + (trail / Gv.F(6.0))) + Gv.F(0.02)), Gv.I(6L), Gd.Ctor("Color", Gv.F(0.78), Gv.F(0.86), Gv.F(0.93), (Gv.F(0.05) + (Gv.F(0.28) * f))), Gv.F(14.0), Gv.B(true));
+            }
+            Gv q0 = Gd.Ctor("Vector2", Gd.cos(a), Gd.sin(a));
+            Gv q1 = Gd.Ctor("Vector2", Gd.cos((a + Gv.F(0.35))), Gd.sin((a + Gv.F(0.35))));
+            Self.C("draw_polyline", Gd.Ctor("PackedVector2Array", Gd.Arr((q0 * Gv.F(4.0)), (q1 * Gv.F(11.0)), (Gd.Ctor("Vector2", Gd.cos((a + Gv.F(0.7))), Gd.sin((a + Gv.F(0.7)))) * Gv.F(18.0)))), Gd.Ctor("Color", Gv.S("e4eaee")), Gv.F(2.6), Gv.B(true));
+          }
+          Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(5.0), Gd.Ctor("Color", Gv.S("9aa6af")));
+          Self.C("draw_circle", Gd.StaticGet("Vector2", "ZERO"), Gv.F(3.2), Gd.Ctor("Color", Gv.S("dfe6ea")));
+          Self.C("draw_circle", Gd.Ctor("Vector2", Gv.I(-1L), Gv.I(-1L)), Gv.F(1.2), Gd.StaticGet("Color", "WHITE"));
+          Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(20.0), Gv.I(0L), Gd.K("TAU"), Gv.I(40L), Gd.Ctor("Color", Gv.S("6c7780")), Gv.F(2.0), Gv.B(true));
+          Self.C("draw_arc", Gd.StaticGet("Vector2", "ZERO"), Gv.F(15.0), (Gd.K("PI") * Gv.F(1.15)), (Gd.K("PI") * Gv.F(1.55)), Gv.I(12L), Gd.Ctor("Color", Gv.I(1L), Gv.I(1L), Gv.I(1L), Gv.F(0.45)), Gv.F(2.5), Gv.B(true));
+        }
         Self.C("draw_circle", Gd.Ctor("Vector2", Gv.I(30L), Gv.I(-38L)), Gv.F(3.6), Gd.Ctor("Color", Gv.S("0d1013")));
         Self.C("draw_circle", Gd.Ctor("Vector2", Gv.I(30L), Gv.I(-38L)), Gv.F(2.6), col.C("lightened", (Gv.F(0.15) + (Gv.F(0.2) * pulse))));
         Gv b2 = it.C("get", Gv.S("bind"), Gv.S(""));
@@ -4332,6 +4336,7 @@ public partial class S_main : GdNode {
   public Gv last_move_ms;
   public static Gv USER_PLAN;
   public Gv plan_user;
+  public Gv o3;
   public Gv editor;
   public Gv v3;
   public Gv practice;
@@ -4453,6 +4458,7 @@ public partial class S_main : GdNode {
     vel = Gd.StaticGet("Vector2", "ZERO");
     last_move_ms = Gv.I(0L);
     plan_user = Gv.B(false);
+    o3 = Gv.B(false);
     editor = Gv.Null;
     v3 = Gv.Null;
     practice = Gv.Null;
@@ -7631,6 +7637,7 @@ public partial class S_main : GdNode {
     case "last_move_ms": return this.last_move_ms;
     case "USER_PLAN": return S_main.USER_PLAN;
     case "plan_user": return this.plan_user;
+    case "o3": return this.o3;
     case "editor": return this.editor;
     case "v3": return this.v3;
     case "practice": return this.practice;
@@ -7723,6 +7730,7 @@ public partial class S_main : GdNode {
     case "vel": this.vel = v; return v;
     case "last_move_ms": this.last_move_ms = v; return v;
     case "plan_user": this.plan_user = v; return v;
+    case "o3": this.o3 = v; return v;
     case "editor": this.editor = v; return v;
     case "v3": this.v3 = v; return v;
     case "practice": this.practice = v; return v;

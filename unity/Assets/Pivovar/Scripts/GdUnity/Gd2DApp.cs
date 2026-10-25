@@ -11,8 +11,12 @@ namespace Pivovar.GdUnity
 {
     public sealed class Gd2DApp : MonoBehaviour
     {
-        public const string ModeKey = "pivovar.mode";
-        public static bool Active { get { return PlayerPrefs.GetString(ModeKey, "3d") == "2d"; } }
+        // Režimy (PlayerPrefs "pivovar.app"): "hybrid" (výchozí) = 3D varna z Unity + simulace, ovládání, rozvaděč a lupa z Godotu;
+        // "2d" = jen kopie Godot aplikace; "3d" = jen 3D prohlížeč bez simulace.
+        public const string ModeKey = "pivovar.app";
+        public static string Mode { get { return PlayerPrefs.GetString(ModeKey, "hybrid"); } }
+        public static bool Active { get { return Mode == "2d"; } }
+        public static bool Hybrid { get { return Mode == "hybrid"; } }
 
         UIDocument doc; GdCanvasElement canvas; GdNode root;
         int frameNo; float lastLog;
@@ -21,7 +25,7 @@ namespace Pivovar.GdUnity
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            if (!Active) return;
+            if (!Active && !Hybrid) return;
             if (FindFirstObjectByType<Gd2DApp>() != null) return;
             new GameObject("Pivovar2D").AddComponent<Gd2DApp>();
         }
@@ -40,14 +44,18 @@ namespace Pivovar.GdUnity
             GdFontProvider.Init();
             Pivovar.Gd.Gen.GdRegistry.Init();
 
-            var cam = Camera.main;
-            if (cam == null) { var go = new GameObject("Cam2D"); cam = go.AddComponent<Camera>(); go.tag = "MainCamera"; }
-            cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.08f, 0.09f, 0.1f); cam.cullingMask = 0;
+            if (!Hybrid)
+            {
+                var cam = Camera.main;
+                if (cam == null) { var go = new GameObject("Cam2D"); cam = go.AddComponent<Camera>(); go.tag = "MainCamera"; }
+                cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.08f, 0.09f, 0.1f); cam.cullingMask = 0;
+            }
+            else SeedUserPlan();
 
             var ps = ScriptableObject.CreateInstance<PanelSettings>();
             ps.scaleMode = PanelScaleMode.ConstantPixelSize; ps.scale = 1f;
             ps.themeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
-            ps.clearColor = true; ps.colorClearValue = new Color(0.08f, 0.09f, 0.1f);
+            ps.clearColor = !Hybrid; ps.colorClearValue = new Color(0.08f, 0.09f, 0.1f);
             doc = gameObject.AddComponent<UIDocument>();
             doc.panelSettings = ps;
             var rootVe = doc.rootVisualElement;
@@ -65,7 +73,39 @@ namespace Pivovar.GdUnity
             }
             catch (Exception e) { Debug.LogError("Pivovar2D: start selhal: " + e); return; }
             canvas.Root = root;
+            if (Hybrid) StartHybrid();
             Debug.Log("Pivovar2D: spuštěno, okno " + Screen.width + "x" + Screen.height);
+        }
+
+        /// <summary>První spuštění: uživatelský plán Godotu (user://plan_upravy.json) se vezme z plan.json, který se používá ve 3D (Vasilův plán).</summary>
+        static void SeedUserPlan()
+        {
+            try
+            {
+                string dst = Path.Combine(G.UserDir, "plan_upravy.json");
+                string src = Path.Combine(Application.streamingAssetsPath, "plan.json");
+                if (!File.Exists(dst) && File.Exists(src)) { File.Copy(src, dst); Debug.Log("Pivovar: uživatelský plán založen z " + src); }
+            }
+            catch (Exception e) { Debug.LogWarning("Pivovar: plán nejde založit: " + e.Message); }
+        }
+
+        SimSync sync;
+        void StartHybrid()
+        {
+            GdRender.HideWorld = true;
+            GdRender.KeepWorld = n =>
+            {
+                var ln = n as Pivovar.Gd.Gen.S_main_LiveNode;
+                if (ln == null) return false;
+                string k = ln.kind.Str;
+                return k == "card" || k == "pump" || k == "leaks";
+            };
+            var sm = (Pivovar.Gd.Gen.S_main)root;
+            sm.o3 = Gv.B(true);
+            var builder = FindFirstObjectByType<BreweryBuilder>();
+            if (builder == null) { Debug.LogError("Pivovar: chybí 3D scéna (BreweryBuilder)"); return; }
+            sync = gameObject.AddComponent<SimSync>();
+            sync.Init(builder, sm);
         }
 
         void Update()
@@ -139,7 +179,12 @@ namespace Pivovar.GdUnity
         void SendKey(KeyCode kc, char ch, EventModifiers mods, bool down)
         {
             // F9 přepíná 3D/2D
-            if (down && kc == KeyCode.F9) { PlayerPrefs.SetString(ModeKey, "3d"); PlayerPrefs.Save(); Debug.Log("Pivovar: příští spuštění bude 3D (PlayerPrefs pivovar.mode=3d)"); }
+            if (down && kc == KeyCode.F9)
+            {
+                string next = Hybrid ? "2d" : "hybrid";
+                PlayerPrefs.SetString(ModeKey, next); PlayerPrefs.Save();
+                Debug.Log("Pivovar: příští spuštění bude '" + next + "' (PlayerPrefs " + ModeKey + ")");
+            }
             int code = Godot(kc, ch);
             if (code == 0 && ch == 0) return;
             if (down) G.KeysDown.Add(code); else G.KeysDown.Remove(code);

@@ -110,6 +110,7 @@ namespace Pivovar.Gd
         public double ScrollV, ScrollH, MaxScrollV, MaxScrollH, ContentH, ContentW, WrapUsed;
         public object RichCache; public string RichKey;
         public bool IsCtl { get { return GdUi.IsControlType(TypeName); } }
+        public GdNode SubCam;                           // aktuální kamera SubViewportu (Camera2D.make_current uvnitř SubViewportu)
 
         public override string ScriptName { get { return TypeName; } }
         public override bool IsA(string t) { return t == TypeName || t == "Node" || t == "CanvasItem" || t == "Object" || t == "Node2D" || t == "Control" || base.IsA(t); }
@@ -235,7 +236,7 @@ namespace Pivovar.Gd
                 case "get_global_mouse_position": return GdRender.ScreenToCanvas(this, Gd.MousePos);
                 case "get_local_mouse_position": return GdRender.ScreenToLocal(this, Gd.MousePos);
                 case "get_node": case "get_node_or_null": case "find_child": return Gv.Null;
-                case "make_current": if (TypeName == "Camera2D") GdRender.CurrentCam = this; return Gv.Null;
+                case "make_current": if (TypeName == "Camera2D") { if (Parent != null && Parent.TypeName == "SubViewport") Parent.SubCam = this; else GdRender.CurrentCam = this; } return Gv.Null;
                 case "move_child":
                     {
                         var c = Gd.A(a, 0).Obj as GdNode; int i = (int)Gd.A(a, 1).d;

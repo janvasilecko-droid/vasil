@@ -25,7 +25,30 @@ namespace Pivovar
         Texture2D brushed;
         readonly List<PipeFlow> flows = new List<PipeFlow>();
         readonly List<Vessel> vessels = new List<Vessel>();
-        readonly List<Transform> spinners = new List<Transform>();
+        public sealed class Spinner { public Transform t; public string bind; public float dps = 40f; }
+        readonly List<Spinner> spinners = new List<Spinner>();
+        readonly Dictionary<string, Renderer> pumpLeds = new Dictionary<string, Renderer>();
+        void AddSpinner(Transform t, string bind) { spinners.Add(new Spinner { t = t, bind = bind }); }
+
+        // ── propojení se simulací z Godotu (hybridní režim): kreslí 3D svět, simulace a ovládání běží v Godotu ──
+        public bool Hybrid { get { return Pivovar.GdUnity.Gd2DApp.Hybrid; } }
+        public List<Vessel> VesselList { get { return vessels; } }
+        public List<Spinner> SpinnerList { get { return spinners; } }
+        public Dictionary<string, Renderer> PumpLeds { get { return pumpLeds; } }
+        public PipeFlow FlowOf(string pipeId)
+        {
+            GameObject g; if (pipeObjs.TryGetValue(pipeId, out g) && g != null) return g.GetComponentInChildren<PipeFlow>();
+            return null;
+        }
+        public List<PipeFlow> AllFlows() { return flows; }
+        public void RefreshValve(PlanItem it) { RemovePart(it); BuildValve(it); }
+
+        /// <summary>Hybridní režim: plán přichází z Godotu (po načtení a po každé úpravě v editoru) a celá 3D varna se postaví znovu.</summary>
+        public void BeginHybrid(Plan p)
+        {
+            plan = p; planPath = null;
+            Build();
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -37,6 +60,7 @@ namespace Pivovar
 
         void Start()
         {
+            if (Hybrid) return;   // plán dodá Godot (BeginHybrid)
             string path = Path.Combine(Application.streamingAssetsPath, "plan.json");
             if (!File.Exists(path)) { Debug.LogError("Pivovar: chybí " + path + " (zkopíruj složku StreamingAssets z repozitáře)."); return; }
             try { plan = Plan.Parse(File.ReadAllText(path)); }
@@ -54,14 +78,15 @@ namespace Pivovar
 
         void Update()
         {
-            if (!PlanEditor.Typing && Inp.Pressed("F")) SetDemoFlow(!demoFlow);
-            if (!PlanEditor.Typing && Inp.Pressed("X")) { cutaway = !cutaway; foreach (Vessel v in vessels) v.ApplyCut(cutaway); }
+            if (!Hybrid && !PlanEditor.Typing && Inp.Pressed("F")) SetDemoFlow(!demoFlow);
+            if (!Hybrid && !PlanEditor.Typing && Inp.Pressed("X")) { cutaway = !cutaway; foreach (Vessel v in vessels) v.ApplyCut(cutaway); }
             float dt = Time.deltaTime;
-            foreach (Transform s in spinners) if (s != null) s.Rotate(0f, 40f * dt, 0f, Space.Self);
+            foreach (Spinner s in spinners) if (s.t != null) s.t.Rotate(0f, (Hybrid ? s.dps : 40f) * dt, 0f, Space.Self);
         }
 
         void OnGUI()
         {
+            if (Hybrid) return;
             GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · V = plochý/3D pohled, tažení myší = posun, kolečko = přiblížení k myši, WASD = posun, F = tok, X = řez, TAB = editor plánu");
         }
 
@@ -79,7 +104,7 @@ namespace Pivovar
             if (root != null) DestroyImmediate(root.gameObject);
             root = new GameObject("Varna").transform;
             root.SetParent(transform, false);
-            flows.Clear(); vessels.Clear(); spinners.Clear(); partObjs.Clear();
+            flows.Clear(); vessels.Clear(); spinners.Clear(); partObjs.Clear(); pumpLeds.Clear();
 
             floorY = 0f;
             foreach (PlanItem it in plan.OfType("vessel"))

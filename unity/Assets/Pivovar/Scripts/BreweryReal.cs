@@ -193,6 +193,9 @@ namespace Pivovar
             Box(mg, new Vector3(0.10f, 0.05f, 0.12f), steelB, new Vector3(0.30f, 0.12f, 0f), Vector3.zero);   // svorkovnice
             // podstavec pod spirálou
             Box(n, new Vector3(0.16f, 0.04f, 0.2f), steelB, new Vector3(0, -0.15f, 0), Vector3.zero);
+            // kontrolka stavu na svorkovnici (zelená jede, modrá zavodňuje, oranžová běží bez průtoku) – řídí ji simulace
+            var led = Box(mg, new Vector3(0.028f, 0.02f, 0.028f), HdrpUtil.Lit(new Color(0.1f, 0.1f, 0.1f), 0f, 0.3f), new Vector3(0.30f, 0.15f, 0.04f), Vector3.zero);
+            var lr = led.GetComponent<Renderer>(); if (lr != null) pumpLeds[it.Id] = lr;
         }
 
         /// <summary>Příruba na uzlu (osa x) se šrouby po obvodu.</summary>
@@ -265,7 +268,7 @@ namespace Pivovar
         }
 
         /// <summary>Vnitřek scezováku podle fotek: síto s hubem, dvě ramena hrabel s děrovanými lopatkami.</summary>
-        void RealLauterInside(Transform pv, float cx, float by, float zc, float r, float hcyl)
+        void RealLauterInside(Transform pv, float cx, float by, float zc, float r, float hcyl, string bind = "sk")
         {
             EnsureRealMats();
             Cyl(pv, r * 0.97f, 0.03f, mSieve, new Vector3(cx, by + 0.18f, zc), Vector3.zero, 56);
@@ -297,7 +300,7 @@ namespace Pivovar
                         CylZ(arm, 0.022f, 0.016f, mSieve, new Vector3(px - 0.07f + h * 0.07f, -0.10f, 0f), 12);
                 }
             }
-            spinners.Add(arms);
+            AddSpinner(arms, bind);
         }
     }
 }

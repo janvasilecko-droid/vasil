@@ -46,6 +46,11 @@ namespace Pivovar.Gd
     public static class GdRender
     {
         public static GdNode CurrentCam;
+        public static Func<GdNode, bool> KeepWorld;   // výjimky z HideWorld (kartičky nádob, stavy čerpadel, úniky)
+        public static bool HideWorld;          // režim 3D: svět z Godotu se nekreslí (kreslí ho Unity), jen ovládací prvky a pohledy SubViewportů
+        static GdNode mainRoot;
+        static bool inSub;                     // uvnitř SubViewportu (svět se nekryje HideWorld)
+        static bool subPass;                   // právě se kreslí svět do SubViewportu (bez CanvasLayerů a ovládacích prvků)
         public static List<RenderItem> CtlItems = new List<RenderItem>();   // ovládací prvky v pořadí kreslení (pro zásah myší)
 
         static Gv P(GdNode n, string k) { return n.Get(k); }
@@ -122,7 +127,7 @@ namespace Pivovar.Gd
         /// <summary>Sesbírá kreslené uzly v pořadí vykreslení.</summary>
         public static List<RenderItem> Collect(GdNode root)
         {
-            var list = new List<RenderItem>(); int seq = 0;
+            var list = new List<RenderItem>(); int seq = 0; mainRoot = root; subPass = false; inSub = false;
             GdUi.LayoutAll(root);
             if (GdUi.Active) GdUi.LayoutTooltip();
             CtlItems = new List<RenderItem>();
@@ -139,9 +144,57 @@ namespace Pivovar.Gd
             return list;
         }
 
+        /// <summary>Pohled SubViewportu do kontejneru: sdílený svět (rozvaděč, lupa) se nakreslí jinou kamerou a ořízne na obdélník kontejneru.</summary>
+        static void RecSub(GdNode n, Mat full, int layer, int zz, float mr, float mg, float mb, float ma, List<RenderItem> list, ref int seq, double[] clip)
+        {
+            GdNode sv = null;
+            foreach (var c in n.Children) if (c.TypeName == "SubViewport") { sv = c; break; }
+            if (sv == null) return;
+            var sz = n.Get("size"); if (!(sz.k == KK.Vec2 || sz.k == KK.Vec2i)) return;
+            double cw = sz.d, ch = sz.e;
+            if (cw < 2 || ch < 2) return;
+            double ox, oy, ex, ey; full.Apply(0, 0, out ox, out oy); full.Apply(cw, ch, out ex, out ey);
+            var rect = new double[] { Math.Min(ox, ex), Math.Min(oy, ey), Math.Max(ox, ex), Math.Max(oy, ey) };
+            if (clip != null) { rect[0] = Math.Max(rect[0], clip[0]); rect[1] = Math.Max(rect[1], clip[1]); rect[2] = Math.Min(rect[2], clip[2]); rect[3] = Math.Min(rect[3], clip[3]); }
+            if (rect[2] <= rect[0] || rect[3] <= rect[1]) return;
+            bool own = false;
+            foreach (var c in sv.Children) if (c.TypeName != "Camera2D") { own = true; break; }
+            double px = 0, py = 0, z = 1; var cam = sv.SubCam;
+            Mat camM;
+            if (cam != null)
+            {
+                var p = cam.Get("position"); var zm = cam.Get("zoom");
+                if (p.k == KK.Vec2) { px = p.d; py = p.e; }
+                if (zm.k == KK.Vec2 && zm.d > 0) z = zm.d;
+                camM.a = z; camM.b = 0; camM.c = 0; camM.d = z; camM.tx = -px * z + ox + (ex - ox) * 0.5; camM.ty = -py * z + oy + (ey - oy) * 0.5;
+            }
+            else { camM = Mat.Id; camM.tx = ox; camM.ty = oy; }
+            var sub = new List<RenderItem>(); int s2 = 0;
+            bool oldSub = subPass, oldIn = inSub; subPass = !own ? true : subPass; inSub = true;
+            try
+            {
+                if (own)
+                {
+                    foreach (var c in sv.Children) if (c.TypeName != "Camera2D") Rec(c, Mat.Id, camM, true, 0, 0, 1, 1, 1, 1, sub, ref s2, rect);
+                }
+                else Rec(mainRoot, Mat.Id, camM, true, 0, 0, 1, 1, 1, 1, sub, ref s2, rect);
+            }
+            finally { subPass = oldSub; inSub = oldIn; }
+            Comparison<RenderItem> cmp = (x, y) => { int c = x.z.CompareTo(y.z); return c != 0 ? c : x.seq.CompareTo(y.seq); };
+            sub.Sort(cmp);
+            foreach (var it in sub)
+            {
+                it.layer = layer; it.z = zz; it.seq = seq++;
+                it.mr *= mr; it.mg *= mg; it.mb *= mb; it.ma *= ma;
+                list.Add(it);
+            }
+        }
+
         static void Rec(GdNode n, Mat parent, Mat cam, bool world, int layer, int z, float mr, float mg, float mb, float ma, List<RenderItem> list, ref int seq, double[] clip)
         {
             if (n.QueuedFree || !Vis(n)) return;
+            if (n.TypeName == "SubViewport") return;           // jeho obsah kreslí kontejner (viz RecSub)
+            if (subPass && n.TypeName == "CanvasLayer") return;
             Mat m;
             if (n.TypeName == "CanvasLayer")
             {
@@ -166,7 +219,7 @@ namespace Pivovar.Gd
                     cl = nc;
                 }
             }
-            if (GdUi.Active && n.IsCtl)
+            if (GdUi.Active && n.IsCtl && !subPass)
             {
                 CtlItems.Add(new RenderItem { node = n, m = full, layer = layer, z = zz, seq = seq, clip = cl, world = world });
                 var ui = GdUi.Paint(n);
@@ -177,7 +230,7 @@ namespace Pivovar.Gd
                     list.Add(ri);
                 }
             }
-            if (n.Cmds != null && n.Cmds.Count > 0)
+            if (n.Cmds != null && n.Cmds.Count > 0 && !(HideWorld && world && !inSub && !(KeepWorld != null && KeepWorld(n))))
             {
                 var it = new RenderItem { node = n, m = full, layer = layer, z = zz, seq = seq++, mr = r, mg = g, mb = b, ma = a, clip = cl, world = world };
                 if (smod != null) { it.mr *= (float)smod.r; it.mg *= (float)smod.g; it.mb *= (float)smod.b; it.ma *= (float)smod.a; }
@@ -192,6 +245,7 @@ namespace Pivovar.Gd
             else seq++;
             var kids = n.Children;
             for (int i = 0; i < kids.Count; i++) Rec(kids[i], m, cam, world, layer, zz, r, g, b, a, list, ref seq, cl);
+            if (GdUi.Active && n.TypeName == "SubViewportContainer" && !subPass) RecSub(n, full, layer, zz, r, g, b, a, list, ref seq, cl);
             if (GdUi.Active && n.TypeName == "ScrollContainer")
             {
                 var post = GdUi.PaintPost(n);
