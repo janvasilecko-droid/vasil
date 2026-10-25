@@ -39,7 +39,7 @@ jobs:
         working-directory: unity/CoreTests
         run: |
           set +e
-          dotnet run -c Release -- --gdtests ../Assets/StreamingAssets > gd.txt 2>&1
+          dotnet run -c Release -- --gdtests ../GodotSrc > gd.txt 2>&1
           code=$?
           { grep -E "FAIL|rror|Unhandled|výjimka|celkem|   at |   S_" gd.txt | head -c 6000; echo; tail -n 5 gd.txt; } > gdsum.txt
           msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' gdsum.txt)

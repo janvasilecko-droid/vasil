@@ -44,7 +44,7 @@ static class Program
 
     static int Main(string[] args)
     {
-        if (args.Length > 0 && args[0] == "--gdtests") return RunGdTests(args.Length > 1 ? args[1] : "../Assets/StreamingAssets");
+        if (args.Length > 0 && args[0] == "--gdtests") return RunGdTests(args.Length > 1 ? args[1] : "../GodotSrc");
         MiniJsonTests();
         string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";
         PlanTests(planPath);
