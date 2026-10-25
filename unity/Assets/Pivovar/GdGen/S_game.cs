@@ -816,6 +816,7 @@ public partial class S_game : GdNode {
   public static Gv StaticGet(string n) { switch (n) {
     case "Art": return Art;
     case "YEL": return YEL;
+    case "HoverLayer": return Gd.Script("S_game_HoverLayer");
     default: return Gv.Null; } }
   public static Gv StaticCall(string n, Gv[] a) { switch (n) {
     case "new": return New(a);

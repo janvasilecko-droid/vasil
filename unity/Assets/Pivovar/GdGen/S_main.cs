@@ -7864,6 +7864,7 @@ public partial class S_main : GdNode {
     case "Cabinet": return Cabinet;
     case "LiquidFx": return LiquidFx;
     case "PANEL_W": return PANEL_W;
+    case "CabDock": return Gd.Script("S_main_CabDock");
     case "PIPE_OUT": return PIPE_OUT;
     case "PIPE_MID": return PIPE_MID;
     case "PIPE_IN": return PIPE_IN;
@@ -7881,7 +7882,14 @@ public partial class S_main : GdNode {
     case "VNAME": return VNAME;
     case "BAKE_SCALE": return BAKE_SCALE;
     case "TILE": return TILE;
+    case "StaticLayer": return Gd.Script("S_main_StaticLayer");
+    case "Mini": return Gd.Script("S_main_Mini");
+    case "MiniView": return Gd.Script("S_main_MiniView");
     case "PIPE_LIQ": return PIPE_LIQ;
+    case "FlowLayer": return Gd.Script("S_main_FlowLayer");
+    case "LiveNode": return Gd.Script("S_main_LiveNode");
+    case "ItemLayer": return Gd.Script("S_main_ItemLayer");
+    case "Hud": return Gd.Script("S_main_Hud");
     default: return Gv.Null; } }
   public static Gv StaticCall(string n, Gv[] a) { switch (n) {
     case "temp_color": return temp_color(Gd.A(a, 0));

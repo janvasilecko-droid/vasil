@@ -159,6 +159,7 @@ namespace Pivovar.Gd
         {
             var v = base.Get(n);
             if (v.IsNull && SigNames.Contains(n)) return Gv.O(Sig(n));
+            if (v.IsNull && (n == "modulate" || n == "self_modulate")) return Gv.Col(1, 1, 1, 1);
             if (GdUi.Active && GdUi.IsControlType(TypeName)) return GdUi.GetCtl(this, n, v);
             return v;
         }
@@ -166,6 +167,7 @@ namespace Pivovar.Gd
         {
             if (GdUi.Active && GdUi.IsControlType(TypeName)) { var old = Raw(n); base.Set(n, v); GdUi.OnSet(this, n, v, old); if (n.StartsWith("theme") || n.StartsWith("ovr:") || n == "default_font_size" || n == "default_font") GdUi.ThemeVer++; return v; }
             if (n.StartsWith("theme") || n.StartsWith("ovr:") || n == "default_font_size" || n == "default_font") { GdUi.Ver++; GdUi.ThemeVer++; }
+            else if (TypeName.StartsWith("StyleBox")) GdUi.ThemeVer++;
             return base.Set(n, v);
         }
 

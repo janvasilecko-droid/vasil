@@ -976,6 +976,7 @@ public partial class S_ctl : GdNode {
     case "DIM": return DIM;
     case "COLLAPSED0": return COLLAPSED0;
     case "PANEL_CFG": return PANEL_CFG;
+    case "Trend": return Gd.Script("S_ctl_Trend");
     default: return Gv.Null; } }
   public static Gv StaticCall(string n, Gv[] a) { switch (n) {
     case "new": return New(a);

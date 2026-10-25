@@ -118,6 +118,7 @@ namespace Pivovar.Gd
                 case "text": if (v.IsNull) return Gv.S(""); return v;
                 case "button_pressed": case "disabled": case "toggle_mode": case "flat": if (v.IsNull) return Gv.B(false); return v;
                 case "visible": if (v.IsNull) return Gv.B(true); return v;
+                case "modulate": case "self_modulate": if (v.IsNull) return Gv.Col(1, 1, 1, 1); return v;
                 case "size_flags_horizontal": case "size_flags_vertical": if (v.IsNull) return Gv.I(1); return v;
                 case "mouse_filter": if (v.IsNull) return Gv.I(DefaultMouseFilter(n.TypeName)); return v;
                 case "value": case "scroll_vertical": case "scroll_horizontal": if (v.IsNull) return Gv.F(key == "value" ? 0 : n.ScrollV); return v;
@@ -224,6 +225,10 @@ namespace Pivovar.Gd
                 case "set_position": n.Set("position", Gd.A(a, 0)); return true;
                 case "set_size": n.Set("size", Gd.A(a, 0)); return true;
                 case "set_global_position": n.Set("position", Gd.A(a, 0)); return true;
+                case "get_theme_stylebox": { string nm = Gd.A(a, 0).ToStr(); string ty = a.Length > 1 && !a[1].IsNull ? a[1].ToStr() : n.TypeName; var sb = StyleOf(n, ty, nm); r = sb.Self; return true; }
+                case "get_theme_color": { string nm = Gd.A(a, 0).ToStr(); string ty = a.Length > 1 && !a[1].IsNull ? a[1].ToStr() : n.TypeName; r = Gv.Col(0.875, 0.875, 0.875, 1); var c = ThemeGet(n, "color", ty, nm); if (c.Cl != null) r = c; return true; }
+                case "get_theme_font_size": r = Gv.I((long)FontSize(n, a.Length > 1 && !a[1].IsNull ? a[1].ToStr() : n.TypeName)); return true;
+                case "get_theme_constant": { var c = ThemeGet(n, "constant", a.Length > 1 && !a[1].IsNull ? a[1].ToStr() : n.TypeName, Gd.A(a, 0).ToStr()); r = c.IsNum ? c : Gv.I(0); return true; }
             }
             return InvokeWidget(n, name, a, out r);
         }

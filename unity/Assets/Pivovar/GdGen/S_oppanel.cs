@@ -536,6 +536,7 @@ public partial class S_oppanel : GdNode {
     case "YEL": return YEL;
     case "GREEN": return GREEN;
     case "RED": return RED;
+    case "Knob": return Gd.Script("S_oppanel_Knob");
     default: return Gv.Null; } }
   public static Gv StaticCall(string n, Gv[] a) { switch (n) {
     case "new": return New(a);

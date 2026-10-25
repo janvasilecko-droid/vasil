@@ -672,6 +672,7 @@ public partial class S_liquidfx : GdObject {
   public static Gv StaticGet(string n) { switch (n) {
     case "_tex": return _tex;
     case "LIQUID_SHADER": return LIQUID_SHADER;
+    case "Gpu": return Gd.Script("S_liquidfx_Gpu");
     default: return Gv.Null; } }
   public static Gv StaticCall(string n, Gv[] a) { switch (n) {
     case "h": return h(Gd.A(a, 0), Gd.A(a, 1));

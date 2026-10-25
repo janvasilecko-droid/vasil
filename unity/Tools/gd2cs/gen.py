@@ -343,6 +343,8 @@ class Gen:
             elif m[0] == 'const': L.append('    case %s: return %s;' % (cs_str(m[1][1]), mangle(m[1][1])))
             elif m[0] == 'enum':
                 for k, v in m[2]: L.append('    case %s: return Gv.I(%d);' % (cs_str(k), v))
+            elif m[0] == 'class' and m[1].get('name') in ci.inner:
+                L.append('    case %s: return Gd.Script(%s);' % (cs_str(m[1]['name']), cs_str(ci.inner[m[1]['name']].cs)))
         L.append('    default: return Gv.Null; } }')
         L.append('  public static Gv StaticCall(string n, Gv[] a) { switch (n) {')
         for m in cls['members']:
