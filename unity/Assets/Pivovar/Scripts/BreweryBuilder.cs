@@ -204,6 +204,10 @@ namespace Pivovar
             var mb = HdrpUtil.Add(vol, "MotionBlur");
             HdrpUtil.Set(mb, "intensity", 0f);
 
+            // šablona HDRP má vlastní slunce se stíny; HDRP umí stíny jen z jednoho směrového světla, tak ho vypneme
+            foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+                if (l.type == LightType.Directional && l.transform.root != root) l.enabled = false;
+
             // slunce přes světlík (strop a stěny nevrhají stíny, ať světlo prochází)
             HdrpUtil.MakeLight(root, "Slunce", LightType.Directional, new Vector3(0, 10, 0), new Vector3(55f, 155f, 0f), new Color(1f, 0.95f, 0.88f), 6000f, "Lux", 0f, true);
         }
