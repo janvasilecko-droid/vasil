@@ -13,6 +13,7 @@ public partial class S_updater : GdNode {
     BASE = Gv.S("https://raw.githubusercontent.com/janvasilecko-droid/vasil/main/trenazer2d/");
   }
   public S_updater() {
+    TypeName = "Node";
     main = Gv.Null;
     http = Gv.Null;
     stage = Gv.S("");

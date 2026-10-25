@@ -5,6 +5,7 @@ public partial class S_boot : GdNode {
   static S_boot() {
   }
   public S_boot() {
+    TypeName = "Node";
   }
   public static Gv ver_of(Gv path = default(Gv)) {
     if (!(Gd.Static("FileAccess", "file_exists", path)).T()) {

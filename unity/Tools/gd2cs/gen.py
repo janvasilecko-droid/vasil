@@ -232,6 +232,7 @@ class Gen:
         L.append('  }')
         # instanční konstruktor
         L.append('  public %s() {' % ci.cs)
+        if ci.engine_base and base == 'GdNode': L.append('    TypeName = "%s";' % ci.engine_base)
         for st in inst_init:
             fc = FuncCtx(static=False)
             L.append('    ' + self.var_init_stmt(ci, st, fc, member=True, static=False))

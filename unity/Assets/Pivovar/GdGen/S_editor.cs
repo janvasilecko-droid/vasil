@@ -67,6 +67,7 @@ public partial class S_editor : GdNode {
     TOOLS = Gd.Arr(Gv.S("select"), Gv.S("pipe"), Gv.S("hose"), Gv.S("pitch"), Gv.S("joint"), Gv.S("measure"), Gv.S("route"), Gv.S("paint"));
   }
   public S_editor() {
+    TypeName = "Node2D";
     m = Gv.Null;
     on = Gv.B(false);
     tool = Gv.S("select");

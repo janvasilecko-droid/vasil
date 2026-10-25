@@ -12,6 +12,7 @@ public partial class S_iodine : GdNode {
     Art = Gd.Script("art");
   }
   public S_iodine() {
+    TypeName = "Control";
     m = Gv.Null;
     source = Gv.S("rvp");
     grist = Gv.B(false);

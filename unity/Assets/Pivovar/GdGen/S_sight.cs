@@ -17,6 +17,7 @@ public partial class S_sight : GdNode {
     Art = Gd.Script("art");
   }
   public S_sight() {
+    TypeName = "Control";
     m = Gv.Null;
     it = Gv.Null;
     sample = Gd.Dict();

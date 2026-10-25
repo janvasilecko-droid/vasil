@@ -7,6 +7,7 @@ public partial class S_liquidfx_Gpu : GdNode {
   static S_liquidfx_Gpu() {
   }
   public S_liquidfx_Gpu() {
+    TypeName = "Node2D";
     polys = Gd.Arr();
     mat = Gv.Null;
   }

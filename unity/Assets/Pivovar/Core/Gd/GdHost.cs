@@ -214,6 +214,7 @@ namespace Pivovar.Gd
         public static int RedrawDirty(GdNode root)
         {
             int cnt = 0;
+            GdUi.LayoutAll(root);
             Walk(root, n =>
             {
                 if (n.DrawDirty && Info(n.GetType())[0] && IsVisible(n)) { n.Redraw(); cnt++; }

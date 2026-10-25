@@ -32,7 +32,6 @@ namespace Pivovar.GdUnity
                 }
                 catch (Exception e) { Debug.LogWarning("Pivovar2D: písmo " + fam + ": " + e.Message); }
             }
-            if (Asset != null) Asset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
 #endif
             Tess.Text = Instance;
         }

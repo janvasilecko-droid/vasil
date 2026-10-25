@@ -10,6 +10,7 @@ public partial class S_oppanel_Knob : GdNode {
   static S_oppanel_Knob() {
   }
   public S_oppanel_Knob() {
+    TypeName = "Control";
     font = Gv.Null;
     get_v = Gv.Null;
     set_v = Gv.Null;
@@ -127,6 +128,7 @@ public partial class S_oppanel : GdNode {
     RED = Gd.Ctor("Color", Gv.S("c8372b"));
   }
   public S_oppanel() {
+    TypeName = "PanelContainer";
     m = Gv.Null;
     S = Gv.Null;
     rows = Gd.Arr();

@@ -18,6 +18,7 @@ public partial class S_main_CabDock : GdNode {
   static S_main_CabDock() {
   }
   public S_main_CabDock() {
+    TypeName = "SubViewportContainer";
     m = Gv.Null;
     sv = Gv.Null;
     cam2 = Gv.Null;
@@ -334,6 +335,7 @@ public partial class S_main_StaticLayer : GdNode {
   static S_main_StaticLayer() {
   }
   public S_main_StaticLayer() {
+    TypeName = "Node2D";
     m = Gv.Null;
     clip = Gd.Ctor("Rect2");
     _pends = Gd.Dict();
@@ -1008,6 +1010,7 @@ public partial class S_main_Mini : GdNode {
   static S_main_Mini() {
   }
   public S_main_Mini() {
+    TypeName = "Control";
     m = Gv.Null;
     sc = Gv.F(1.0);
     org = Gd.StaticGet("Vector2", "ZERO");
@@ -1160,6 +1163,7 @@ public partial class S_main_MiniView : GdNode {
   static S_main_MiniView() {
   }
   public S_main_MiniView() {
+    TypeName = "Control";
     m = Gv.Null;
     mini = Gv.Null;
     last = Gd.StaticGet("Vector3", "ZERO");
@@ -1226,6 +1230,7 @@ public partial class S_main_FlowLayer : GdNode {
   static S_main_FlowLayer() {
   }
   public S_main_FlowLayer() {
+    TypeName = "Node2D";
     m = Gv.Null;
     mat = Gv.Null;
     tex = Gv.Null;
@@ -1965,6 +1970,7 @@ public partial class S_main_ItemLayer : GdNode {
     LQ_F = Gd.Arr(Gv.F(-0.42), Gv.F(-0.2), Gv.F(0.05), Gv.F(0.16), Gv.F(0.02), Gv.F(-0.1), Gv.F(-0.24), Gv.F(-0.45));
   }
   public S_main_ItemLayer() {
+    TypeName = "Node2D";
     fx = Gd.Dict();
     spin = Gv.F(0.0);
     m = Gv.Null;
@@ -3890,6 +3896,7 @@ public partial class S_main_Hud : GdNode {
   static S_main_Hud() {
   }
   public S_main_Hud() {
+    TypeName = "CanvasLayer";
     m = Gv.Null;
     info = Gv.Null;
     msg = Gv.Null;
@@ -4390,6 +4397,7 @@ public partial class S_main : GdNode {
     PIPE_LIQ = Gv.S("\nshader_type canvas_item;\nfloat h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat vn(vec2 p) {\n\tvec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);\n\treturn mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y);\n}\nvoid fragment() {\n\tfloat c = UV.y * 2.0 - 1.0;\n\tfloat d = sqrt(max(0.0, 1.0 - c * c));\n\tfloat spd = COLOR.a * 300.0;\n\tvec3 base = COLOR.rgb;\n\tbase = mix(base, vec3(dot(base, vec3(0.299, 0.587, 0.114))), 0.10) * vec3(0.97, 0.95, 0.90);\n\tfloat x = UV.x - TIME * spd;\n\tvec3 deep = base * vec3(0.80, 0.64, 0.46);\n\tvec3 col = mix(base * vec3(1.10, 1.08, 1.05), deep, pow(d, 1.3));\n\tfloat st = vn(vec2(x * 0.045, c * 2.5 + 3.0));\n\tcol *= 1.0 + step(0.5, spd) * (st - 0.5) * 0.10;\n\tvec2 g = vec2(x * 0.22, c * 5.0);\n\tvec2 gi = floor(g); vec2 gf = fract(g);\n\tfloat hh = h21(gi);\n\tvec2 cp = vec2(0.5 + 0.35 * sin(hh * 40.0), 0.5 + 0.35 * cos(hh * 30.0));\n\tfloat sp = smoothstep(0.16, 0.0, length(gf - cp)) * step(0.82, hh);\n\tcol = mix(col, base * 1.35 + 0.06, sp * 0.5 * d);\n\tcol *= mix(1.0, 0.62, smoothstep(0.70, 1.0, abs(c)));\n\tcol += vec3(1.0, 0.97, 0.9) * exp(-pow((c + 0.46) / 0.10, 2.0)) * 0.38;\n\tcol += vec3(0.8, 0.85, 0.95) * exp(-pow((c - 0.62) / 0.07, 2.0)) * 0.12;\n\tCOLOR = vec4(col, 1.0);\n}\n");
   }
   public S_main() {
+    TypeName = "Node2D";
     cabinet = Gv.Null;
     cab_hold = Gv.S("");
     iodine_win = Gv.Null;

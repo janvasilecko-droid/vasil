@@ -35,6 +35,7 @@ public partial class S_cabinet : GdNode {
     FMS = Gd.Dict(Gv.S("p1"), Gd.Dict(Gv.S("min"), Gv.F(50.0), Gv.S("max"), Gv.F(400.0), Gv.S("step"), Gv.F(25.0)), Gv.S("p2"), Gd.Dict(Gv.S("min"), Gv.F(10.0), Gv.S("max"), Gv.F(200.0), Gv.S("step"), Gv.F(10.0)), Gv.S("p3"), Gd.Dict(Gv.S("min"), Gv.F(20.0), Gv.S("max"), Gv.F(150.0), Gv.S("step"), Gv.F(10.0)));
   }
   public S_cabinet() {
+    TypeName = "Node2D";
     m = Gv.Null;
     it = Gv.Null;
     sig = Gv.S("");

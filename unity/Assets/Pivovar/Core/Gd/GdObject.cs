@@ -46,6 +46,9 @@ namespace Pivovar.Gd
             return v;
         }
         public bool HasProp(string n) { return props != null && props.ContainsKey(n); }
+        /// <summary>Čtení vlastnosti bez vedlejších účinků (bez výpočtu rozložení).</summary>
+        public Gv Raw(string n) { Gv v; if (props != null && props.TryGetValue(n, out v)) return v; return Gv.Null; }
+        public void SetRaw(string n, Gv v) { if (props == null) props = new Dictionary<string, Gv>(); props[n] = v; }
 
         public virtual Gv Invoke(string n, Gv[] a)
         {
@@ -96,6 +99,16 @@ namespace Pivovar.Gd
         public bool Ready;
         public bool QueuedFree;
         readonly Dictionary<string, GdSignal> sigs = new Dictionary<string, GdSignal>();
+        // ---- ovládací prvky (viz GdUi*.cs) ----
+        public bool PosSet, SizeSet, AnchorSet;       // co nastavil skript (rozlišení režimu rozložení)
+        public int LayoutVer = -1, UiVer, UiMeshKey = -1, PostMeshKey = -1;
+        public TessOut UiMesh, PostMesh;
+        public bool Hover, Down, Focused;
+        public double PW, PH;                          // velikost rodiče při posledním rozložení (pro offsety)
+        public double MinW, MinH; public int MinPass = -1;   // mezipaměť minimální velikosti
+        public double ScrollV, ScrollH, MaxScrollV, MaxScrollH, ContentH, ContentW, WrapUsed;
+        public object RichCache; public string RichKey;
+        public bool IsCtl { get { return GdUi.IsControlType(TypeName); } }
 
         public override string ScriptName { get { return TypeName; } }
         public override bool IsA(string t) { return t == TypeName || t == "Node" || t == "CanvasItem" || t == "Object" || t == "Node2D" || t == "Control" || base.IsA(t); }
@@ -145,21 +158,29 @@ namespace Pivovar.Gd
         {
             var v = base.Get(n);
             if (v.IsNull && SigNames.Contains(n)) return Gv.O(Sig(n));
+            if (GdUi.Active && GdUi.IsControlType(TypeName)) return GdUi.GetCtl(this, n, v);
             return v;
+        }
+        public override Gv Set(string n, Gv v)
+        {
+            if (GdUi.Active && GdUi.IsControlType(TypeName)) { var old = Raw(n); base.Set(n, v); GdUi.OnSet(this, n, v, old); if (n.StartsWith("theme") || n.StartsWith("ovr:") || n == "default_font_size" || n == "default_font") GdUi.ThemeVer++; return v; }
+            if (n.StartsWith("theme") || n.StartsWith("ovr:") || n == "default_font_size" || n == "default_font") { GdUi.Ver++; GdUi.ThemeVer++; }
+            return base.Set(n, v);
         }
 
         public override Gv Invoke(string n, Gv[] a)
         {
+            if (GdUi.Active && GdUi.IsControlType(TypeName)) { Gv cr; if (GdUi.InvokeCtl(this, n, a, out cr)) return cr; }
             switch (n)
             {
                 case "add_child":
                     {
                         var c = Gd.A(a, 0).Obj as GdNode;
-                        if (c != null) { if (c.Parent != null) c.Parent.Children.Remove(c); c.Parent = this; Children.Add(c); c.Canvas = Canvas; if (InTree) c.EnterTree(); }
+                        if (c != null) { if (c.Parent != null) c.Parent.Children.Remove(c); c.Parent = this; Children.Add(c); c.Canvas = Canvas; GdUi.Ver++; if (InTree) c.EnterTree(); }
                         return Gv.Null;
                     }
-                case "remove_child": { var c = Gd.A(a, 0).Obj as GdNode; if (c != null) { Children.Remove(c); c.Parent = null; } return Gv.Null; }
-                case "queue_free": case "free": QueuedFree = true; if (Parent != null) Parent.Children.Remove(this); Parent = null; return Gv.Null;
+                case "remove_child": { var c = Gd.A(a, 0).Obj as GdNode; if (c != null) { Children.Remove(c); c.Parent = null; GdUi.Ver++; } return Gv.Null; }
+                case "queue_free": case "free": QueuedFree = true; if (Parent != null) Parent.Children.Remove(this); Parent = null; GdUi.Ver++; return Gv.Null;
                 case "get_children": { var l = new List<Gv>(); foreach (var c in Children) l.Add(c.Self); return Gv.A(new GdArray(l)); }
                 case "get_child": { int i = (int)Gd.A(a, 0).d; return i >= 0 && i < Children.Count ? Children[i].Self : Gv.Null; }
                 case "get_child_count": return Gv.I(Children.Count);
@@ -218,10 +239,17 @@ namespace Pivovar.Gd
                         if (c != null && Children.Remove(c)) { if (i < 0) i += Children.Count + 1; Children.Insert(Math.Max(0, Math.Min(i, Children.Count)), c); }
                         return Gv.Null;
                     }
-                case "accept_event": case "grab_focus": case "release_focus": case "set_anchors_preset": case "set_anchor": case "set_offset":
-                case "add_theme_stylebox_override": case "add_theme_color_override": case "add_theme_font_size_override": case "add_theme_font_override":
-                case "add_theme_constant_override": case "set_deferred": case "call_deferred": case "reparent": case "add_to_group": case "set_size": case "set_position":
-                    return Gv.Null;
+                case "add_theme_stylebox_override": Set("ovr:stylebox/" + Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "add_theme_color_override": Set("ovr:color/" + Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "add_theme_font_size_override": Set("ovr:font_size/" + Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "add_theme_font_override": Set("ovr:font/" + Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "add_theme_constant_override": Set("ovr:constant/" + Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "set_deferred": Set(Gd.A(a, 0).ToStr(), Gd.A(a, 1)); return Gv.Null;
+                case "call_deferred": { var nm = Gd.A(a, 0).ToStr(); return Invoke(nm, Slice(a, 1)); }
+                case "set_size": Set("size", Gd.A(a, 0)); return Gv.Null;
+                case "set_position": Set("position", Gd.A(a, 0)); return Gv.Null;
+                case "accept_event": Gd.InputHandled = true; GdUi.Accepted = true; return Gv.Null;
+                case "reparent": case "add_to_group": return Gv.Null;
                 case "get_size": return Get("size");
                 case "get_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }
                 case "get_global_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }

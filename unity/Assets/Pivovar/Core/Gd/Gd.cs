@@ -294,6 +294,7 @@ namespace Pivovar.Gd
 
         public static Gv StaticGet(string cls, string n)
         {
+            { Gv uc; if (GdUi.TryConst(cls, n, out uc)) return uc; }
             switch (cls)
             {
                 case "Vector2":

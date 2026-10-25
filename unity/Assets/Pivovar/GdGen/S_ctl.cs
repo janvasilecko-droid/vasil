@@ -6,6 +6,7 @@ public partial class S_ctl_Trend : GdNode {
   static S_ctl_Trend() {
   }
   public S_ctl_Trend() {
+    TypeName = "Control";
     ctl = Gv.Null;
   }
   public Gv _draw() {
@@ -119,6 +120,7 @@ public partial class S_ctl : GdNode {
     PANEL_CFG = Gv.S("user://panel.json");
   }
   public S_ctl() {
+    TypeName = "CanvasLayer";
     m = Gv.Null;
     S = Gv.Null;
     refs = Gd.Dict();

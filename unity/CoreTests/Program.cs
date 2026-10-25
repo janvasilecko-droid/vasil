@@ -48,6 +48,7 @@ static class Program
         Pivovar.Gd.Gd.PrintHook = line => { if (line.Length < 400) Console.WriteLine(line); };
         Pivovar.Gd.Gd.ErrHook = e => { errs.Add(e); Console.WriteLine("CHYBA " + e); };
         Pivovar.Gd.Gd.Lenient = true;
+        Pivovar.Gd.GdUi.Active = true;
         Pivovar.Gd.Gd.ResDir = resDir;
         Pivovar.Gd.Gd.UserDir = Path.Combine(Path.GetTempPath(), "zajic_user_" + Environment.ProcessId);
         Pivovar.Gd.Gd.CmdArgs = new Pivovar.Gd.Gv[0];

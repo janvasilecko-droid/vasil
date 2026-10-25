@@ -34,6 +34,7 @@ namespace Pivovar.GdUnity
             G.CmdArgs = new Gv[0];
             G.DisplayName = "unity";
             G.Lenient = true;
+            GdUi.Active = true;
             G.PrintHook = line => Debug.Log("[gd] " + line);
             G.ErrHook = e => Debug.LogWarning("[gd] " + e);
             GdFontProvider.Init();

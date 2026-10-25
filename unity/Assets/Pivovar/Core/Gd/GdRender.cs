@@ -122,6 +122,7 @@ namespace Pivovar.Gd
         public static List<RenderItem> Collect(GdNode root)
         {
             var list = new List<RenderItem>(); int seq = 0;
+            GdUi.LayoutAll(root);
             Rec(root, Mat.Id, CameraMat(), true, 0, 0, 1, 1, 1, 1, list, ref seq, null);
             list.Sort((x, y) =>
             {
@@ -149,7 +150,7 @@ namespace Pivovar.Gd
             if (mod != null) { r *= (float)mod.r; g *= (float)mod.g; b *= (float)mod.b; a *= (float)mod.a; }
             // clip_contents
             double[] cl = clip;
-            if (n.Get("clip_contents").T())
+            if (n.Get("clip_contents").T() || (GdUi.Active && n.TypeName == "ScrollContainer"))
             {
                 var sz = n.Get("size"); if (sz.k == KK.Vec2 || sz.k == KK.Vec2i)
                 {
@@ -157,6 +158,16 @@ namespace Pivovar.Gd
                     var nc = new double[] { Math.Min(x0, x1), Math.Min(y0, y1), Math.Max(x0, x1), Math.Max(y0, y1) };
                     if (cl != null) { nc[0] = Math.Max(nc[0], cl[0]); nc[1] = Math.Max(nc[1], cl[1]); nc[2] = Math.Min(nc[2], cl[2]); nc[3] = Math.Min(nc[3], cl[3]); }
                     cl = nc;
+                }
+            }
+            if (GdUi.Active && n.IsCtl)
+            {
+                var ui = GdUi.Paint(n);
+                if (ui != null)
+                {
+                    var ri = new RenderItem { node = n, m = full, layer = layer, z = zz, seq = seq++, mr = r, mg = g, mb = b, ma = a, clip = cl, world = world, mesh = ui };
+                    if (smod != null) { ri.mr *= (float)smod.r; ri.mg *= (float)smod.g; ri.mb *= (float)smod.b; ri.ma *= (float)smod.a; }
+                    list.Add(ri);
                 }
             }
             if (n.Cmds != null && n.Cmds.Count > 0)
@@ -174,6 +185,11 @@ namespace Pivovar.Gd
             else seq++;
             var kids = n.Children;
             for (int i = 0; i < kids.Count; i++) Rec(kids[i], m, cam, world, layer, zz, r, g, b, a, list, ref seq, cl);
+            if (GdUi.Active && n.TypeName == "ScrollContainer")
+            {
+                var post = GdUi.PaintPost(n);
+                if (post != null) list.Add(new RenderItem { node = n, m = full, layer = layer, z = zz, seq = seq++, mr = r, mg = g, mb = b, ma = a, clip = clip, world = world, mesh = post });
+            }
         }
     }
 }

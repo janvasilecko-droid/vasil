@@ -11,6 +11,7 @@ public partial class S_game_HoverLayer : GdNode {
   static S_game_HoverLayer() {
   }
   public S_game_HoverLayer() {
+    TypeName = "Node2D";
     g = Gv.Null;
     m = Gv.Null;
     cur = Gd.Dict();
@@ -139,6 +140,7 @@ public partial class S_game : GdNode {
     YEL = Gd.Ctor("Color", Gv.S("f2c230"));
   }
   public S_game() {
+    TypeName = "CanvasLayer";
     m = Gv.Null;
     quest = Gv.Null;
     q_step = Gv.Null;

@@ -16,6 +16,7 @@ public partial class S_rotametr : GdNode {
     YEL = Gd.Ctor("Color", Gv.S("f2c230"));
   }
   public S_rotametr() {
+    TypeName = "Control";
     m = Gv.Null;
     btn = Gv.Null;
     shown = Gv.F(0.0);
