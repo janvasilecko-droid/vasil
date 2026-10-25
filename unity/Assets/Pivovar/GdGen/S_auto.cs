@@ -341,6 +341,16 @@ public partial class S_auto : GdObject {
           }
         }
         Gv wv = sim.C("route_valves", Gv.S("hlt"), Gv.S("sk"), Gd.Arr(Gv.S("phw")), Gv.I(1L));
+        Gv spr_id = Gv.S("");
+        Gv gnode = sim.G("net").G("nodes").C("get", sim.G("last_goal"));
+        if (Gv.Ne(gnode, Gv.Null)) {
+          foreach (Gv ga in (gnode.G("att")).Iter()) {
+            if ((Gv.Eq(ga.G("kind"), Gv.S("vessel")) && Gv.Ne(ga.G("spray"), Gv.Null))) {
+              spr_id = Gd.Dyn("str", ga.G("spray"));
+            }
+          }
+        }
+        Gd.print((Gv.S("FLUSH cesta: klapek bojler→pod síta %d %s, přes trysku: %s, výpust: %s") % Gd.Arr(((Gv.Ne(wv, Gv.Null) ? wv.C("size") : Gv.I(-1L))), Gd.Dyn("str", wv), spr_id, Gd.Dyn("str", dv))));
         S = S.S("flush", Gd.Dict(Gv.S("on"), Gv.B(true), Gv.S("L"), Gv.F(0.0), Gv.S("target"), Gv.F(300.0), Gv.S("vs"), (((Gv.Ne(wv, Gv.Null) ? wv : Gd.Arr())) + dv), Gv.S("rate"), Gv.F(100.0)));
         sim = sim.S("valve_ver", (sim.G("valve_ver") + Gv.I(1L)));
       }

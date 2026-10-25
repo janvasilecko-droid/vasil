@@ -218,6 +218,12 @@ func _begin() -> void :
                 if m.outlet_open.has(vid): m.outlet_open[vid] = true
                 elif sim.net.byId.has(vid): sim.net.byId[vid]["open"] = true
             var wv = sim.route_valves("hlt", "sk", ["phw"], 1)
+            var spr_id = ""
+            var gnode = sim.net.nodes.get(sim.last_goal)
+            if gnode != null:
+                for ga in gnode.att:
+                    if ga.kind == "vessel" and ga.spray != null: spr_id = str(ga.spray)
+            print("FLUSH cesta: klapek bojler→pod síta %d %s, přes trysku: %s, výpust: %s" % [(wv.size() if wv != null else -1), str(wv), spr_id, str(dv)])
             S.flush = {"on": true, "L": 0.0, "target": 300.0, "vs": (wv if wv != null else []) + dv, "rate": 100.0}
             sim.valve_ver += 1
         "topup":

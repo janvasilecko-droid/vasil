@@ -750,7 +750,7 @@ func _patch_sk(data: Dictionary) -> void :
 
 func _load_plan() -> void :
     var path: = "res://plan.json"
-    plan_user = FileAccess.file_exists(USER_PLAN) and not ("--tests" in OS.get_cmdline_user_args() or "--autotest" in OS.get_cmdline_user_args())
+    plan_user = FileAccess.file_exists(USER_PLAN) and (("--userplan" in OS.get_cmdline_user_args()) or not ("--tests" in OS.get_cmdline_user_args() or "--autotest" in OS.get_cmdline_user_args()))
     if plan_user: path = USER_PLAN
     var f: = FileAccess.open(path, FileAccess.READ)
     if f == null:

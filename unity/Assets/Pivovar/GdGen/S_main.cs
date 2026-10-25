@@ -5462,7 +5462,7 @@ public partial class S_main : GdNode {
   }
   public Gv _load_plan() {
     Gv path = Gv.S("res://plan.json");
-    plan_user = Gv.B(((Gd.Static("FileAccess", "file_exists", USER_PLAN)).T() && !(Gv.In(Gv.S("--tests"), Gd.Static("OS", "get_cmdline_user_args")) || Gv.In(Gv.S("--autotest"), Gd.Static("OS", "get_cmdline_user_args")))));
+    plan_user = Gv.B(((Gd.Static("FileAccess", "file_exists", USER_PLAN)).T() && (Gv.In(Gv.S("--userplan"), Gd.Static("OS", "get_cmdline_user_args")) || !(Gv.In(Gv.S("--tests"), Gd.Static("OS", "get_cmdline_user_args")) || Gv.In(Gv.S("--autotest"), Gd.Static("OS", "get_cmdline_user_args"))))));
     if ((plan_user).T()) {
       path = USER_PLAN;
     }

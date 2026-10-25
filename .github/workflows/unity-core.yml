@@ -85,6 +85,25 @@ jobs:
           cat brew.txt
           exit $code
 
+  godot-userplan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Simulace celé várky na plánu uživatele (plan_upravy.json)
+        working-directory: unity/CoreTests
+        run: |
+          set +e
+          dotnet run -c Release -- --gdauto ../GodotSrc --userplan > ubrew.txt 2>&1
+          code=$?
+          { grep -E "KONEC|PROTOKOL|BILANCE EXTRAKTU|vyteklo|CHYBA|Unhandled|výjimka|celkem|roplach|FLUSH|\[(warn|err|bad)" ubrew.txt | head -c 7000; echo; grep -E "^\[ *[0-9.]+ min\]" ubrew.txt | awk 'NR%2==1' | head -c 4000; } > ubrewsum.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' ubrewsum.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=userplan::$msg"; else echo "::error title=userplan::$msg"; fi
+          cat ubrew.txt
+          exit $code
+
   compile-unity-scripts:
     runs-on: ubuntu-latest
     steps:

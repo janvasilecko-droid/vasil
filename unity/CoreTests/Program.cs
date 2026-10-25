@@ -50,6 +50,11 @@ static class Program
         Pivovar.Gd.Gd.ResDir = resDir;
         Pivovar.Gd.Gd.UserDir = Path.Combine(Path.GetTempPath(), "zajic_user_" + Environment.ProcessId);
         var ca = new List<Pivovar.Gd.Gv> { Pivovar.Gd.Gv.S("--autotest") };
+        if (Array.IndexOf(extra, "--userplan") >= 0)
+        {
+            Directory.CreateDirectory(Pivovar.Gd.Gd.UserDir);
+            File.Copy(Path.Combine(resDir, "user_plan.json"), Path.Combine(Pivovar.Gd.Gd.UserDir, "plan_upravy.json"), true);
+        }
         foreach (var x in extra) ca.Add(Pivovar.Gd.Gv.S(x));
         Pivovar.Gd.Gd.CmdArgs = ca.ToArray();
         var sw = System.Diagnostics.Stopwatch.StartNew();
