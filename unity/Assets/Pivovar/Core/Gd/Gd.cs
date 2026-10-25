@@ -93,13 +93,15 @@ namespace Pivovar.Gd
         static readonly Stopwatch clock = Stopwatch.StartNew();
         static readonly Dictionary<string, GdRegEntry> reg = new Dictionary<string, GdRegEntry>();
 
-        static GdTree tree; static GdNode viewport;
+        public static double ScreenW = 1920, ScreenH = 1080, Delta = 1.0 / 60.0;
+        public static bool InputHandled;
+        static GdTree tree; static GdViewport viewport;
         public static Gv Tree { get { if (tree == null) tree = new GdTree(); return tree.Self; } }
         public static Gv Viewport
         {
             get
             {
-                if (viewport == null) { viewport = new GdNode(); viewport.TypeName = "Viewport"; viewport.Set("size", Gv.Vec(1920, 1080)); }
+                if (viewport == null) viewport = new GdViewport();
                 return viewport.Self;
             }
         }

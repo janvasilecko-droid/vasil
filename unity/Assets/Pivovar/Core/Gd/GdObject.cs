@@ -167,6 +167,8 @@ namespace Pivovar.Gd
                 case "get_tree": return Gd.Tree;
                 case "get_viewport": return Gd.Viewport;
                 case "get_window": return Gd.Viewport;
+                case "get_visible_rect": case "get_viewport_rect": return Gv.Rect(0, 0, Gd.ScreenW, Gd.ScreenH);
+                case "get_process_delta_time": return Gv.F(Gd.Delta);
                 case "queue_redraw": case "update": DrawDirty = true; return Gv.Null;
                 case "queue_sort": return Gv.Null;
                 case "connect":
@@ -226,6 +228,30 @@ namespace Pivovar.Gd
         {
             if (a.Length <= from) return new Gv[0];
             var r = new Gv[a.Length - from]; Array.Copy(a, from, r, 0, r.Length); return r;
+        }
+    }
+
+    /// <summary>Okno/výřez: velikost obrazovky nastavuje hostitel (Unity) přes Gd.ScreenW/H.</summary>
+    public sealed class GdViewport : GdNode
+    {
+        public GdViewport() { TypeName = "Viewport"; }
+        public override Gv Get(string n)
+        {
+            if (n == "size") return Gv.Vec(Gd.ScreenW, Gd.ScreenH);
+            return base.Get(n);
+        }
+        public override Gv Invoke(string n, Gv[] a)
+        {
+            switch (n)
+            {
+                case "get_visible_rect": return Gv.Rect(0, 0, Gd.ScreenW, Gd.ScreenH);
+                case "get_mouse_position": return Gd.MousePos;
+                case "set_input_as_handled": Gd.InputHandled = true; return Gv.Null;
+                case "is_input_handled": return Gv.B(Gd.InputHandled);
+                case "get_texture": return Gd.Load("res://__screen.png");
+                case "warp_mouse": return Gv.Null;
+            }
+            return base.Invoke(n, a);
         }
     }
 

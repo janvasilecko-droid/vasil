@@ -175,7 +175,7 @@ namespace Pivovar.Gd
         /// <summary>Jeden snímek: časovače, tweeny, signál process_frame, _process uzlů, překreslení.</summary>
         public static void Frame(GdNode root, double dt)
         {
-            Time += dt;
+            Time += dt; Gd.Delta = dt;
             var tree = Gd.Tree.Obj as GdTree;
             if (tree != null)
             {
