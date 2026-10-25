@@ -30,7 +30,7 @@ namespace Pivovar
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            if (Pivovar.GdUnity.Gd2DApp.Active) return;   // výchozí je 2D režim (věrná kopie Godot aplikace)
+            if (Pivovar.GdUnity.Gd2DApp.Active) return;   // 2D Godot kopie je jen záloha (PlayerPrefs pivovar.mode=2d)
             if (FindFirstObjectByType<BreweryBuilder>() != null) return;
             new GameObject("Pivovar").AddComponent<BreweryBuilder>();
         }
@@ -61,7 +61,7 @@ namespace Pivovar
 
         void OnGUI()
         {
-            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · pravé tl. = otáčet, Shift+pravé = posun, kolečko = zoom, WASD/QE = jízda, F = tok, X = řez, TAB = editor plánu");
+            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · V = plochý/3D pohled, pravé tl. = posun (3D: otáčet), kolečko = zoom, WASD = posun, F = tok, X = řez, TAB = editor plánu");
         }
 
         void SetDemoFlow(bool on)

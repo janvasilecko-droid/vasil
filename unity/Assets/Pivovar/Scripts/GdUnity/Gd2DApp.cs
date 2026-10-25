@@ -12,7 +12,7 @@ namespace Pivovar.GdUnity
     public sealed class Gd2DApp : MonoBehaviour
     {
         public const string ModeKey = "pivovar.mode";
-        public static bool Active { get { return PlayerPrefs.GetString(ModeKey, "2d") != "3d"; } }
+        public static bool Active { get { return PlayerPrefs.GetString(ModeKey, "3d") == "2d"; } }
 
         UIDocument doc; GdCanvasElement canvas; GdNode root;
         int frameNo; float lastLog;
