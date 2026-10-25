@@ -91,6 +91,7 @@ namespace Pivovar.Gd
         public bool DrawDirty = true;
         public int DrawVer;
         public bool HasDraw;                  // true, pokud třída definuje _draw
+        public TessOut Mesh; public int MeshVer = -1;   // mezipaměť trojúhelníků (viz GdRender)
         public bool InTree;
         public bool Ready;
         public bool QueuedFree;
@@ -207,11 +208,19 @@ namespace Pivovar.Gd
                 case "show": Set("visible", Gv.B(true)); return Gv.Null;
                 case "hide": Set("visible", Gv.B(false)); return Gv.Null;
                 case "is_visible_in_tree": return Gv.B(!HasProp("visible") || Get("visible").T());
-                case "get_global_mouse_position": case "get_local_mouse_position": return Gd.MousePos;
+                case "get_global_mouse_position": return GdRender.ScreenToCanvas(this, Gd.MousePos);
+                case "get_local_mouse_position": return GdRender.ScreenToLocal(this, Gd.MousePos);
                 case "get_node": case "get_node_or_null": case "find_child": return Gv.Null;
-                case "accept_event": case "grab_focus": case "release_focus": case "move_child": case "set_anchors_preset": case "set_anchor": case "set_offset":
+                case "make_current": if (TypeName == "Camera2D") GdRender.CurrentCam = this; return Gv.Null;
+                case "move_child":
+                    {
+                        var c = Gd.A(a, 0).Obj as GdNode; int i = (int)Gd.A(a, 1).d;
+                        if (c != null && Children.Remove(c)) { if (i < 0) i += Children.Count + 1; Children.Insert(Math.Max(0, Math.Min(i, Children.Count)), c); }
+                        return Gv.Null;
+                    }
+                case "accept_event": case "grab_focus": case "release_focus": case "set_anchors_preset": case "set_anchor": case "set_offset":
                 case "add_theme_stylebox_override": case "add_theme_color_override": case "add_theme_font_size_override": case "add_theme_font_override":
-                case "add_theme_constant_override": case "set_deferred": case "call_deferred": case "make_current": case "reparent": case "add_to_group": case "set_size": case "set_position":
+                case "add_theme_constant_override": case "set_deferred": case "call_deferred": case "reparent": case "add_to_group": case "set_size": case "set_position":
                     return Gv.Null;
                 case "get_size": return Get("size");
                 case "get_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }

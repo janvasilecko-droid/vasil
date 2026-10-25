@@ -6,19 +6,21 @@ namespace Pivovar.Gd
 {
     public struct GlyphQuad { public float x0, y0, x1, y1, u0, v0, u1, v1; }
 
-    /// <summary>Poskytovatel textu (v Unity z dynamického písma); v testech není.</summary>
+    /// <summary>Poskytovatel měření textu (v Unity z TextCore FontAsset); v testech není.</summary>
     public interface ITextProvider
     {
         /// <summary>Šířka a výška textu při velikosti písma size (v pixelech).</summary>
         void Measure(string text, double size, out double w, out double h);
-        /// <summary>Glyfy relativně k základní čáře vlevo (0,0); vrací atlas.</summary>
-        GdTexture Layout(string text, double size, List<GlyphQuad> outQuads);
+        /// <summary>Vzdálenost od horního okraje řádku k základní čáře.</summary>
         double Ascent(double size);
     }
+
+    public struct TextRun { public string text; public double x, y, size; public float r, g, b, a; }
 
     public sealed class TessBatch
     {
         public GdTexture tex;
+        public List<TextRun> runs;                 // není-li null, jde o dávku textu (kreslí se jinak než trojúhelníky)
         public List<float> v = new List<float>();
         public List<int> idx = new List<int>();
         public int VCount { get { return v.Count / 8; } }
@@ -29,8 +31,13 @@ namespace Pivovar.Gd
         public List<TessBatch> batches = new List<TessBatch>();
         public TessBatch Get(GdTexture tex)
         {
-            if (batches.Count > 0) { var l = batches[batches.Count - 1]; if (ReferenceEquals(l.tex, tex)) return l; }
+            if (batches.Count > 0) { var l = batches[batches.Count - 1]; if (l.runs == null && ReferenceEquals(l.tex, tex)) return l; }
             var b = new TessBatch(); b.tex = tex; batches.Add(b); return b;
+        }
+        public TessBatch GetText()
+        {
+            if (batches.Count > 0) { var l = batches[batches.Count - 1]; if (l.runs != null) return l; }
+            var b = new TessBatch(); b.runs = new List<TextRun>(); batches.Add(b); return b;
         }
         public int Tris { get { int n = 0; foreach (var b in batches) n += b.idx.Count / 3; return n; } }
     }
@@ -364,21 +371,12 @@ namespace Pivovar.Gd
             return s.Length * size * 0.52;
         }
 
-        static readonly List<GlyphQuad> tmpQ = new List<GlyphQuad>();
         static void AddStr(TessOut o, DrawCmd c, double ox, double oy)
         {
-            if (Text == null) return;
-            tmpQ.Clear();
-            var atlas = Text.Layout(c.text, c.fs, tmpQ); if (atlas == null) return;
             double tw = TextWidth(c.text, c.fs), sx = 0;
             if (c.maxw > 0) { if (c.align == 1) sx = (c.maxw - tw) * 0.5; else if (c.align == 2) sx = c.maxw - tw; }
-            var b = o.Get(atlas); var col = C(c.col);
-            foreach (var q in tmpQ)
-            {
-                double px = c.xy[0] + sx + ox, py = c.xy[1] + oy;
-                var p0 = Tr(c, px + q.x0, py + q.y0); var p1 = Tr(c, px + q.x1, py + q.y0); var p2 = Tr(c, px + q.x1, py + q.y1); var p3 = Tr(c, px + q.x0, py + q.y1);
-                Quad(b, p0, p1, p2, p3, col, col, col, col, q.u0, q.v0, q.u1, q.v1);
-            }
+            var p = Tr(c, c.xy[0] + sx + ox, c.xy[1] + oy); var col = C(c.col);
+            o.GetText().runs.Add(new TextRun { text = c.text, x = p.x, y = p.y, size = c.fs * Scale(c), r = col.r, g = col.g, b = col.b, a = col.a });
         }
         static void AddOutline(TessOut o, DrawCmd c)
         {

@@ -30,6 +30,7 @@ namespace Pivovar
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
+            if (Pivovar.GdUnity.Gd2DApp.Active) return;   // výchozí je 2D režim (věrná kopie Godot aplikace)
             if (FindFirstObjectByType<BreweryBuilder>() != null) return;
             new GameObject("Pivovar").AddComponent<BreweryBuilder>();
         }

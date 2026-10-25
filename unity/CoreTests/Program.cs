@@ -63,9 +63,10 @@ static class Program
             try { Pivovar.Gd.GdHost.Frame(root, 1.0 / 60.0); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Frame", ex); }
             try { Pivovar.Gd.GdHost.RedrawDirty(root); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Redraw", ex); }
         }
-        int cmds = 0, drawn = 0; var tess = new Pivovar.Gd.TessOut();
-        Pivovar.Gd.GdHost.Walk(root, n => { if (n.Cmds != null) { drawn++; cmds += n.Cmds.Count; foreach (var c in n.Cmds) { try { Pivovar.Gd.Tess.Add(tess, c); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Tess " + c.k, ex); } } } });
-        Console.WriteLine("kreslicích uzlů: " + drawn + ", příkazů: " + cmds + ", trojúhelníků: " + tess.Tris + ", dávek: " + tess.batches.Count);
+        var items = Pivovar.Gd.GdRender.Collect(root);
+        int tris = 0, batches = 0, runs = 0;
+        foreach (var it in items) { if (it.mesh == null) continue; tris += it.mesh.Tris; foreach (var b in it.mesh.batches) { batches++; if (b.runs != null) runs += b.runs.Count; } }
+        Console.WriteLine("vykreslovaných uzlů: " + items.Count + ", trojúhelníků: " + tris + ", dávek: " + batches + ", textů: " + runs);
         Console.WriteLine("celkem (boot) chyb: " + Pivovar.Gd.Gd.Errors.Count);
         return Pivovar.Gd.Gd.Errors.Count == 0 ? 0 : 1;
     }
