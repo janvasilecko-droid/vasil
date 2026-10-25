@@ -13,7 +13,29 @@ Pravidlo: čísla, která nejsou z uvedeného zdroje, jsou označena ODHAD a jso
 | Chmel IBU | konstanta 0,44 natvrdo v kódu | parametr `iboKeep` (ODHAD, rozsah 0,2–1,0) |
 | Vířivka | skok po 3 min víření (časovač) | plynulá závislost `k = k_klid + (k_vír − k_klid)(1 − e^(−t_vír/τ))`, parametry `trubKstill`, `trubKwhirl`, `whirlTau` (ODHAD) |
 | CIP | „hotovo ✔“ vypadalo jako ověřená čistota | hlášení a hodnocení říkají **„podmínky postupu splněny – SIMULOVANÝ výsledek“**; mikrobiologie se nesimuluje |
-| Testy | 202 | **235** (+33 s nezávislou referencí), 0 selhání |
+| Testy | 202 | **265** (z toho 30 z kontroly 25. 10.), 0 selhání |
+
+## 0b. Kontrola parametrů a rizikových výpočtů (25. 10. 2026) – skutečné opravy
+
+Podrobný přehled všech 111 parametrů (použití v kódu, výchozí hodnota, rozsah): [AUDIT-PARAMETRU.md](AUDIT-PARAMETRU.md), generuje `Tools/audit_params.py` (v CI; selže při nekonzistenci). Zdroj pravdy výchozích hodnot je jen `CFG_DEFAULT`.
+
+| # | Chyba | Oprava (soubor) | Regresní test |
+|---|---|---|---|
+| 1 | Kotel počítal odběr páry `UAst·(T_p − T)` **bez** zhoršení přestupu u husté náplně, zatímco nádoba přijala `× film_factor` → kotel „vyráběl“ až 2,2× víc, než se předalo (tlak páry a zatížení kotle nepravdivé) | `sim.gd sim_step`: `S._pd.rvp.P *= film_factor(rvp)` (totéž mp); `heat()` už film neaplikuje podruhé. `P_dodaný = UAst·h·wet·(T_p − T)·UA(film)/UA_ref` | REGRESE kotel: výroba = přijatá energie (< 1 %); přetížení: Σvýroba − Σodběr = Δ(buben) |
+| 2 | Referenční přestup na straně náplně `HA_REF = 25 kW/K` byl pevný – při kalibrovaném `rvpUAst > 25` by odpor stěny vyšel záporný | `ha_ref() = max(25, 2·rvpUAst)`; odpor stěny+páry `1/gs = 1/UA_ref − 1/hA_ref` | REGRESE přestup tepla: voda při 35 Hz = faktor 1 i pro rvpUAst = 30 |
+| 3 | Počáteční tlak páry 2,5 bar natvrdo (ignoroval `steamBar`) | `"boiler.p": c.steamBar` | REGRESE kotel: počáteční tlak = steamBar |
+| 4 | Tabulka sytosti končila na 8 bar abs. (steamBar až 8 bar přetlaku = 9,0 bar abs.) a nad ní vracela 170 °C (pokles) | přidán bod 10 bar → 179,9 °C; za tabulkou poslední hodnota | REGRESE tabulka sytosti |
+| 5 | Zásoba kapaliny v potrubí z jiné geometrie (`2 L/m·(DN/50)²`) než tlakové ztráty (`bore_mm`, `pipeLenScale`) | `pipe_hold_L = π/4·d²·L·pipeLenScale·1000`; spojené úseky jen při stejném DN | REGRESE potrubí: zásoba = π/4·d²·L·pipeLenScale; rychlost 400 L/min v DN50 = 1,5 m/s |
+| 6 | `lvUA` (0,15 kW/K) a objem lože na kg sladu (2,7 L/kg) byly pevné literály mimo registr | nové parametry `lvUA`, `skBedLkg` (ODHAD, v registru) | REGRESE ledovka, REGRESE lože |
+| 7 | Kvašení (μ, q, Ks, ferTa …) a CIP (ohřev stanice, teploty, časy) měly pevné literály | 23 nových parametrů `fer*`, `cip*` s META a rozsahy (**ODHAD** – model není fitován na měřený průběh) | REGRESE kvašení/CIP: změna parametru mění výsledek |
+| 8 | Migrace starých uložení po načtení **přepsala** ručně kalibrovanou `skPerm` < 5e-12 na 1e-11 | migrace běží PŘED `apply_calibration` a vrací `CFG_DEFAULT.skPerm` (`main.gd`) | KALIBRACE skPerm 3e-12 přežije načtení |
+| 9 | Kalibrace dovolila nesmyslné kombinace (hltStart > hltCap, lvStart > lvVol, práh slehávání ≥ práh kanálků) | křížové kontroly v `apply_calibration` | KALIBRACE vazba (2×) |
+| 10 | Duplicitní výchozí hodnoty (`PUMPS` const vs `CFG_DEFAULT`; záložní literály `get("mpCap", 5000)` vs 6000, `skPerm` 1e-11 vs 1,5e-11, `trubKstill` 1/90 vs 0,0111) | jediný zdroj `CFG_DEFAULT`; `audit_params.py` hlídá záložní literály | `audit_params.py` v CI (job param-audit) |
+| 11 | `boilMin`, `pitchT`, `targetEBC`, `targetIBU`, `targetP` bez popisu | META: zdroj RECEPT = provozní nastavení / cíl receptu, nikoliv fyzika (viz KALIBRACE.md) | registr: 111/111 popsaných |
+
+Testy tohoto kola: rozsahy všech parametrů, extrémní hodnoty (každý z 111 parametrů na dolní i horní mezi → žádné NaN/∞), nulové průtoky deskového chladiče (mladina i chladivo), nezávislý ε-NTU, extrakt při rmutování (součet zůstává 300,0000 kg), citlivost na krok (0,5 vs 0,05 min: 287,7 vs 288,5 kg), `betaAct`, `kdBeta63`, teplotní optimum β-amylázy (podíl zkvasitelných 0,96 při 63 °C vs 0,54 při 72 °C – nic není nastaveno na cílové prokvašení).
+
+**Co kontrola NEmění (a proč):** `chillerKW` zůstává konstantní kapacita (nezávisí na teplotě odpařování ani kondenzace – nutno změřit výkon na odpařovači); NPSH čerpadel se nemodeluje; konstanty `K = 0,4` na úsek a `0,191` (podíl pevných látek v mlátě) jsou ODHAD v kódu, ne v registru. Fermentace a CIP jsou fenomenologické/procedurální a o přesnosti nic netvrdí.
 
 ## A. Hmota a extrakt, výtěžnosti
 
