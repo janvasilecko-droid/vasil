@@ -42,6 +42,34 @@ static class Program
         return (gf == 0 && Pivovar.Gd.Gd.Quit) ? 0 : 1;
     }
 
+    static int RunGdAuto(string resDir, string[] extra)
+    {
+        var errs = new List<string>();
+        Pivovar.Gd.Gd.PrintHook = line => Console.WriteLine(line);
+        Pivovar.Gd.Gd.ErrHook = e => { errs.Add(e); Console.WriteLine("CHYBA " + e); };
+        Pivovar.Gd.Gd.ResDir = resDir;
+        Pivovar.Gd.Gd.UserDir = Path.Combine(Path.GetTempPath(), "zajic_user_" + Environment.ProcessId);
+        var ca = new List<Pivovar.Gd.Gv> { Pivovar.Gd.Gv.S("--autotest") };
+        foreach (var x in extra) ca.Add(Pivovar.Gd.Gv.S(x));
+        Pivovar.Gd.Gd.CmdArgs = ca.ToArray();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            Pivovar.Gd.Gen.GdRegistry.Init();
+            var mv = Pivovar.Gd.Gen.S_main.New();
+            ((Pivovar.Gd.GdNode)mv.Obj).EnterTree();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Unhandled výjimka: " + ex.GetType().Name + ": " + ex.Message);
+            var lines = (ex.StackTrace ?? "").Split('\n');
+            for (int i = 0; i < Math.Min(14, lines.Length); i++) Console.WriteLine("   " + lines[i].Trim());
+            return 2;
+        }
+        Console.WriteLine("celkem (autotest) chyb: " + errs.Count + ", čas výpočtu " + sw.Elapsed.TotalSeconds.ToString("0") + " s");
+        return errs.Count == 0 ? 0 : 1;
+    }
+
     static int RunGdBoot(string resDir)
     {
         var errs = new List<string>();
@@ -75,6 +103,7 @@ static class Program
     static int Main(string[] args)
     {
         if (args.Length > 0 && args[0] == "--gdboot") return RunGdBoot(args.Length > 1 ? args[1] : "../GodotSrc");
+        if (args.Length > 0 && args[0] == "--gdauto") return RunGdAuto(args.Length > 1 ? args[1] : "../GodotSrc", args.Length > 2 ? args[2..] : new string[0]);
         if (args.Length > 0 && args[0] == "--gdtests") return RunGdTests(args.Length > 1 ? args[1] : "../GodotSrc");
         MiniJsonTests();
         string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";

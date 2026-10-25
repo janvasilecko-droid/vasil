@@ -66,6 +66,25 @@ jobs:
           cat boot.txt
           exit $code
 
+  godot-autobrew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Simulace celé várky (automat od vody po spilku)
+        working-directory: unity/CoreTests
+        run: |
+          set +e
+          dotnet run -c Release -- --gdauto ../GodotSrc > brew.txt 2>&1
+          code=$?
+          { grep -E "KONEC|PROTOKOL|BILANCE EXTRAKTU|vyteklo|CHYBA|Unhandled|výjimka|celkem|\[(warn|err|bad)" brew.txt | head -c 7000; echo; grep -E "^\[ *[0-9.]+ min\]" brew.txt | awk 'NR%2==1' | head -c 4000; } > brewsum.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' brewsum.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=autobrew::$msg"; else echo "::error title=autobrew::$msg"; fi
+          cat brew.txt
+          exit $code
+
   compile-unity-scripts:
     runs-on: ubuntu-latest
     steps:
