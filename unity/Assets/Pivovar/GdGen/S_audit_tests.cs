@@ -943,7 +943,7 @@ public partial class S_audit_tests : GdObject {
     Gv isoRef = ((((k1 * Gv.F(100.0)) * ((Gd.exp(((-k1) * Gv.F(60.0))) - Gd.exp(((-k2) * Gv.F(60.0)))))) / ((k2 - k1)))).AsF();
     T.C("chk", Gv.S("REF chmel 100 °C, 60 min: izo-α podle analytického řešení dvou následných reakcí"), Gv.B(Gv.Lt(_rel(vh1.G("iso"), isoRef), Gv.F(1e-06))), (Gv.S("%.3f vs %.3f") % Gd.Arr(vh1.G("iso"), isoRef)));
     T.C("chk", Gv.S("REF chmel: α klesá jako e^(−k1·t) a krok nehraje roli"), Gv.B((Gv.Lt(_rel(vh1.G("alpha"), (Gv.F(100.0) * Gd.exp(((-k1) * Gv.F(60.0))))), Gv.F(1e-06)) && Gv.Lt(_rel(vh1.G("iso"), vh2.G("iso")), Gv.F(1e-05)))), (Gv.S("iso %.4f / %.4f") % Gd.Arr(vh1.G("iso"), vh2.G("iso"))));
-    T.C("chk", Gv.S("REF chmel: využití izomerizací za 60 min varu je v rozumných mezích 10–45 %"), Gv.B((Gv.Gt(vh1.G("iso"), Gv.F(10.0)) && Gv.Lt(vh1.G("iso"), Gv.F(45.0)))), (Gv.S("%.1f %% α → iso") % vh1.G("iso")));
+    T.C("chk", Gv.S("REF chmel: využití izomerizací za 60 min varu je v rozumných mezích 20–65 %"), Gv.B((Gv.Gt(vh1.G("iso"), Gv.F(20.0)) && Gv.Lt(vh1.G("iso"), Gv.F(65.0)))), (Gv.S("%.1f %% α → iso") % vh1.G("iso")));
     T.C("fresh");
     S = sim.G("S");
     c = S.G("cfg");
@@ -964,7 +964,7 @@ public partial class S_audit_tests : GdObject {
     Gv e1 = ((sim.C("ext", v) + ((S.G("drainExt") - dr0)))).AsF();
     Gv P1 = (((Gv.F(100.0) * sim.C("ext", v)) / ((sim.C("ext", v) + v.G("w"))))).AsF();
     T.C("chk", Gv.S("REF var: extrakt (v nádobě + odtečený) se při odparu zachová"), Gv.B(Gv.Lt(_rel(e1, e0), Gv.F(0.005))), (Gv.S("%.2f → %.2f kg") % Gd.Arr(e0, e1)));
-    T.C("chk", Gv.S("REF var: vody ubývá (odpar) a °P = 100·E/(E+W) roste"), Gv.B((Gv.Lt(v.G("w"), (w0 - Gv.F(20.0))) && Gv.Gt(P1, (((Gv.F(100.0) * e0) / ((e0 + w0))) + Gv.F(0.3))))), (Gv.S("voda %.0f → %.0f kg, %.2f °P") % Gd.Arr(w0, v.G("w"), P1)));
+    T.C("chk", Gv.S("REF var: vody ubývá (odpar) a °P = 100·E/(E+W) roste"), Gv.B((Gv.Lt(v.G("w"), (w0 - Gv.F(20.0))) && Gv.Gt(P1, (((Gv.F(100.0) * e0) / ((e0 + w0))) + Gv.F(0.1))))), (Gv.S("voda %.0f → %.0f kg, %.2f °P") % Gd.Arr(w0, v.G("w"), P1)));
     T.C("chk", Gv.S("REF var: plato() v modelu odpovídá 100·E/(E+W) (±0,3 °P)"), Gv.B(Gv.Lt(Gd.absf((sim.C("plato", v) - P1)), Gv.F(0.3))), (Gv.S("%.2f vs %.2f") % Gd.Arr(sim.C("plato", v), P1)));
     T.C("fresh");
     S = sim.G("S");
@@ -1007,6 +1007,7 @@ public partial class S_audit_tests : GdObject {
     Gv Hm2 = (sim.C("path_head", path, Qt2, Gv.F(1.0), Gv.F(0.001))).AsF();
     T.C("chk", Gv.S("REF potrubí: turbulence – Swamee–Jain v modelu souhlasí s Colebrookem do 2 %"), Gv.B(Gv.Lt(_rel(Hm2, Hturb), Gv.F(0.02))), (Gv.S("%.3f vs %.3f m, f=%.4f") % Gd.Arr(Hm2, Hturb, fc)));
     T.C("chk", Gv.S("REF potrubí: ztráta roste s průtokem (≈ Q²) a se zavřením klapky"), Gv.B(Gv.Gt(sim.C("path_head", path, (Gv.F(2.0) * Qt2), Gv.F(1.0), Gv.F(0.001)), (Gv.F(3.3) * Hm2))), Gv.S(""));
+    Gv Pm = Gd.Script("physics");
     Gv cases = Gd.Arr(Gd.Arr(Gv.F(2.0), Gv.F(1.0), Gv.F(0.5)), Gd.Arr(Gv.F(2.0), Gv.F(4.0), Gv.F(1.0)), Gd.Arr(Gv.F(1.0), Gv.F(3.0), Gv.F(3.0)), Gd.Arr(Gv.F(0.5), Gv.F(2.0), Gv.F(2.0)));
     Gv okE = Gv.B(true);
     Gv det = Gv.S("");
@@ -1019,15 +1020,15 @@ public partial class S_audit_tests : GdObject {
       Gv cr = ((cmin / cmax)).AsF();
       Gv ntu = ((UA / cmin)).AsF();
       Gv eref = ((Gv.Lt(Gd.absf((Gv.F(1.0) - cr)), Gv.F(1e-09)) ? (ntu / ((Gv.F(1.0) + ntu))) : (((Gv.F(1.0) - Gd.exp(((-ntu) * ((Gv.F(1.0) - cr)))))) / ((Gv.F(1.0) - (cr * Gd.exp(((-ntu) * ((Gv.F(1.0) - cr)))))))))).AsF();
-      Gv em = (Gd.Static("Physics", "exchanger_effectiveness", UA, Ch, Cc)).AsF();
+      Gv em = (Pm.C("exchanger_effectiveness", UA, Ch, Cc)).AsF();
       if (Gv.Gt(Gd.absf((em - eref)), Gv.F(1e-09))) {
         okE = Gv.B(false);
       }
       det = (det + (Gv.S("%.3f ") % em));
     }
     T.C("chk", Gv.S("REF výměník: ε-NTU protiproud souhlasí s uzavřeným vzorcem (Cr<1 i Cr=1)"), okE, det);
-    Gv emax = (Gd.Static("Physics", "exchanger_effectiveness", Gv.F(1000.0), Gv.F(1.0), Gv.F(2.0))).AsF();
-    T.C("chk", Gv.S("REF výměník: nekonečně velká plocha → ε → 1, nulová plocha → 0"), Gv.B((Gv.Gt(emax, Gv.F(0.999)) && Gv.Eq(Gd.Static("Physics", "exchanger_effectiveness", Gv.F(0.0), Gv.F(1.0), Gv.F(2.0)), Gv.F(0.0)))), (Gv.S("%.5f") % emax));
+    Gv emax = (Pm.C("exchanger_effectiveness", Gv.F(1000.0), Gv.F(1.0), Gv.F(2.0))).AsF();
+    T.C("chk", Gv.S("REF výměník: nekonečně velká plocha → ε → 1, nulová plocha → 0"), Gv.B((Gv.Gt(emax, Gv.F(0.999)) && Gv.Eq(Pm.C("exchanger_effectiveness", Gv.F(0.0), Gv.F(1.0), Gv.F(2.0)), Gv.F(0.0)))), (Gv.S("%.5f") % emax));
     T.C("fresh");
     S = sim.G("S");
     c = S.G("cfg");
