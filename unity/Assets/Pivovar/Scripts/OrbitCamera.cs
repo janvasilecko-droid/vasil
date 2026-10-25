@@ -26,7 +26,7 @@ namespace Pivovar
             if (cam == null) cam = GetComponent<Camera>();
             if (cam == null) return;
             cam.orthographic = Flat;
-            if (Flat) { yaw = 0f; pitch = 0f; }
+            if (Flat) { yaw = 0f; pitch = 0f; target = new Vector3(15f, 3.3f, 0f); dist = 27f; }   // celá varna na jednu obrazovku
         }
 
         void LateUpdate()
