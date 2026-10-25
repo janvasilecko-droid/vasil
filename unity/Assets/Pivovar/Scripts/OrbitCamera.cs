@@ -26,7 +26,7 @@ namespace Pivovar
             if (cam == null) cam = GetComponent<Camera>();
             if (cam == null) return;
             cam.orthographic = Flat;
-            if (Flat) { yaw = 0f; pitch = 0f; target = new Vector3(15f, 3.3f, 0f); dist = 27f; }   // celá varna na jednu obrazovku
+            if (Flat) { yaw = 0f; pitch = 0f; dist = 4.0f / 0.52f; float asp = Mathf.Max(0.5f, (float)Screen.width / Mathf.Max(1, Screen.height)); target = new Vector3(-6.8f + 4.0f * asp, 4f, 0f); }   // záběr přes celou výšku haly, začátek vlevo; dál se jede myší
         }
 
         void LateUpdate()
@@ -41,21 +41,37 @@ namespace Pivovar
             bool shift = Inp.Held("Shift");
             if (Flat)
             {
-                float ortho = dist * 0.52f;                       // stejný výřez jako perspektiva 55° ve vzdálenosti dist
-                if (cam != null) { cam.orthographicSize = ortho; }
-                if (Inp.Right() || Inp.Middle())
+                float aspect = Mathf.Max(0.5f, (float)Screen.width / Mathf.Max(1, Screen.height));
+                float ortho = Mathf.Clamp(dist * 0.52f, 0.8f, 16f);
+                // tažení myší po ploše: levé tlačítko (když není zapnutý editor), pravé nebo prostřední vždy
+                bool drag = Inp.Right() || Inp.Middle() || (Inp.Left() && !PlanEditor.Active);
+                if (drag)
                 {
                     float k = 2f * ortho / Mathf.Max(1, Screen.height);
-                    target += transform.right * (-d.x * k) + transform.up * (-d.y * k);
+                    target += Vector3.right * (-d.x * k) + Vector3.up * (-d.y * k);
                 }
+                // kolečko: přiblížení k ukazateli myši
                 float sc2 = Inp.Scroll();
-                if (Mathf.Abs(sc2) > 0.001f) dist = Mathf.Clamp(dist * Mathf.Pow(0.9f, sc2), 1.2f, 90f);
-                float sp2 = PlanEditor.Typing ? 0f : dist * 0.6f * Time.unscaledDeltaTime;
+                if (Mathf.Abs(sc2) > 0.001f)
+                {
+                    Vector2 mp = Inp.MousePos();
+                    float nx = (mp.x / Mathf.Max(1, Screen.width)) * 2f - 1f, ny = (mp.y / Mathf.Max(1, Screen.height)) * 2f - 1f;
+                    Vector3 under = target + new Vector3(nx * ortho * aspect, ny * ortho, 0f);
+                    dist = Mathf.Clamp(dist * Mathf.Pow(0.78f, sc2), 1.5f, 31f);
+                    ortho = Mathf.Clamp(dist * 0.52f, 0.8f, 16f);
+                    target = under - new Vector3(nx * ortho * aspect, ny * ortho, 0f);
+                }
+                float sp2 = PlanEditor.Typing ? 0f : ortho * 1.2f * Time.unscaledDeltaTime;
                 if (Inp.Held("W") || Inp.Held("E")) target += Vector3.up * sp2;
                 if (Inp.Held("S") || Inp.Held("Q")) target -= Vector3.up * sp2;
                 if (Inp.Held("D")) target += Vector3.right * sp2;
                 if (Inp.Held("A")) target -= Vector3.right * sp2;
+                // držet záběr uvnitř haly (x -11.7..45.7, y 0..8), ať není vidět šedá mimo varnu
+                float hx = ortho * aspect, hy = ortho;
+                target.x = (2f * hx >= 57.4f) ? 17f : Mathf.Clamp(target.x, -11.7f + hx, 45.7f - hx);
+                target.y = (2f * hy >= 8.0f) ? 4f : Mathf.Clamp(target.y, hy, 8f - hy);
                 target.z = 0f;
+                if (cam != null) cam.orthographicSize = ortho;
                 transform.position = target + new Vector3(0f, 0f, -10f);
                 transform.rotation = Quaternion.identity;
                 return;

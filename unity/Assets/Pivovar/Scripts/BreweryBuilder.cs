@@ -61,7 +61,7 @@ namespace Pivovar
 
         void OnGUI()
         {
-            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · V = plochý/3D pohled, pravé tl. = posun (3D: otáčet), kolečko = zoom, WASD = posun, F = tok, X = řez, TAB = editor plánu");
+            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · V = plochý/3D pohled, tažení myší = posun, kolečko = přiblížení k myši, WASD = posun, F = tok, X = řez, TAB = editor plánu");
         }
 
         void SetDemoFlow(bool on)
@@ -191,7 +191,7 @@ namespace Pivovar
             HdrpUtil.Set(gs, "multiplier", 350f);          // nity: bez toho je obloha ~1 nit a kov odráží černo
             var ex = HdrpUtil.Add(vol, "Exposure");
             HdrpUtil.Set(ex, "mode", "Fixed");
-            HdrpUtil.Set(ex, "fixedExposure", 9.3f);
+            HdrpUtil.Set(ex, "fixedExposure", 8.4f);
             HdrpUtil.Set(ex, "compensation", 0f);
             var tm = HdrpUtil.Add(vol, "Tonemapping");
             HdrpUtil.Set(tm, "mode", "ACES");

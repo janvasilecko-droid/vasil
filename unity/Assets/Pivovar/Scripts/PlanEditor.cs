@@ -15,6 +15,7 @@ namespace Pivovar
     {
         /// <summary>True, když uživatel píše do textového pole (ať kamera a klávesy F/X nereagují).</summary>
         public static bool Typing;
+        public static bool Active;
 
         enum Mode { Select, NewPipe }
 
@@ -288,7 +289,7 @@ namespace Pivovar
         // ───────────────────────── vstup ─────────────────────────
         void Toggle()
         {
-            on = !on;
+            on = !on; Active = on;
             if (!on) { mode = Mode.Select; draw.Clear(); Typing = false; }
             status = on ? "Editor zapnut. Klik = výběr, tažení = posun, Shift+klik na úsek trubky = nový bod." : "";
         }
