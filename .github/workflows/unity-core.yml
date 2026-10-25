@@ -47,6 +47,25 @@ jobs:
           cat gd.txt
           exit $code
 
+  godot-boot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Spuštění přeložené aplikace bez okna (rychlá kontrola)
+        working-directory: unity/CoreTests
+        run: |
+          set +e
+          dotnet run -c Release -- --gdboot ../GodotSrc > boot.txt 2>&1
+          code=$?
+          { grep -E "CHYBA|celkem|kreslic|uzl|   at |      S_|      Pivovar|rror" boot.txt | head -c 7000; echo; tail -n 4 boot.txt; } > bootsum.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' bootsum.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=gd-boot::$msg"; else echo "::error title=gd-boot::$msg"; fi
+          cat boot.txt
+          exit $code
+
   compile-unity-scripts:
     runs-on: ubuntu-latest
     steps:

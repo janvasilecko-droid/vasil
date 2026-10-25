@@ -84,6 +84,13 @@ namespace Pivovar.Gd
         public GdNode Parent;
         public readonly List<GdNode> Children = new List<GdNode>();
         public IGdCanvas Canvas;
+        // záznam kreslení (viz GdDraw.cs)
+        public List<DrawCmd> Cmds;            // poslední zaznamenané příkazy
+        public List<DrawCmd> rec;             // právě zaznamenávané (jen uvnitř _draw)
+        public double[] curM;                 // aktuální draw_set_transform
+        public bool DrawDirty = true;
+        public int DrawVer;
+        public bool HasDraw;                  // true, pokud třída definuje _draw
         public bool InTree;
         public bool Ready;
         public bool QueuedFree;
@@ -100,12 +107,27 @@ namespace Pivovar.Gd
 
         public virtual void OnEnterTree() { }
 
+        /// <summary>Spustí _draw a uloží příkazy.</summary>
+        public void Redraw()
+        {
+            rec = new List<DrawCmd>(); curM = null;
+            try { Invoke("_draw", new Gv[0]); }
+            catch (Exception ex) { if (!Gd.Lenient) throw; Gd.Err("_draw " + ScriptName, ex); }
+            finally { Cmds = rec; rec = null; curM = null; DrawDirty = false; DrawVer++; }
+        }
+
         public void EnterTree()
         {
             if (InTree) return;
             InTree = true;
             foreach (var c in Children.ToArray()) c.EnterTree();
-            if (!Ready) { Ready = true; Invoke("_ready", new Gv[0]); }
+            if (!Ready)
+            {
+                Ready = true;
+                try { Invoke("_ready", new Gv[0]); }
+                catch (Exception ex) { if (!Gd.Lenient) throw; Gd.Err("_ready " + ScriptName, ex); }
+                if (TypeName == "Timer" && Get("autostart").T()) Invoke("start", new Gv[0]);
+            }
         }
 
         public override Gv Get(string n)
@@ -139,7 +161,8 @@ namespace Pivovar.Gd
                 case "get_tree": return Gd.Tree;
                 case "get_viewport": return Gd.Viewport;
                 case "get_window": return Gd.Viewport;
-                case "queue_redraw": case "queue_sort": case "update": if (Canvas != null) Canvas.Call(this, "queue_redraw", a); return Gv.Null;
+                case "queue_redraw": case "update": DrawDirty = true; return Gv.Null;
+                case "queue_sort": return Gv.Null;
                 case "connect":
                     {
                         var sv = Get(Gd.A(a, 0).Str).o as GdSignal;
@@ -152,6 +175,13 @@ namespace Pivovar.Gd
                         if (sv != null) sv.Emit(Slice(a, 1));
                         return Gv.Null;
                     }
+                case "create_tween": { var t = new GdTween(); GdHost.Tweens.Add(t); return t.Self; }
+                case "start":
+                    if (TypeName == "Timer") { Set("running", Gv.B(true)); Set("left", Gv.F(a.Length > 0 && a[0].IsNum && a[0].d > 0 ? a[0].d : Math.Max(0.001, Get("wait_time").d))); return Gv.Null; }
+                    break;
+                case "stop":
+                    if (TypeName == "Timer") { Set("running", Gv.B(false)); return Gv.Null; }
+                    break;
                 case "set_process": case "set_physics_process": case "set_process_input": case "set_process_unhandled_input": case "set_process_unhandled_key_input": return Gv.Null;
                 case "show": Set("visible", Gv.B(true)); return Gv.Null;
                 case "hide": Set("visible", Gv.B(false)); return Gv.Null;
@@ -167,12 +197,9 @@ namespace Pivovar.Gd
                 case "get_global_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }
                 case "get_theme_default_font": return Gv.Null;
             }
-            if (n.StartsWith("draw_") || n.StartsWith("get_theme_") || n == "get_string_size")
-            {
-                if (Canvas != null) { Canvas.Call(this, n, a); }
-                if (n == "get_string_size") return Gd.StringSize(Gd.A(a, 1), Gd.A(a, 3));
-                return Gv.Null;
-            }
+            if (n.StartsWith("draw_")) { GdDrawRec.Record(this, n, a); return Gv.Null; }
+            if (n == "get_string_size") return Gd.StringSize(Gd.A(a, 1), Gd.A(a, 3));
+            if (n.StartsWith("get_theme_")) return Gv.Null;
             return base.Invoke(n, a);
         }
 
@@ -183,16 +210,27 @@ namespace Pivovar.Gd
         }
     }
 
-    /// <summary>Strom scény (get_tree()): jen signál process_frame a časovač (v testech beze smyčky).</summary>
+    public sealed class GdSceneTimer : GdNode
+    {
+        public double Left;
+        public GdSceneTimer() { TypeName = "SceneTreeTimer"; }
+        public override Gv Get(string n) { if (n == "time_left") return Gv.F(Left); return base.Get(n); }
+    }
+
+    /// <summary>Strom scény (get_tree()): signál process_frame, časovače.</summary>
     public sealed class GdTree : GdNode
     {
+        public readonly List<GdSceneTimer> Timers = new List<GdSceneTimer>();
         public GdTree() { TypeName = "SceneTree"; }
         public override Gv Invoke(string n, Gv[] a)
         {
             switch (n)
             {
-                case "create_timer": { var t = new GdNode(); t.TypeName = "Timer"; return t.Self; }
+                case "create_timer": { var t = new GdSceneTimer(); t.Left = Gd.A(a, 0).d; Timers.Add(t); return t.Self; }
+                case "create_tween": { var t = new GdTween(); GdHost.Tweens.Add(t); return t.Self; }
                 case "quit": Gd.QuitCode = a.Length > 0 ? (int)a[0].d : 0; Gd.Quit = true; return Gv.Null;
+                case "get_nodes_in_group": return Gv.A(new GdArray());
+                case "change_scene_to_file": return Gv.Null;
             }
             return base.Invoke(n, a);
         }

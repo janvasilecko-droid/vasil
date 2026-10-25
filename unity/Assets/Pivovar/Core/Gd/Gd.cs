@@ -105,6 +105,21 @@ namespace Pivovar.Gd
         }
         public static Gv MousePos = Gv.Vec(0, 0);
         public static int QuitCode; public static bool Quit;
+        /// <summary>Shovívavý režim: chyba v jednom uzlu se zaznamená a program běží dál.</summary>
+        public static bool Lenient;
+        public static readonly Dictionary<string, int> Errors = new Dictionary<string, int>();
+        public static Action<string> ErrHook;
+        public static void Err(string where, Exception ex)
+        {
+            var key = where + " :: " + ex.GetType().Name + ": " + ex.Message;
+            int c; Errors.TryGetValue(key, out c); Errors[key] = c + 1;
+            if (c == 0)
+            {
+                var st = (ex.StackTrace ?? "").Split('\n'); var sb = new StringBuilder(key);
+                for (int i = 0; i < Math.Min(8, st.Length); i++) sb.Append("\n      ").Append(st[i].Trim());
+                if (ErrHook != null) ErrHook(sb.ToString()); else PrintHook("[chyba] " + sb);
+            }
+        }
         public static string DisplayName = "headless";
 
         public static string MapPath(string p)
@@ -267,6 +282,9 @@ namespace Pivovar.Gd
                         case "TRANSPARENT": return Gv.Col(1, 1, 1, 0); case "GRAY": return Gv.Col(0.745, 0.745, 0.745, 1); case "ORANGE": return Gv.Col(1, 0.647, 0, 1);
                     }
                     break;
+                case "Image":
+                    switch (n) { case "FORMAT_RGBA8": return Gv.I(5); case "FORMAT_RGB8": return Gv.I(4); case "FORMAT_L8": return Gv.I(0); case "FORMAT_LA8": return Gv.I(1); }
+                    break;
                 case "FileAccess":
                     switch (n) { case "READ": return Gv.I(1); case "WRITE": return Gv.I(2); case "READ_WRITE": return Gv.I(3); case "WRITE_READ": return Gv.I(7); }
                     break;
@@ -351,7 +369,14 @@ namespace Pivovar.Gd
                         return Gv.Vec(s1.d + dx * t, s1.e + dy * t);
                     }
                     break;
-                case "ImageTexture": case "Image": case "Font": case "SystemFont":
+                case "Image":
+                    if (n == "create") { var t = GdTexture.Create((int)A(a, 0).d, (int)A(a, 1).d); return t.Self; }
+                    if (n == "load_from_file") return Load(A(a, 0).Str);
+                    break;
+                case "ImageTexture":
+                    if (n == "create_from_image") { var t = A(a, 0).o as GdTexture; if (t != null) t.Version++; return A(a, 0); }
+                    break;
+                case "Font": case "SystemFont":
                     { var o = new GdNode(); o.TypeName = cls; return o.Self; }
                 case "Input":
                     switch (n) { case "is_action_pressed": case "is_key_pressed": case "is_mouse_button_pressed": case "is_action_just_pressed": return Gv.B(false); case "get_mouse_position": return MousePos; }
@@ -394,6 +419,12 @@ namespace Pivovar.Gd
                 return Script(stem);
             }
             if (ResourceLoader != null) { var r = ResourceLoader(path); if (!r.IsNull) return r; }
+            if (path.EndsWith(".png"))
+            {
+                var t = new GdTexture(); t.path = path; t.w = 64; t.h = 64;
+                try { using (var fs = File.OpenRead(MapPath(path))) { var hd = new byte[24]; if (fs.Read(hd, 0, 24) == 24) { t.w = (hd[16] << 24) | (hd[17] << 16) | (hd[18] << 8) | hd[19]; t.h = (hd[20] << 24) | (hd[21] << 16) | (hd[22] << 8) | hd[23]; } } } catch { }
+                return t.Self;
+            }
             var o = new GdNode(); o.TypeName = "Resource"; o.Set("path", Gv.S(path)); o.Set("size", Gv.Vec(64, 64));
             return o.Self;
         }
@@ -567,6 +598,8 @@ namespace Pivovar.Gd
         {
             double sz = size.IsNum ? size.d : 16;
             string s = text.Str ?? text.ToStr();
+            double w, h;
+            if (Tess.Text != null) { Tess.Text.Measure(s, sz, out w, out h); return Gv.Vec(w, h); }
             return Gv.Vec(s.Length * sz * 0.52, sz * 1.2);
         }
 

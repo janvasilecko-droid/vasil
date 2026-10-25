@@ -42,8 +42,37 @@ static class Program
         return (gf == 0 && Pivovar.Gd.Gd.Quit) ? 0 : 1;
     }
 
+    static int RunGdBoot(string resDir)
+    {
+        var errs = new List<string>();
+        Pivovar.Gd.Gd.PrintHook = line => { if (line.Length < 400) Console.WriteLine(line); };
+        Pivovar.Gd.Gd.ErrHook = e => { errs.Add(e); Console.WriteLine("CHYBA " + e); };
+        Pivovar.Gd.Gd.Lenient = true;
+        Pivovar.Gd.Gd.ResDir = resDir;
+        Pivovar.Gd.Gd.UserDir = Path.Combine(Path.GetTempPath(), "zajic_user_" + Environment.ProcessId);
+        Pivovar.Gd.Gd.CmdArgs = new Pivovar.Gd.Gv[0];
+        Pivovar.Gd.Gd.DisplayName = "unity";
+        Pivovar.Gd.Gen.GdRegistry.Init();
+        var mv = Pivovar.Gd.Gen.S_main.New();
+        var root = (Pivovar.Gd.GdNode)mv.Obj;
+        try { root.EnterTree(); } catch (Exception ex) { Pivovar.Gd.Gd.Err("EnterTree", ex); }
+        int nodes = 0; Pivovar.Gd.GdHost.Walk(root, n => nodes++);
+        Console.WriteLine("uzlů ve scéně: " + nodes);
+        for (int f = 0; f < 180; f++)
+        {
+            try { Pivovar.Gd.GdHost.Frame(root, 1.0 / 60.0); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Frame", ex); }
+            try { Pivovar.Gd.GdHost.RedrawDirty(root); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Redraw", ex); }
+        }
+        int cmds = 0, drawn = 0; var tess = new Pivovar.Gd.TessOut();
+        Pivovar.Gd.GdHost.Walk(root, n => { if (n.Cmds != null) { drawn++; cmds += n.Cmds.Count; foreach (var c in n.Cmds) { try { Pivovar.Gd.Tess.Add(tess, c); } catch (Exception ex) { Pivovar.Gd.Gd.Err("Tess " + c.k, ex); } } } });
+        Console.WriteLine("kreslicích uzlů: " + drawn + ", příkazů: " + cmds + ", trojúhelníků: " + tess.Tris + ", dávek: " + tess.batches.Count);
+        Console.WriteLine("celkem (boot) chyb: " + Pivovar.Gd.Gd.Errors.Count);
+        return Pivovar.Gd.Gd.Errors.Count == 0 ? 0 : 1;
+    }
+
     static int Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--gdboot") return RunGdBoot(args.Length > 1 ? args[1] : "../GodotSrc");
         if (args.Length > 0 && args[0] == "--gdtests") return RunGdTests(args.Length > 1 ? args[1] : "../GodotSrc");
         MiniJsonTests();
         string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";
