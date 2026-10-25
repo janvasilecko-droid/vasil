@@ -5,6 +5,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Pivovar.Gd;
+using G = Pivovar.Gd.Gd;
 
 namespace Pivovar.GdUnity
 {
@@ -27,14 +28,14 @@ namespace Pivovar.GdUnity
 
         void Start()
         {
-            Gd.ResDir = Path.Combine(Application.streamingAssetsPath, "godot");
-            Gd.UserDir = Path.Combine(Application.persistentDataPath, "user");
-            Directory.CreateDirectory(Gd.UserDir);
-            Gd.CmdArgs = new Gv[0];
-            Gd.DisplayName = "unity";
-            Gd.Lenient = true;
-            Gd.PrintHook = line => Debug.Log("[gd] " + line);
-            Gd.ErrHook = e => Debug.LogWarning("[gd] " + e);
+            G.ResDir = Path.Combine(Application.streamingAssetsPath, "godot");
+            G.UserDir = Path.Combine(Application.persistentDataPath, "user");
+            Directory.CreateDirectory(G.UserDir);
+            G.CmdArgs = new Gv[0];
+            G.DisplayName = "unity";
+            G.Lenient = true;
+            G.PrintHook = line => Debug.Log("[gd] " + line);
+            G.ErrHook = e => Debug.LogWarning("[gd] " + e);
             GdFontProvider.Init();
             Pivovar.Gd.Gen.GdRegistry.Init();
 
@@ -54,7 +55,7 @@ namespace Pivovar.GdUnity
             rootVe.Add(canvas);
             HookInput(rootVe);
 
-            Gd.ScreenW = Screen.width; Gd.ScreenH = Screen.height;
+            G.ScreenW = Screen.width; G.ScreenH = Screen.height;
             try
             {
                 var mv = Pivovar.Gd.Gen.S_main.New();
@@ -70,18 +71,18 @@ namespace Pivovar.GdUnity
         {
             if (root == null) return;
             var l = canvas.layout;
-            if (l.width > 1 && l.height > 1) { Gd.ScreenW = l.width; Gd.ScreenH = l.height; }
+            if (l.width > 1 && l.height > 1) { G.ScreenW = l.width; G.ScreenH = l.height; }
             double dt = Math.Min(Time.unscaledDeltaTime, 0.1);
-            try { GdHost.Frame(root, dt); } catch (Exception e) { Gd.Err("Frame", e); }
-            try { GdHost.RedrawDirty(root); } catch (Exception e) { Gd.Err("Redraw", e); }
+            try { GdHost.Frame(root, dt); } catch (Exception e) { G.Err("Frame", e); }
+            try { GdHost.RedrawDirty(root); } catch (Exception e) { G.Err("Redraw", e); }
             canvas.MarkDirtyRepaint();
             frameNo++;
             if (Time.unscaledTime - lastLog > 5f && frameNo > 30)
             {
                 lastLog = Time.unscaledTime;
-                Debug.Log("Pivovar2D: položek " + canvas.LastItems + ", trojúhelníků " + canvas.LastTris + ", dávek " + canvas.LastBatches + ", chyb " + Gd.Errors.Count);
+                Debug.Log("Pivovar2D: položek " + canvas.LastItems + ", trojúhelníků " + canvas.LastTris + ", dávek " + canvas.LastBatches + ", chyb " + G.Errors.Count);
             }
-            if (Gd.Quit) { Gd.Quit = false; Application.Quit(); }
+            if (G.Quit) { G.Quit = false; Application.Quit(); }
         }
 
         // ---------- vstup ----------
@@ -103,7 +104,7 @@ namespace Pivovar.GdUnity
             ve.RegisterCallback<PointerDownEvent>(_ => canvas.Focus());
         }
 
-        static void SetMouse(Vector2 p) { Gd.MousePos = Gv.Vec(p.x, p.y); }
+        static void SetMouse(Vector2 p) { G.MousePos = Gv.Vec(p.x, p.y); }
         static int GodotButton(int b) { return b == 0 ? 1 : b == 1 ? 2 : b == 2 ? 3 : b + 1; }
 
         GdEvent Ev(string type, int button, bool pressed, Vector2 pos, EventModifiers mods, bool dbl)
@@ -112,7 +113,7 @@ namespace Pivovar.GdUnity
                 "position", Gv.Vec(pos.x, pos.y), "global_position", Gv.Vec(pos.x, pos.y),
                 "shift_pressed", (mods & EventModifiers.Shift) != 0, "ctrl_pressed", (mods & EventModifiers.Control) != 0,
                 "alt_pressed", (mods & EventModifiers.Alt) != 0, "meta_pressed", (mods & EventModifiers.Command) != 0);
-            int mask = 0; foreach (var d in Gd.MouseDown) mask |= d == 1 ? 1 : d == 2 ? 2 : d == 3 ? 4 : 0;
+            int mask = 0; foreach (var d in G.MouseDown) mask |= d == 1 ? 1 : d == 2 ? 2 : d == 3 ? 4 : 0;
             e.Set("button_mask", Gv.I(mask));
             return e;
         }
@@ -120,7 +121,7 @@ namespace Pivovar.GdUnity
         void Mouse(Vector2 pos, int b, bool down, EventModifiers mods, bool dbl)
         {
             int gb = GodotButton(b); SetMouse(pos);
-            if (down) Gd.MouseDown.Add(gb); else Gd.MouseDown.Remove(gb);
+            if (down) G.MouseDown.Add(gb); else G.MouseDown.Remove(gb);
             Send(Ev("InputEventMouseButton", gb, down, pos, mods, dbl));
         }
 
@@ -140,7 +141,7 @@ namespace Pivovar.GdUnity
             if (down && kc == KeyCode.F9) { PlayerPrefs.SetString(ModeKey, "3d"); PlayerPrefs.Save(); Debug.Log("Pivovar: příští spuštění bude 3D (PlayerPrefs pivovar.mode=3d)"); }
             int code = Godot(kc, ch);
             if (code == 0 && ch == 0) return;
-            if (down) Gd.KeysDown.Add(code); else Gd.KeysDown.Remove(code);
+            if (down) G.KeysDown.Add(code); else G.KeysDown.Remove(code);
             var ev = GdEvent.Make("InputEventKey", "pressed", down, "echo", false, "keycode", code, "physical_keycode", code,
                 "unicode", (int)(ch >= 32 ? ch : (char)0),
                 "shift_pressed", (mods & EventModifiers.Shift) != 0, "ctrl_pressed", (mods & EventModifiers.Control) != 0,
@@ -174,8 +175,8 @@ namespace Pivovar.GdUnity
         void Send(GdEvent e)
         {
             if (root == null) return;
-            Gd.InputHandled = false;
-            try { GdHost.Dispatch(root, e); } catch (Exception ex) { Gd.Err("Dispatch", ex); }
+            G.InputHandled = false;
+            try { GdHost.Dispatch(root, e); } catch (Exception ex) { G.Err("Dispatch", ex); }
         }
     }
 }

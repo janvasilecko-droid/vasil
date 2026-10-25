@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Pivovar.Gd;
+using G = Pivovar.Gd.Gd;
 #if UNITY_6000_0_OR_NEWER
 using UnityEngine.TextCore.Text;
 #endif
@@ -53,7 +54,7 @@ namespace Pivovar.GdUnity
             {
                 try
                 {
-                    var bytes = System.IO.File.ReadAllBytes(Gd.MapPath(t.path));
+                    var bytes = System.IO.File.ReadAllBytes(G.MapPath(t.path));
                     tx = new Texture2D(2, 2, TextureFormat.RGBA32, true);
                     ImageConversion.LoadImage(tx, bytes, false);
                     tx.filterMode = FilterMode.Trilinear; tx.anisoLevel = 4;
