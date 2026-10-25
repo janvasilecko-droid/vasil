@@ -20,6 +20,87 @@ namespace Pivovar.Core
             return v;
         }
 
+        /// <summary>Zápis zpět do JSONu (pro uložení upraveného plánu). Celá čísla bez ".0"; kořen a položky pole items na vlastních řádcích.</summary>
+        public static string Write(object o, bool pretty)
+        {
+            var sb = new StringBuilder();
+            WriteValue(sb, o, 0, pretty);
+            if (pretty) sb.Append('\n');
+            return sb.ToString();
+        }
+
+        static void WriteValue(StringBuilder sb, object o, int depth, bool pretty)
+        {
+            if (o == null) { sb.Append("null"); return; }
+            if (o is bool) { sb.Append((bool)o ? "true" : "false"); return; }
+            if (o is string) { WriteString(sb, (string)o); return; }
+            if (o is double) { WriteNumber(sb, (double)o); return; }
+            if (o is int) { sb.Append(((int)o).ToString(CultureInfo.InvariantCulture)); return; }
+            if (o is long) { sb.Append(((long)o).ToString(CultureInfo.InvariantCulture)); return; }
+            var list = o as List<object>;
+            if (list != null)
+            {
+                sb.Append('[');
+                bool nl = pretty && depth < 2 && list.Count > 0;
+                for (int k = 0; k < list.Count; k++)
+                {
+                    if (k > 0) sb.Append(nl ? "," : ", ");
+                    if (nl) { sb.Append('\n'); sb.Append(' ', (depth + 1) * 1); }
+                    WriteValue(sb, list[k], depth + 1, pretty);
+                }
+                if (nl) { sb.Append('\n'); sb.Append(' ', depth * 1); }
+                sb.Append(']');
+                return;
+            }
+            var dict = o as Dictionary<string, object>;
+            if (dict != null)
+            {
+                sb.Append('{');
+                bool nl = pretty && depth < 2 && dict.Count > 0;
+                int n = 0;
+                foreach (KeyValuePair<string, object> kv in dict)
+                {
+                    if (n++ > 0) sb.Append(nl ? "," : ", ");
+                    if (nl) { sb.Append('\n'); sb.Append(' ', (depth + 1) * 1); }
+                    WriteString(sb, kv.Key);
+                    sb.Append(": ");
+                    WriteValue(sb, kv.Value, depth + 1, pretty);
+                }
+                if (nl) { sb.Append('\n'); sb.Append(' ', depth * 1); }
+                sb.Append('}');
+                return;
+            }
+            throw new FormatException("JSON: nepodporovaný typ " + o.GetType().Name);
+        }
+
+        static void WriteNumber(StringBuilder sb, double d)
+        {
+            if (double.IsNaN(d) || double.IsInfinity(d)) { sb.Append("0"); return; }
+            if (d == Math.Floor(d) && Math.Abs(d) < 1e15) sb.Append(((long)d).ToString(CultureInfo.InvariantCulture));
+            else sb.Append(d.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        static void WriteString(StringBuilder sb, string s)
+        {
+            sb.Append('"');
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 0x20) sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            sb.Append('"');
+        }
+
         sealed class Parser
         {
             readonly string s;

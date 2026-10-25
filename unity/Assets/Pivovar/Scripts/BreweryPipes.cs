@@ -67,19 +67,41 @@ namespace Pivovar
             go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         }
 
+        Transform pipesRoot;
+        readonly Dictionary<string, GameObject> pipeObjs = new Dictionary<string, GameObject>();
+        readonly Dictionary<string, GameObject> partObjs = new Dictionary<string, GameObject>();
+
         void BuildPipes()
         {
-            var pp = new GameObject("Potrubí").transform; pp.SetParent(root, false);
-            foreach (PlanItem it in plan.OfType("pipe"))
+            pipesRoot = new GameObject("Potrubí").transform; pipesRoot.SetParent(root, false);
+            pipeObjs.Clear();
+            foreach (PlanItem it in plan.OfType("pipe")) BuildPipe(it);
+        }
+
+        /// <summary>Znovu postaví jednu trubku (po úpravě bodů v editoru).</summary>
+        public void RebuildPipe(PlanItem it)
+        {
+            GameObject old;
+            if (pipeObjs.TryGetValue(it.Id, out old) && old != null) DestroyImmediate(old);
+            pipeObjs.Remove(it.Id);
+            flows.RemoveAll(f => f == null);
+            if (it.Type == "pipe") BuildPipe(it);
+            SetDemoFlow(demoFlow);
+        }
+
+        void BuildPipe(PlanItem it)
+        {
             {
                 List<double[]> pts = it.Pts();
-                if (pts.Count < 2) continue;
+                if (pts.Count < 2) return;
+                var pp = new GameObject("trubka " + it.Id).transform; pp.SetParent(pipesRoot, false);
+                pipeObjs[it.Id] = pp.gameObject;
                 if (it.IsHose)
                 {
                     var hp = new List<Vector3>();
                     foreach (double[] p in pts) hp.Add(Pp(p[0], p[1], ZP + 0.12f));
                     AddRaw(pp, MeshKit.Tube(MeshKit.RoundPath(hp, 0.2f), 0.045f, 14), HdrpUtil.Lit(new Color(0.12f, 0.12f, 0.14f), 0f, 0.35f), Vector3.zero, Vector3.zero, "hadice " + it.Id);
-                    continue;
+                    return;
                 }
                 var raw = new List<Vector3>();
                 foreach (double[] p in pts) raw.Add(Pp(p[0], p[1], ZP));
@@ -127,6 +149,7 @@ namespace Pivovar
         void BuildValve(PlanItem it)
         {
             var n = new GameObject("klapka " + it.Id).transform; n.SetParent(root, false);
+            partObjs[it.Id] = n.gameObject;
             n.localPosition = Pp(it.X, it.Y, ZP);
             n.localRotation = Quaternion.Euler(0f, 0f, -(float)it.Num("rot", 0));
             float rp = 0.028f;
@@ -151,6 +174,7 @@ namespace Pivovar
         void BuildPump(PlanItem it)
         {
             var n = new GameObject("čerpadlo " + it.Id).transform; n.SetParent(root, false);
+            partObjs[it.Id] = n.gameObject;
             n.localPosition = Pp(it.X, it.Y, ZP);
             CylZ(n, 0.135f, 0.085f, steelB, new Vector3(0, 0, 0), 36);
             CylZ(n, 0.06f, 0.07f, steelP, new Vector3(0, 0, -0.085f), 24);
@@ -168,7 +192,45 @@ namespace Pivovar
         {
             if (it.Str("k", "") != "vent") return;
             float hgt = 70f * K;
-            Cyl(root, 0.15f, hgt, steelB, new Vector3((float)it.X * K, (floorY - (float)it.Y + 35f) * K, -0.2f), Vector3.zero, 20);
+            partObjs[it.Id] = Cyl(root, 0.15f, hgt, steelB, new Vector3((float)it.X * K, (floorY - (float)it.Y + 35f) * K, -0.2f), Vector3.zero, 20);
         }
+
+        /// <summary>Při tažení v editoru: přesune klapku / čerpadlo / dekoraci na novou polohu z plánu.</summary>
+        public void MovePart(PlanItem it)
+        {
+            GameObject g;
+            if (!partObjs.TryGetValue(it.Id, out g) || g == null) return;
+            if (it.Type == "deco") g.transform.localPosition = new Vector3((float)it.X * K, (floorY - (float)it.Y + 35f) * K, -0.2f);
+            else
+            {
+                g.transform.localPosition = Pp(it.X, it.Y, ZP);
+                if (it.Type == "valve") g.transform.localRotation = Quaternion.Euler(0f, 0f, -(float)it.Num("rot", 0));
+            }
+        }
+
+        /// <summary>Postaví jeden díl (klapka, čerpadlo, dekorace) – po přidání v editoru.</summary>
+        public void BuildPart(PlanItem it)
+        {
+            if (it.Type == "valve") BuildValve(it);
+            else if (it.Type == "pump") BuildPump(it);
+            else if (it.Type == "deco") BuildDeco(it);
+        }
+
+        /// <summary>Odstraní objekt dílu nebo trubky ze scény (plán se maže zvlášť).</summary>
+        public void RemovePart(PlanItem it)
+        {
+            GameObject g;
+            if (partObjs.TryGetValue(it.Id, out g) && g != null) DestroyImmediate(g);
+            partObjs.Remove(it.Id);
+            if (pipeObjs.TryGetValue(it.Id, out g) && g != null) DestroyImmediate(g);
+            pipeObjs.Remove(it.Id);
+            flows.RemoveAll(f => f == null);
+        }
+
+        /// <summary>Svět (Unity) -> souřadnice plánu v px pro rovinu v hloubce zGodot.</summary>
+        public Vector2 ToPlan(Vector3 w) { return new Vector2(w.x / K, floorY - w.y / K); }
+        public Vector3 FromPlan(double px, double py, float zGodot) { return Pp(px, py, zGodot); }
+        public Vessel VesselOf(PlanItem it) { foreach (Vessel v in vessels) if (v.item == it) return v; return null; }
+        public Camera Cam { get { return cam; } }
     }
 }

@@ -14,6 +14,7 @@ namespace Pivovar
         public const float ZP = 0.42f;        // rovina potrubí (m před osou nádob)
 
         [System.NonSerialized] public Plan plan;
+        [System.NonSerialized] public string planPath;
         public float floorY;                  // px plánu, kde stojí podlaha
         public bool demoFlow;
         public bool cutaway = true;
@@ -39,7 +40,9 @@ namespace Pivovar
             if (!File.Exists(path)) { Debug.LogError("Pivovar: chybí " + path + " (zkopíruj složku StreamingAssets z repozitáře)."); return; }
             try { plan = Plan.Parse(File.ReadAllText(path)); }
             catch (System.Exception e) { Debug.LogError("Pivovar: plan.json nejde načíst: " + e.Message); return; }
+            planPath = path;
             Build();
+            gameObject.AddComponent<PlanEditor>().Init(this);
             Debug.Log("Pivovar: postaveno – nádob " + vessels.Count + ", trubek " + flows.Count + ". Ovládání: pravé tlačítko otáčí, kolečko přibližuje, F = tok v potrubí, X = řez/celé nádoby.");
         }
 
@@ -49,15 +52,15 @@ namespace Pivovar
 
         void Update()
         {
-            if (Inp.Pressed("F")) SetDemoFlow(!demoFlow);
-            if (Inp.Pressed("X")) { cutaway = !cutaway; foreach (Vessel v in vessels) v.ApplyCut(cutaway); }
+            if (!PlanEditor.Typing && Inp.Pressed("F")) SetDemoFlow(!demoFlow);
+            if (!PlanEditor.Typing && Inp.Pressed("X")) { cutaway = !cutaway; foreach (Vessel v in vessels) v.ApplyCut(cutaway); }
             float dt = Time.deltaTime;
             foreach (Transform s in spinners) if (s != null) s.Rotate(0f, 40f * dt, 0f, Space.Self);
         }
 
         void OnGUI()
         {
-            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · pravé tl. = otáčet, Shift+pravé = posun, kolečko = zoom, WASD/QE = jízda, F = tok, X = řez");
+            GUI.Label(new Rect(10, 8, 900, 24), "Pivovar Zajíc · HDRP · pravé tl. = otáčet, Shift+pravé = posun, kolečko = zoom, WASD/QE = jízda, F = tok, X = řez, TAB = editor plánu");
         }
 
         void SetDemoFlow(bool on)
@@ -67,12 +70,14 @@ namespace Pivovar
         }
 
         // ───────────────────────── stavba ─────────────────────────
+        public void Rebuild() { Build(); }
+
         void Build()
         {
-            if (root != null) Destroy(root.gameObject);
+            if (root != null) DestroyImmediate(root.gameObject);
             root = new GameObject("Varna").transform;
             root.SetParent(transform, false);
-            flows.Clear(); vessels.Clear(); spinners.Clear();
+            flows.Clear(); vessels.Clear(); spinners.Clear(); partObjs.Clear();
 
             floorY = 0f;
             foreach (PlanItem it in plan.OfType("vessel"))

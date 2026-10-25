@@ -23,7 +23,7 @@ namespace Pivovar
             float sc = Inp.Scroll();
             if (Mathf.Abs(sc) > 0.001f) dist = Mathf.Clamp(dist * Mathf.Pow(0.9f, sc), 1.2f, 90f);
 
-            float sp = dist * 0.6f * Time.unscaledDeltaTime;
+            float sp = PlanEditor.Typing ? 0f : dist * 0.6f * Time.unscaledDeltaTime;
             Vector3 fwd = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
             if (Inp.Held("W")) target += fwd * sp;
             if (Inp.Held("S")) target -= fwd * sp;

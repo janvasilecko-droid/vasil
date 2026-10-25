@@ -34,6 +34,17 @@ namespace Pivovar.Core
         }
         public bool Has(string k) { return D.ContainsKey(k); }
 
+        public void Set(string k, object v) { D[k] = v; }
+        public void SetNum(string k, double v) { D[k] = v; }
+
+        /// <summary>Přepíše lomenou čáru trubky.</summary>
+        public void SetPts(List<double[]> pts)
+        {
+            var l = new List<object>();
+            foreach (double[] p in pts) l.Add(new List<object> { p[0], p[1] });
+            D["pts"] = l;
+        }
+
         /// <summary>Lomená čára trubky v px plánu: [[x,y],...]</summary>
         public List<double[]> Pts()
         {
@@ -57,12 +68,15 @@ namespace Pivovar.Core
         public readonly List<PlanItem> Items = new List<PlanItem>();
         public readonly List<double[]> Joints = new List<double[]>();
         public int Version;
+        /// <summary>Celý původní JSON (včetně klíčů, které Unity nepoužívá) – při uložení se zapíše zpět beze ztráty.</summary>
+        public Dictionary<string, object> Root;
 
         public static Plan Parse(string json)
         {
             var root = MiniJson.Parse(json) as Dictionary<string, object>;
             if (root == null) throw new FormatException("plan.json: kořen není objekt");
             var plan = new Plan();
+            plan.Root = root;
             object o;
             if (root.TryGetValue("ver", out o) && o is double) plan.Version = (int)(double)o;
             if (root.TryGetValue("items", out o))
@@ -91,6 +105,35 @@ namespace Pivovar.Core
         public IEnumerable<PlanItem> OfType(string type)
         {
             foreach (var it in Items) if (it.Type == type) yield return it;
+        }
+
+        /// <summary>Přidá položku (nová trubka, klapka…) do plánu i do výsledného JSONu.</summary>
+        public void AddItem(Dictionary<string, object> d)
+        {
+            var it = new PlanItem(d);
+            Items.Add(it);
+            var l = ItemsList();
+            if (l != null) l.Add(d);
+        }
+
+        public bool RemoveItem(PlanItem it)
+        {
+            var l = ItemsList();
+            if (l != null) l.Remove(it.D);
+            return Items.Remove(it);
+        }
+
+        List<object> ItemsList()
+        {
+            object o;
+            if (Root != null && Root.TryGetValue("items", out o)) return o as List<object>;
+            return null;
+        }
+
+        /// <summary>Zápis do JSONu ve stejném tvaru jako 2D verze (lze importovat v editoru 2D).</summary>
+        public string ToJson()
+        {
+            return MiniJson.Write(Root, true);
         }
 
         public PlanItem ById(string id)

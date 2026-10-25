@@ -15,7 +15,9 @@ static class Program
     static int Main(string[] args)
     {
         MiniJsonTests();
-        PlanTests(args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json");
+        string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";
+        PlanTests(planPath);
+        WriteTests(planPath);
         Console.WriteLine();
         Console.WriteLine("celkem PASS " + pass + " / FAIL " + fail);
         return fail == 0 ? 0 : 1;
@@ -35,6 +37,62 @@ static class Program
         threw = false;
         try { MiniJson.Parse("[1,2"); } catch (FormatException) { threw = true; }
         Chk("json: neukončené pole vyhodí výjimku", threw);
+    }
+
+    static bool Same(object a, object b)
+    {
+        if (a == null || b == null) return a == b;
+        if (a is double && b is double) return Math.Abs((double)a - (double)b) < 1e-9;
+        if (a is string || a is bool) return a.Equals(b);
+        var la = a as List<object>; var lb = b as List<object>;
+        if (la != null && lb != null)
+        {
+            if (la.Count != lb.Count) return false;
+            for (int i = 0; i < la.Count; i++) if (!Same(la[i], lb[i])) return false;
+            return true;
+        }
+        var da = a as Dictionary<string, object>; var db = b as Dictionary<string, object>;
+        if (da != null && db != null)
+        {
+            if (da.Count != db.Count) return false;
+            foreach (var kv in da) { object o; if (!db.TryGetValue(kv.Key, out o) || !Same(kv.Value, o)) return false; }
+            return true;
+        }
+        return false;
+    }
+
+    static void WriteTests(string path)
+    {
+        string src = File.ReadAllText(path);
+        Plan p = Plan.Parse(src);
+        string out1 = p.ToJson();
+        Plan p2 = Plan.Parse(out1);
+        Chk("zápis: plán po uložení a načtení je shodný (všechny klíče)", Same(p.Root, p2.Root));
+        Chk("zápis: celá čísla bez desetinné tečky", out1.Contains("\"x\": 600,") || out1.Contains("\"x\": 600}"));
+        Chk("zápis: počet položek zachován", p2.Items.Count == p.Items.Count, p2.Items.Count.ToString());
+
+        // úprava bodu trubky se projeví v JSONu
+        PlanItem pipe = null;
+        foreach (var it in p.OfType("pipe")) { if (it.Pts().Count >= 2) { pipe = it; break; } }
+        var pts = pipe.Pts(); pts[0][0] += 12; pts.Add(new double[] { 1, 2 });
+        pipe.SetPts(pts);
+        Plan p3 = Plan.Parse(p.ToJson());
+        var q = p3.ById(pipe.Id).Pts();
+        Chk("zápis: změněný bod trubky se uloží", Math.Abs(q[0][0] - pts[0][0]) < 1e-9 && q.Count == pts.Count);
+
+        // přidání a smazání položky
+        int n0 = p.Items.Count;
+        var d = new Dictionary<string, object>(); d["type"] = "valve"; d["id"] = "valve_test"; d["x"] = 5.0; d["y"] = 6.0;
+        p.AddItem(d);
+        Plan p4 = Plan.Parse(p.ToJson());
+        Chk("zápis: nová položka je v JSONu", p4.Items.Count == n0 + 1 && p4.ById("valve_test") != null);
+        p.RemoveItem(p.ById("valve_test"));
+        Chk("zápis: smazaná položka zmizí", Plan.Parse(p.ToJson()).Items.Count == n0);
+
+        // znaky, které umí JSON: uvozovky, zpětné lomítko, nový řádek, česká písmena
+        var tst = new Dictionary<string, object>(); tst["s"] = "a\"b\\c\nd á";
+        object back = MiniJson.Parse(MiniJson.Write(tst, false));
+        Chk("zápis: escape řetězců", Same(tst, back));
     }
 
     static void PlanTests(string path)
