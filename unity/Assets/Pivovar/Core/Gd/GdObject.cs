@@ -130,15 +130,21 @@ namespace Pivovar.Gd
             }
         }
 
+        static readonly HashSet<string> SigNames = new HashSet<string> {
+            "process_frame", "physics_frame", "timeout", "pressed", "toggled", "button_down", "button_up", "visibility_changed", "resized", "size_changed",
+            "gui_input", "item_selected", "item_activated", "text_changed", "text_submitted", "text_set", "value_changed", "mouse_entered", "mouse_exited",
+            "confirmed", "canceled", "request_completed", "finished", "focus_entered", "focus_exited", "tree_entered", "tree_exited", "tree_exiting",
+            "child_entered_tree", "child_exiting_tree", "draw", "hidden", "ready", "renamed", "meta_clicked", "meta_hover_started", "meta_hover_ended",
+            "id_pressed", "index_pressed", "popup_hide", "about_to_popup", "close_requested", "files_dropped", "drag_started", "drag_ended", "color_changed",
+            "scrolling", "scroll_started", "scroll_ended", "item_rect_changed", "minimum_size_changed", "theme_changed", "sort_children", "input_event" };
+
+        public static bool IsSignalName(string n) { return SigNames.Contains(n); }
+
         public override Gv Get(string n)
         {
-            switch (n)
-            {
-                case "process_frame": case "timeout": case "pressed": case "toggled": case "visibility_changed": case "resized": case "size_changed":
-                case "gui_input": case "item_selected": case "text_changed": case "value_changed": case "mouse_entered": case "mouse_exited":
-                    return Gv.O(Sig(n));
-            }
-            return base.Get(n);
+            var v = base.Get(n);
+            if (v.IsNull && SigNames.Contains(n)) return Gv.O(Sig(n));
+            return v;
         }
 
         public override Gv Invoke(string n, Gv[] a)
