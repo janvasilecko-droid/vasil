@@ -182,7 +182,7 @@ namespace Pivovar
             HdrpUtil.Set(gs, "multiplier", 350f);          // nity: bez toho je obloha ~1 nit a kov odráží černo
             var ex = HdrpUtil.Add(vol, "Exposure");
             HdrpUtil.Set(ex, "mode", "Fixed");
-            HdrpUtil.Set(ex, "fixedExposure", 9.5f);
+            HdrpUtil.Set(ex, "fixedExposure", 8.6f);
             HdrpUtil.Set(ex, "compensation", 0f);
             var tm = HdrpUtil.Add(vol, "Tonemapping");
             HdrpUtil.Set(tm, "mode", "ACES");
@@ -220,7 +220,7 @@ namespace Pivovar
             if (fm.HasProperty("_BaseColorMap")) { fm.SetTexture("_BaseColorMap", tiles); fm.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 2.5f, depth / 2.5f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 0.2f, depth)), fm, new Vector3((x0 + x1) * 0.5f, -0.1f, 0f), Vector3.zero, "podlaha");
 
-            Material wall = HdrpUtil.Lit(new Color(0.34f, 0.35f, 0.38f), 0f, 0.20f, false);
+            Material wall = HdrpUtil.Lit(new Color(0.50f, 0.51f, 0.54f), 0f, 0.20f, false);
             Material tileWall = HdrpUtil.Lit(new Color(0.20f, 0.22f, 0.25f), 0f, 0.75f, false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 3.2f, 0.3f)), tileWall, new Vector3((x0 + x1) * 0.5f, 1.6f, -depth * 0.5f), Vector3.zero, "obklad", false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, hgt - 3.2f, 0.3f)), wall, new Vector3((x0 + x1) * 0.5f, 3.2f + (hgt - 3.2f) * 0.5f, -depth * 0.5f), Vector3.zero, "stena", false);
@@ -265,7 +265,7 @@ namespace Pivovar
                 {
                     bool edge = (x % 128 < 3) || (y % 128 < 3);
                     float v = 0.85f + 0.06f * Mathf.Sin(x * 0.37f) * Mathf.Cos(y * 0.29f) + 0.04f * Mathf.Sin(x * 1.3f + y * 0.7f);
-                    Color c = edge ? new Color(0.05f, 0.05f, 0.06f) : new Color(0.16f, 0.17f, 0.19f) * v;
+                    Color c = edge ? new Color(0.05f, 0.05f, 0.06f) : new Color(0.26f, 0.27f, 0.30f) * v;
                     c.a = 1f;
                     t.SetPixel(x, y, c);
                 }

@@ -43,6 +43,7 @@ namespace Pivovar
         {
             if (liqMat == null) return;
             if (liqMat.HasProperty("_BaseColor")) liqMat.SetColor("_BaseColor", c); else liqMat.color = c;
+            HdrpUtil.SetEmissive(liqMat, new Color(c.r, c.g, c.b), 260f);   // vlastní záře kapaliny jako ve videu
         }
     }
 
@@ -125,7 +126,8 @@ namespace Pivovar
             // osa válce podél x: z Unity osy y otočíme o 90° kolem z
             v.shellFull = AddRaw(pv, full, inox, pos, new Vector3(0, 0, 90f), "plášť");
             v.shellCut = AddRaw(pv, cutm, inox, pos, new Vector3(0, 0, 90f), "plášť řez");
-            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.92f);
+            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.35f);
+            HdrpUtil.SetEmissive(lm, new Color(LiquidColor(it.Bind).r, LiquidColor(it.Bind).g, LiquidColor(it.Bind).b), 260f);
             v.liqMat = lm;
             AddRaw(pv, MeshKit.Cylinder(rr * 0.98f, w * 0.98f, 40), lm, pos, new Vector3(0, 0, 90f), "kapalina");
             v.ApplyCut(cutaway);
@@ -177,7 +179,8 @@ namespace Pivovar
             v.ApplyCut(cutaway);
 
             // kapalina
-            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.92f);
+            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.35f);
+            HdrpUtil.SetEmissive(lm, new Color(LiquidColor(it.Bind).r, LiquidColor(it.Bind).g, LiquidColor(it.Bind).b), 260f);
             v.liqMat = lm;
             if (cone)
                 v.liqCone = AddRaw(pv, MeshKit.Cylinder(r * 0.985f, hb, 48, 0.09f), lm, new Vector3(cx, yb + hb * 0.5f, -zc), Vector3.zero, "kapalina kužel");
