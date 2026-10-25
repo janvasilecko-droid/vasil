@@ -271,7 +271,7 @@ public partial class S_tests : GdObject {
       batch = batch.S("T", Gv.F(70.0));
       best = best.S("from", Gv.S("a"));
       sim.C("edge_push", best, batch, Gv.B(true));
-      Gv SW = Gd.Load("res://sight.gd").C("new");
+      Gv SW = Gd.Script("sight").C("new");
       SW = SW.S("m", m);
       Gv smp = SW.C("take_sample", (best.G("pts").I(Gv.I(0L)) + (((best.G("pts").I(Gv.I(1L)) - best.G("pts").I(Gv.I(0L)))) * Gv.F(0.02))));
       chk(Gv.S("průhledítko: dávka menší než 1 L má správné °P a teplotu"), Gv.B(((!(smp.C("get", Gv.S("empty"), Gv.B(true))).T() && (near(smp.G("P"), Gv.F(9.09), Gv.F(0.1))).T()) && (near(smp.G("T"), Gv.F(70.0), Gv.F(0.1))).T())), (Gv.S("%s °P") % Gd.Dyn("str", smp.C("get", Gv.S("P")))));
