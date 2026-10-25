@@ -114,9 +114,50 @@ static class Program
         string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";
         PlanTests(planPath);
         WriteTests(planPath);
+        UpdateTests();
         Console.WriteLine();
         Console.WriteLine("celkem PASS " + pass + " / FAIL " + fail);
         return fail == 0 ? 0 : 1;
+    }
+
+    static void UpdateTests()
+    {
+        string h1 = new string('a', 64), h2 = new string('b', 64);
+        string json = "{\"ver\": 202610251200, \"commit\": \"abc\", \"notes\": \"Test\", \"requires\": 1, \"files\": [" +
+            "{\"path\": \"Managed/PivovarGdGen.dll\", \"sha256\": \"" + h1 + "\", \"size\": 100}," +
+            "{\"path\": \"StreamingAssets/godot/art/x.png\", \"sha256\": \"" + h2 + "\", \"size\": 5}]}";
+        var m = UpdateManifest.Parse(json);
+        Chk("aktualizace: manifest se načte", m.Ver == 202610251200L && m.Files.Count == 2 && m.Requires == 1 && m.Notes == "Test");
+        // jen změněné soubory: první shodný hash, druhý jiný
+        var ch = UpdateLogic.Changed(m, p => p.EndsWith("dll") ? h1 : h1);
+        Chk("aktualizace: stahují se jen soubory s jiným hashem", ch.Count == 1 && ch[0].Path.EndsWith("x.png"));
+        var chMissing = UpdateLogic.Changed(m, p => null);
+        Chk("aktualizace: chybějící soubor se stáhne", chMissing.Count == 2);
+        var chNone = UpdateLogic.Changed(m, p => p.EndsWith("dll") ? h1 : h2);
+        Chk("aktualizace: nic se nestahuje, když vše sedí", chNone.Count == 0);
+        Chk("aktualizace: rozhodnutí – nová verze", UpdateLogic.Decide(m, 202610241200L, 1, 1) == 1);
+        Chk("aktualizace: rozhodnutí – už mám novější nebo stejnou", UpdateLogic.Decide(m, 202610251200L, 1, 1) == 0 && UpdateLogic.Decide(m, 202610260000L, 1, 2) == 0);
+        Chk("aktualizace: rozhodnutí – stejné soubory = nic", UpdateLogic.Decide(m, 1L, 1, 0) == 0);
+        Chk("aktualizace: starý program (skripty) vyžaduje nové sestavení", UpdateLogic.Decide(m, 1L, 0, 1) == 2);
+        // bezpečnost cest
+        Chk("aktualizace: cesty „..“, absolutní a zpětná lomítka se odmítnou",
+            !UpdateLogic.SafePath("../x.dll") && !UpdateLogic.SafePath("Managed/../../x") && !UpdateLogic.SafePath("/etc/x") && !UpdateLogic.SafePath("C:/x") && !UpdateLogic.SafePath("Managed\\x.dll") && !UpdateLogic.SafePath("Jine/x.dll") && UpdateLogic.SafePath("Managed/PivovarCore.dll"));
+        bool threw = false;
+        try { UpdateManifest.Parse(json.Replace("Managed/PivovarGdGen.dll", "../evil.dll")); } catch (FormatException) { threw = true; }
+        Chk("aktualizace: manifest s nebezpečnou cestou se odmítne", threw);
+        threw = false;
+        try { UpdateManifest.Parse(json.Replace(h1, "abc")); } catch (FormatException) { threw = true; }
+        Chk("aktualizace: manifest se špatným hashem se odmítne", threw);
+        // hash
+        string tmp = Path.Combine(Path.GetTempPath(), "upd_" + Environment.ProcessId + ".bin");
+        File.WriteAllBytes(tmp, new byte[] { 1, 2, 3 });
+        Chk("aktualizace: SHA-256 souboru = SHA-256 bajtů (známá hodnota)", UpdateLogic.Sha256File(tmp) == UpdateLogic.Sha256Bytes(new byte[] { 1, 2, 3 }) && UpdateLogic.Sha256Bytes(new byte[0]) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        File.Delete(tmp);
+        // dávka
+        var moves = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>(@"C:\u\s\a.dll", @"C:\app\Managed\a.dll") };
+        string cmd = UpdateLogic.BuildApplyScript(1234, @"C:\app\Pivovar.exe", @"C:\u\apply.log", moves);
+        Chk("aktualizace: dávka čeká na ukončení, zálohuje, kopíruje, při chybě vrací a spouští program",
+            cmd.Contains("PID eq 1234") && cmd.Contains("a.dll.bak") && cmd.Contains(":rollback") && cmd.Contains("start \"\" \"C:\\app\\Pivovar.exe\"") && cmd.IndexOf("copy /Y \"C:\\u\\s\\a.dll\"") > cmd.IndexOf(".bak"));
     }
 
     static void MiniJsonTests()

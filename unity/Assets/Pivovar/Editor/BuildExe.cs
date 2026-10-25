@@ -3,6 +3,7 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEditor.Build;
 
 namespace Pivovar.EditorTools
 {
@@ -15,6 +16,11 @@ namespace Pivovar.EditorTools
             Directory.CreateDirectory(dir);
             string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path;
             if (string.IsNullOrEmpty(scene)) scene = "Assets/Scenes/SampleScene.unity";
+            // Aktualizace bez nového stahování potřebuje Mono (knihovny PivovarCore.dll / PivovarGdGen.dll se při aktualizaci vyměňují)
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+            // časová značka sestavení: podle ní program pozná, jestli je aktualizace novější než on sám
+            Directory.CreateDirectory(Application.streamingAssetsPath);
+            File.WriteAllText(Path.Combine(Application.streamingAssetsPath, "build_stamp.txt"), System.DateTime.UtcNow.ToString("yyyyMMddHHmm"));
             var opts = new BuildPlayerOptions
             {
                 scenes = new[] { scene },

@@ -7,6 +7,7 @@ public partial class S_updater : GdNode {
   public Gv http;
   public Gv stage;
   public Gv remote;
+  public Gv unity;
   public Gv status = Gv.O(new GdSignal());
   public Gv available = Gv.O(new GdSignal());
   static S_updater() {
@@ -18,12 +19,35 @@ public partial class S_updater : GdNode {
     http = Gv.Null;
     stage = Gv.S("");
     remote = Gd.Dict();
+    unity = Gv.B(false);
   }
   public Gv _ready() {
+    unity = Gv.B(Gv.Eq(Gd.Static("DisplayServer", "get_name"), Gv.S("unity")));
     http = Gd.New("HTTPRequest");
     http = http.S("timeout", Gv.F(180.0));
     Self.C("add_child", http);
     http.G("request_completed").C("connect", Gd.Fn((_a) => _done(Gd.A(_a, 0), Gd.A(_a, 1), Gd.A(_a, 2), Gd.A(_a, 3))));
+    return Gv.Null;
+  }
+  public Gv _process(Gv _d = default(Gv)) {
+    _d = (_d).AsF();
+    if (!(unity).T()) {
+      return Gv.Null;
+    }
+    Gv s = Gd.Dyn("str", Gd.Static("UnityUpdate", "poll"));
+    Gv guard = Gv.I(0L);
+    while ((Gv.Ne(s, Gv.S("")) && Gv.Lt(guard, Gv.I(20L)))) {
+      guard = (guard + Gv.I(1L));
+      Gv kind = s.C("get_slice", Gv.S("|"), Gv.I(0L));
+      Gv arg = s.C("get_slice", Gv.S("|"), Gv.I(1L));
+      Gv txt = s.C("substr", ((kind.C("length") + arg.C("length")) + Gv.I(2L)));
+      if (Gv.Eq(kind, Gv.S("avail"))) {
+        available.C("emit", Gd.Dyn("int", arg));
+      } else {
+        status.C("emit", txt, arg);
+      }
+      s = Gd.Dyn("str", Gd.Static("UnityUpdate", "poll"));
+    }
     return Gv.Null;
   }
   public Gv current_ver() {
@@ -37,6 +61,10 @@ public partial class S_updater : GdNode {
   }
   public Gv check(Gv download = default(Gv)) {
     if (download.k == 0) download = Gv.B(true);
+    if ((unity).T()) {
+      Gd.Static("UnityUpdate", "start", download);
+      return Gv.Null;
+    }
     if (Gv.Ne(stage, Gv.S(""))) {
       return Gv.Null;
     }
@@ -134,6 +162,7 @@ public partial class S_updater : GdNode {
     case "http": return this.http;
     case "stage": return this.stage;
     case "remote": return this.remote;
+    case "unity": return this.unity;
     case "status": return this.status;
     case "available": return this.available;
     default: return base.Get(n); } }
@@ -142,9 +171,11 @@ public partial class S_updater : GdNode {
     case "http": this.http = v; return v;
     case "stage": this.stage = v; return v;
     case "remote": this.remote = v; return v;
+    case "unity": this.unity = v; return v;
     default: return base.Set(n, v); } }
   public override Gv Invoke(string n, Gv[] a) { switch (n) {
     case "_ready": return _ready();
+    case "_process": return _process(Gd.A(a, 0));
     case "current_ver": return current_ver();
     case "check": return check(Gd.A(a, 0));
     case "_done": return _done(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2), Gd.A(a, 3));

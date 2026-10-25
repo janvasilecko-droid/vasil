@@ -43,6 +43,7 @@ namespace Pivovar.GdUnity
             G.ErrHook = e => Debug.LogWarning("[gd] " + e);
             GdFontProvider.Init();
             Pivovar.Gd.Gen.GdRegistry.Init();
+            UpdateClient.Install(gameObject);
 
             if (!Hybrid)
             {

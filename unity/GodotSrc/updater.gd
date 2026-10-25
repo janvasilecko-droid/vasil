@@ -6,12 +6,27 @@ var main: Node
 var http: HTTPRequest
 var stage: = ""
 var remote: = {}
+var unity: bool = false          # Unity program: stahuje se jen změněné knihovny/soubory (UpdateClient.cs), ne .pck
 signal status(text: String, kind: String)
 signal available(ver: int)
 
 func _ready() -> void :
+    unity = DisplayServer.get_name() == "unity"
     http = HTTPRequest.new();http.timeout = 180.0;add_child(http)
     http.request_completed.connect(_done)
+
+## Unity: zprávy z UpdateClient (fronta "druh|číslo|text"), předáváme dál jako signály
+func _process(_d: float) -> void :
+    if not unity: return
+    var s: String = str(UnityUpdate.poll())
+    var guard: = 0
+    while s != "" and guard < 20:
+        guard += 1
+        var kind: String = s.get_slice("|", 0);var arg: String = s.get_slice("|", 1)
+        var txt: String = s.substr(kind.length() + arg.length() + 2)
+        if kind == "avail": available.emit(int(arg))
+        else: status.emit(txt, arg)
+        s = str(UnityUpdate.poll())
 
 func current_ver() -> int:
     var f: = FileAccess.open("res://version.json", FileAccess.READ)
@@ -20,6 +35,8 @@ func current_ver() -> int:
     return int(d.get("ver", 0)) if d is Dictionary else 0
 
 func check(download: = true) -> void :
+    if unity:
+        UnityUpdate.start(download);return
     if stage != "": return
     stage = "check_dl" if download else "check"
     if download: status.emit("Hledám novou verzi…", "info")

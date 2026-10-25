@@ -122,3 +122,43 @@ jobs:
           if [ $code -eq 0 ]; then echo "::notice title=unity-compile::$msg"; else echo "::error title=unity-compile::$msg"; fi
           cat out.txt
           exit $code
+
+  # Aktualizace Unity programu bez nového stahování: po úspěšných testech se přeloží PivovarCore.dll a PivovarGdGen.dll
+  # (stejné zdroje jako asmdef v Unity), spočítají se SHA-256 a vše se vystaví do větve unity-update (manifest.json + files/).
+  update-pack:
+    needs: [core, godot-tests, godot-boot, godot-autobrew, compile-unity-scripts]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Přeložit knihovny pro aktualizaci
+        run: |
+          set +e
+          dotnet build unity/UpdatePack/PivovarGdGen.csproj -c Release -o /tmp/pack > /tmp/pack.txt 2>&1
+          code=$?
+          ls -la /tmp/pack
+          { grep -E "error|Build succeeded" /tmp/pack.txt | sort -u | head -c 3000; ls -la /tmp/pack | head -c 800; } > /tmp/packsum.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' /tmp/packsum.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=update-build::$msg"; else echo "::error title=update-build::$msg"; cat /tmp/pack.txt; fi
+          exit $code
+      - name: Manifest a publikace do větve unity-update
+        run: |
+          set -e
+          python3 unity/Tools/make_update_manifest.py /tmp/upd /tmp/pack/PivovarCore.dll /tmp/pack/PivovarGdGen.dll "$GITHUB_SHA" 1 | tee /tmp/mf.txt
+          cd /tmp/upd
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -q -b unity-update
+          git add -A
+          git commit -q -m "Aktualizace Unity programu z $GITHUB_SHA"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push -q --force origin unity-update
+          echo "::notice title=update-publish::$(cat /tmp/mf.txt)"

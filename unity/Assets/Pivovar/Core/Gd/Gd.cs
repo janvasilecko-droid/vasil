@@ -88,6 +88,8 @@ namespace Pivovar.Gd
         public static string UserDir = Path.Combine(Path.GetTempPath(), "zajic_user");
         public static string ResDir = ".";
         public static Action<string> PrintHook = s => Console.WriteLine(s);
+        /// <summary>Aktualizace bez nového stahování: Unity program sem zavěsí svou implementaci (volá se z updater.gd jako UnityUpdate.metoda(...)).</summary>
+        public static Func<string, Gv[], Gv> UpdateHook;
         public static Func<string, Gv> ResourceLoader;      // Unity vrstva: načtení textur apod.
         public static Gv[] CmdArgs = new Gv[0];
         static readonly Stopwatch clock = Stopwatch.StartNew();
@@ -412,6 +414,8 @@ namespace Pivovar.Gd
                     break;
                 case "Font": case "SystemFont":
                     { var o = new GdNode(); o.TypeName = cls; return o.Self; }
+                case "UnityUpdate":
+                    return UpdateHook != null ? UpdateHook(n, a) : Gv.Null;
                 case "Input":
                     switch (n) { case "is_key_pressed": return Gv.B(KeysDown.Contains((int)A(a, 0).d)); case "is_mouse_button_pressed": return Gv.B(MouseDown.Contains((int)A(a, 0).d)); case "is_action_pressed": case "is_action_just_pressed": return Gv.B(false); case "get_mouse_position": return MousePos; }
                     return Gv.Null;
