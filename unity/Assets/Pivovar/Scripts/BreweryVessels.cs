@@ -13,6 +13,9 @@ namespace Pivovar
         public GameObject shellCut, shellFull;
         public GameObject liqCyl, liqCone, liqDish;
         public Material liqMat;
+        public GameObject foam;
+        public ParticleSystem bubbles;
+        float boil;
         public float by, hcyl, r, cx, z;
         public bool cone;
         float fill;
@@ -36,7 +39,29 @@ namespace Pivovar
                 float h = Mathf.Max(0.001f, fill * hcyl);
                 liqCyl.transform.localScale = new Vector3(1f, h / hcyl, 1f);
                 liqCyl.transform.localPosition = new Vector3(cx, by + h * 0.5f, -z);
+                if (foam != null)
+                {
+                    foam.SetActive(any);
+                    foam.transform.localPosition = new Vector3(cx, by + h, -z);
+                }
+                if (bubbles != null)
+                {
+                    bubbles.transform.localPosition = new Vector3(cx, by + 0.03f, -z);
+                    var m = bubbles.main; m.startLifetime = Mathf.Max(0.3f, (h - 0.03f) / 0.45f);
+                }
             }
+        }
+
+        /// <summary>Var 0..1: bubliny stoupají od dna, pěna na hladině houstne.</summary>
+        public void SetBoil(float k)
+        {
+            boil = Mathf.Clamp01(k);
+            if (bubbles != null)
+            {
+                var em = bubbles.emission; em.rateOverTime = 220f * boil;
+                if (boil > 0.01f) { if (!bubbles.isPlaying) bubbles.Play(); } else bubbles.Stop();
+            }
+            if (foam != null) foam.transform.localScale = new Vector3(1f, 1f + 4f * boil, 1f);
         }
 
         public void SetColor(Color c)
@@ -146,6 +171,30 @@ namespace Pivovar
             return go;
         }
 
+        ParticleSystem MakeBubbles(Transform pv, float radius)
+        {
+            var go = new GameObject("bubliny");
+            go.transform.SetParent(pv, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true; main.playOnAwake = false;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.014f, 0.04f);
+            main.startSpeed = 0.45f;
+            main.startColor = new Color(1f, 0.96f, 0.85f, 0.9f);
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.maxParticles = 700;
+            var sh = ps.shape;
+            sh.enabled = true; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 0f; sh.radius = radius; sh.radiusThickness = 1f;
+            sh.rotation = new Vector3(-90f, 0f, 0f);
+            var em = ps.emission; em.rateOverTime = 0f;
+            var rend = go.GetComponent<ParticleSystemRenderer>();
+            rend.sharedMaterial = bubbleMat;
+            rend.renderMode = ParticleSystemRenderMode.Billboard;
+            rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return ps;
+        }
+
         void BuildTank(PlanItem it, Transform pv, string shape, float cx, float yb, float r, float h)
         {
             bool cone = shape == "cone";
@@ -196,8 +245,12 @@ namespace Pivovar
                 v.liqDish = AddRaw(pv, MeshKit.Lathe(dp, 48, 0f, Mathf.PI * 2f, new Vector2(4f, 1f)), lm, pos, Vector3.zero, "kapalina dno");
             }
             v.liqCyl = AddRaw(pv, MeshKit.Cylinder(r * 0.985f, hcyl, 56), lm, new Vector3(cx, by + hcyl * 0.5f, -zc), Vector3.zero, "kapalina válec");
+            // pěna na hladině a bubliny od dna
+            v.foam = AddRaw(pv, MeshKit.Cylinder(r * 0.975f, 0.03f, 48), foamMat, pos, Vector3.zero, "pěna");
+            v.bubbles = MakeBubbles(pv, r * 0.9f);
             float f0; if (!DemoFill.TryGetValue(it.Bind, out f0)) f0 = 0.5f;
             v.SetFill(f0);
+            v.SetBoil(it.Bind == "rvp" || it.Bind == "wp" ? 0.55f : 0f);
 
             // svary a obruče
             foreach (float yy in new float[] { by, by + hcyl }) Cyl(pv, r * 1.004f, 0.014f, steelB, new Vector3(cx, yy, zc), Vector3.zero, 64);

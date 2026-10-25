@@ -71,6 +71,15 @@ namespace Pivovar
         readonly Dictionary<string, GameObject> pipeObjs = new Dictionary<string, GameObject>();
         readonly Dictionary<string, GameObject> partObjs = new Dictionary<string, GameObject>();
 
+        Material hoseMat;
+        Material HoseMat()
+        {
+            if (hoseMat != null) return hoseMat;
+            hoseMat = HdrpUtil.Lit(new Color(0.78f, 0.80f, 0.83f), 1f, 0.5f);
+            HdrpUtil.SetNormalMap(hoseMat, brushed, 1.0f, new Vector2(40f, 3f));   // nerezový oplet
+            return hoseMat;
+        }
+
         void BuildPipes()
         {
             pipesRoot = new GameObject("Potrubí").transform; pipesRoot.SetParent(root, false);
@@ -100,12 +109,20 @@ namespace Pivovar
                 {
                     var hp = new List<Vector3>();
                     foreach (double[] p in pts) hp.Add(Pp(p[0], p[1], ZP + 0.12f));
-                    AddRaw(pp, MeshKit.Tube(MeshKit.RoundPath(hp, 0.2f), 0.045f, 14), HdrpUtil.Lit(new Color(0.12f, 0.12f, 0.14f), 0f, 0.35f), Vector3.zero, Vector3.zero, "hadice " + it.Id);
+                    AddRaw(pp, MeshKit.Tube(MeshKit.RoundPath(hp, 0.2f), 0.036f, 14), HoseMat(), Vector3.zero, Vector3.zero, "hadice " + it.Id);
+                    foreach (int e in new int[] { 0, hp.Count - 1 })
+                    {
+                        Vector3 nb = hp[e == 0 ? 1 : hp.Count - 2];
+                        Vector3 dr = (nb - hp[e]).normalized;
+                        MakeOriented(pp, MeshKit.Cylinder(0.046f, 0.07f, 20), steelP, hp[e] + dr * 0.035f, Quaternion.FromToRotation(Vector3.up, dr));
+                    }
                     return;
                 }
                 var raw = new List<Vector3>();
                 foreach (double[] p in pts) raw.Add(Pp(p[0], p[1], ZP));
-                float rad = Mathf.Clamp((float)it.Num("dn", 50) * 0.0009f, 0.025f, 0.09f);   // trochu silnější než skutečnost, ať je potrubí čitelné
+                float dn2 = (float)it.Num("dn", 50);
+                float w2d = dn2 <= 32f ? Mathf.Clamp(dn2 * 0.24f, 3f, 6f) : Mathf.Max(9f, Mathf.Round(12f * dn2 / 50f));   // šířka trubky ve 2D v px
+                float rad = w2d * K * 0.5f * 1.3f;
                 List<Vector3> path = MeshKit.RoundPath(raw, Mathf.Max(0.09f, rad * 3f));
 
                 Material mat = HdrpUtil.Lit(new Color(0.78f, 0.80f, 0.84f), 1f, 0.78f);
@@ -166,9 +183,22 @@ namespace Pivovar
             Cyl(stem, 0.028f, 0.02f, steelP, Vector3.zero, Vector3.zero, 16);
             Box(stem, new Vector3(0.12f, 0.008f, 0.022f), steelP, new Vector3(0.06f, 0.012f, 0), Vector3.zero);
             Box(stem, new Vector3(0.07f, 0.022f, 0.03f), HdrpUtil.Lit(new Color(0.12f, 0.13f, 0.15f), 0f, 0.4f), new Vector3(0.155f, 0.012f, 0), Vector3.zero);
-            Material dot = HdrpUtil.Lit(new Color(0.2f, 0.85f, 0.3f), 0f, 0.4f);
-            HdrpUtil.SetEmissive(dot, new Color(0.2f, 0.85f, 0.3f), 300f);
+            object oo; bool open = !(it.D.TryGetValue("open", out oo) && oo is bool && !(bool)oo);
+            string kind = it.Str("kind", "klapka");
+            Color dc = open ? new Color(0.2f, 0.85f, 0.3f) : new Color(0.9f, 0.2f, 0.15f);
+            Material dot = HdrpUtil.Lit(dc, 0f, 0.4f);
+            HdrpUtil.SetEmissive(dot, dc, 300f);
             Cyl(stem, 0.007f, 0.004f, dot, new Vector3(0.155f, 0.025f, 0), Vector3.zero, 10);
+            stem.localRotation = Quaternion.Euler(0f, open ? 0f : 90f, 0f);   // páka podél trubky = otevřeno, napříč = zavřeno
+            if (kind == "belimo")
+            {
+                Box(n, new Vector3(0.13f, 0.1f, 0.09f), orange, new Vector3(0, 0.22f, 0), Vector3.zero);
+                Box(n, new Vector3(0.05f, 0.02f, 0.02f), dark, new Vector3(0, 0.27f, 0.05f), Vector3.zero);
+            }
+            else if (kind == "kulovy")
+            {
+                Add(n, MeshKit.Sphere(0.05f, 20, 12), steelP, Vector3.zero, Vector3.zero, "koule");
+            }
         }
 
         void BuildPump(PlanItem it)
@@ -190,7 +220,7 @@ namespace Pivovar
 
         void BuildDeco(PlanItem it)
         {
-            if (it.Str("k", "") != "vent") return;
+            if (it.Str("k", "") != "vent") { BuildDecoExtra(it); return; }
             float hgt = 70f * K;
             partObjs[it.Id] = Cyl(root, 0.15f, hgt, steelB, new Vector3((float)it.X * K, (floorY - (float)it.Y + 35f) * K, -0.2f), Vector3.zero, 20);
         }
@@ -214,6 +244,20 @@ namespace Pivovar
             if (it.Type == "valve") BuildValve(it);
             else if (it.Type == "pump") BuildPump(it);
             else if (it.Type == "deco") BuildDeco(it);
+            else if (it.Type == "inl") BuildInl(it);
+            else if (it.Type == "flow") BuildFlow(it);
+            else if (it.Type == "hopf") BuildHopf(it);
+            else if (it.Type == "fitting") BuildFitting(it);
+            else if (it.Type == "nozzle") BuildNozzle(it);
+            else if (it.Type == "spray") BuildSpray(it);
+            else if (it.Type == "manifold") BuildManifold(it);
+            else if (it.Type == "sw") BuildSwitch(it);
+        }
+
+        /// <summary>Díly, které se při tažení v editoru dají přesunout bez přestavby celé scény.</summary>
+        public static bool IsLight(PlanItem it)
+        {
+            return it.Type == "valve" || it.Type == "pump" || (it.Type == "deco" && it.Str("k", "") == "vent");
         }
 
         /// <summary>Odstraní objekt dílu nebo trubky ze scény (plán se maže zvlášť).</summary>

@@ -78,6 +78,21 @@ namespace Pivovar
 
         static string Fmt(double v) { return v.ToString("0.##", CultureInfo.InvariantCulture); }
 
+        static bool IsPointItem(PlanItem it)
+        {
+            switch (it.Type)
+            {
+                case "valve": case "pump": case "deco": case "nozzle": case "inl": case "flow": case "spray":
+                case "hopf": case "fitting": case "sw": case "manifold": return true;
+            }
+            return false;
+        }
+
+        static bool SnapsToPipe(PlanItem it)
+        {
+            return it.Type == "valve" || it.Type == "pump" || it.Type == "inl" || it.Type == "flow" || it.Type == "hopf" || it.Type == "fitting";
+        }
+
         bool Protected(PlanItem it)
         {
             if (it.Type == "vessel") return true;
@@ -129,7 +144,7 @@ namespace Pivovar
         {
             if (it == null) return;
             if (it.Type == "pipe") b.RebuildPipe(it);
-            else if (it.Type == "vessel" || heavy) pendingRebuild = true;
+            else if (!BreweryBuilder.IsLight(it) || heavy) pendingRebuild = true;
             else b.MovePart(it);
         }
 
@@ -217,7 +232,7 @@ namespace Pivovar
             float bestD = 24f * uiScale; PlanItem bi = null;
             foreach (PlanItem it in b.plan.Items)
             {
-                if (it.Type != "valve" && it.Type != "pump" && it.Type != "deco") continue;
+                if (!IsPointItem(it)) continue;
                 bool vis; Vector2 s = Scr(it.X, it.Y, ZOf(it), out vis);
                 if (!vis) continue;
                 float d = (s - mp).magnitude;
@@ -384,21 +399,21 @@ namespace Pivovar
             else
             {
                 Vector2 q = plan + grab;
-                if ((sel.Type == "valve" || sel.Type == "pump") && snapPipes && !e.alt)
+                if (SnapsToPipe(sel) && snapPipes && !e.alt)
                 {
                     Vector2 on2;
                     if (NearestOnPipes(q, 14, out on2)) q = on2; else q = Grid(q);
                 }
                 else if (!e.alt) q = Grid(q);
                 sel.SetNum("x", q.x); sel.SetNum("y", q.y);
-                if (sel.Type != "vessel") b.MovePart(sel);
+                if (BreweryBuilder.IsLight(sel)) b.MovePart(sel);
             }
         }
 
         void OnMouseUp(Vector2 mp)
         {
             pressing = false;
-            if (dragging && sel != null && sel.Type == "vessel") pendingRebuild = true;
+            if (dragging && sel != null && sel.Type != "pipe" && !BreweryBuilder.IsLight(sel)) pendingRebuild = true;
             dragging = false;
         }
 
@@ -458,7 +473,7 @@ namespace Pivovar
             if (sel == null) return;
             if (k == KeyCode.Delete || k == KeyCode.Backspace) { DeleteSel(); e.Use(); return; }
             if (e.control && k == KeyCode.D) { Duplicate(); e.Use(); return; }
-            if (k == KeyCode.R && (sel.Type == "valve" || sel.Type == "pump")) { RotateSel(); e.Use(); return; }
+            if (k == KeyCode.R && (sel.Type == "valve" || sel.Type == "pump" || sel.Type == "inl" || sel.Type == "flow" || sel.Type == "nozzle")) { RotateSel(); e.Use(); return; }
             float step = e.shift ? 10f : 1f;
             Vector2 dv = Vector2.zero;
             if (k == KeyCode.LeftArrow) dv.x = -step; else if (k == KeyCode.RightArrow) dv.x = step;
@@ -487,7 +502,7 @@ namespace Pivovar
         void RotateSel()
         {
             PushUndo("");
-            string key = sel.Type == "pump" ? "dir" : "rot";
+            string key = (sel.Type == "pump" || sel.Type == "nozzle") ? "dir" : "rot";
             double v = sel.Num(key, 0) + 90;
             if (v > 180) v -= 360;
             sel.SetNum(key, v);
@@ -786,9 +801,9 @@ namespace Pivovar
                     double hh = NumField("výška", "h", sel.H);
                     if (w != sel.W || hh != sel.H) { PushUndo("wh"); sel.SetNum("w", w); sel.SetNum("h", hh); resized = true; }
                 }
-                if (sel.Type == "valve" || sel.Type == "pump")
+                if (sel.Type == "valve" || sel.Type == "pump" || sel.Type == "inl" || sel.Type == "flow" || sel.Type == "nozzle")
                 {
-                    string key = sel.Type == "pump" ? "dir" : "rot";
+                    string key = (sel.Type == "pump" || sel.Type == "nozzle") ? "dir" : "rot";
                     double r = NumField("úhel", "rot", sel.Num(key, 0));
                     if (r != sel.Num(key, 0)) { PushUndo("rot"); sel.SetNum(key, r); moved = true; }
                 }

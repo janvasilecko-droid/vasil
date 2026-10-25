@@ -88,7 +88,9 @@ namespace Pivovar
             }
             floorY += 6f;
 
+            hoseMat = null;
             MakeMaterials();
+            MakePartMaterials();
             BuildEnvironment();
             BuildHall();
             foreach (PlanItem it in plan.OfType("vessel")) BuildVessel(it);
@@ -96,6 +98,7 @@ namespace Pivovar
             foreach (PlanItem it in plan.OfType("valve")) BuildValve(it);
             foreach (PlanItem it in plan.OfType("pump")) BuildPump(it);
             foreach (PlanItem it in plan.OfType("deco")) BuildDeco(it);
+            BuildExtras();
             SetupCamera();
             SetDemoFlow(demoFlow);
         }
@@ -187,7 +190,7 @@ namespace Pivovar
             HdrpUtil.Set(gs, "multiplier", 350f);          // nity: bez toho je obloha ~1 nit a kov odráží černo
             var ex = HdrpUtil.Add(vol, "Exposure");
             HdrpUtil.Set(ex, "mode", "Fixed");
-            HdrpUtil.Set(ex, "fixedExposure", 8.6f);
+            HdrpUtil.Set(ex, "fixedExposure", 9.3f);
             HdrpUtil.Set(ex, "compensation", 0f);
             var tm = HdrpUtil.Add(vol, "Tonemapping");
             HdrpUtil.Set(tm, "mode", "ACES");
@@ -221,12 +224,13 @@ namespace Pivovar
         {
             float x0 = -12f, x1 = 46f, depth = 30f, hgt = 8f;
             Texture2D tiles = TileTexture();
-            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.82f, false);
-            if (fm.HasProperty("_BaseColorMap")) { fm.SetTexture("_BaseColorMap", tiles); fm.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 2.5f, depth / 2.5f)); }
+            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.88f, false);
+            if (fm.HasProperty("_BaseColorMap")) { fm.SetTexture("_BaseColorMap", tiles); fm.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 1.2f, depth / 1.2f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 0.2f, depth)), fm, new Vector3((x0 + x1) * 0.5f, -0.1f, 0f), Vector3.zero, "podlaha");
 
-            Material wall = HdrpUtil.Lit(new Color(0.50f, 0.51f, 0.54f), 0f, 0.20f, false);
-            Material tileWall = HdrpUtil.Lit(new Color(0.20f, 0.22f, 0.25f), 0f, 0.75f, false);
+            Material wall = HdrpUtil.Lit(new Color(0.86f, 0.86f, 0.84f), 0f, 0.25f, false);
+            Material tileWall = HdrpUtil.Lit(new Color(0.95f, 0.96f, 0.97f), 0f, 0.85f, false);
+            if (tileWall.HasProperty("_BaseColorMap")) { tileWall.SetTexture("_BaseColorMap", tiles); tileWall.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 0.6f, 3.2f / 0.6f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 3.2f, 0.3f)), tileWall, new Vector3((x0 + x1) * 0.5f, 1.6f, -depth * 0.5f), Vector3.zero, "obklad", false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, hgt - 3.2f, 0.3f)), wall, new Vector3((x0 + x1) * 0.5f, 3.2f + (hgt - 3.2f) * 0.5f, -depth * 0.5f), Vector3.zero, "stena", false);
             Add(root, MeshKit.Box(new Vector3(0.3f, hgt, depth)), wall, new Vector3(x0, hgt * 0.5f, 0f), Vector3.zero, "stena L", false);
@@ -268,9 +272,9 @@ namespace Pivovar
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
-                    bool edge = (x % 128 < 3) || (y % 128 < 3);
+                    bool edge = (x % 128 < 2) || (y % 128 < 2);
                     float v = 0.85f + 0.06f * Mathf.Sin(x * 0.37f) * Mathf.Cos(y * 0.29f) + 0.04f * Mathf.Sin(x * 1.3f + y * 0.7f);
-                    Color c = edge ? new Color(0.05f, 0.05f, 0.06f) : new Color(0.26f, 0.27f, 0.30f) * v;
+                    Color c = edge ? new Color(0.42f, 0.42f, 0.40f) : new Color(0.80f, 0.79f, 0.75f) * (0.97f + 0.05f * (v - 0.85f) * 5f);
                     c.a = 1f;
                     t.SetPixel(x, y, c);
                 }
