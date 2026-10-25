@@ -64,10 +64,13 @@ namespace Pivovar
             Ray r = Cam.ScreenPointToRay(new Vector3(mp.x, Screen.height - mp.y, 0f));
             if (Mathf.Abs(r.direction.z) < 1e-5f) return false;
             float t = (-zGodot - r.origin.z) / r.direction.z;
-            if (t < 0f) return false;
+            if (t < 0f || t > 120f) return false;
             plan = b.ToPlan(r.origin + r.direction * t);
-            return true;
+            return InRange(plan.x, plan.y);
         }
+
+        // rozumný rozsah plánu v px (plán má x -1322…7410, y -25…1660); mimo něj je to chyba tažení, ne úprava
+        static bool InRange(double x, double y) { return x > -2500 && x < 9000 && y > -600 && y < 2600; }
 
         float ZOf(PlanItem it)
         {
@@ -122,6 +125,19 @@ namespace Pivovar
             status = "Vráceno zpět.";
         }
 
+        string FindOutOfRange()
+        {
+            foreach (PlanItem it in b.plan.Items)
+            {
+                if (it.Type == "pipe")
+                {
+                    foreach (double[] pt in it.Pts()) if (!InRange(pt[0], pt[1])) return "trubka " + it.Id;
+                }
+                else if (it.D.ContainsKey("x") && it.D.ContainsKey("y") && !InRange(it.X, it.Y)) return it.Type + " " + it.Id;
+            }
+            return null;
+        }
+
         void Save()
         {
             try
@@ -130,6 +146,8 @@ namespace Pivovar
                 string dir = Path.GetDirectoryName(path);
                 string bak = Path.Combine(dir, "plan.zaloha.json");
                 if (!File.Exists(bak)) File.Copy(path, bak);
+                string bad = FindOutOfRange();
+                if (bad != null) { status = "Neuloženo: " + bad + " je mimo plán. Vrať to zpět (Ctrl+Z)."; return; }
                 string json = b.plan.ToJson();
                 var enc = new UTF8Encoding(false);
                 File.WriteAllText(path, json, enc);
@@ -293,6 +311,7 @@ namespace Pivovar
 
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Tab && !Typing) { Toggle(); e.Use(); return; }
             if (!on) return;
+            if (pressing && !Inp.Left() && e.type != EventType.MouseUp) { pressing = false; dragging = false; }
 
             uiScale = Mathf.Clamp(Screen.height / 900f, 1f, 3f);
             if (e.type == EventType.Repaint) DrawOverlay();
