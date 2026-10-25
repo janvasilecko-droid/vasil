@@ -12,7 +12,12 @@ namespace Pivovar
 
         // Plochý pohled: ortografická kamera zepředu (vypadá jako 2D schéma, ale světlo, stíny, materiály a kapalina jsou 3D). Klávesa V přepíná.
         public const string ViewKey = "pivovar.view";
-        public static bool Flat = PlayerPrefs.GetString(ViewKey, "flat") != "3d";
+        static int flat = -1;
+        public static bool Flat
+        {
+            get { if (flat < 0) flat = PlayerPrefs.GetString(ViewKey, "flat") != "3d" ? 1 : 0; return flat == 1; }
+            set { flat = value ? 1 : 0; }
+        }
         bool lastFlat; bool init;
         Camera cam;
 
