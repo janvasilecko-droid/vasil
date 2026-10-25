@@ -18,7 +18,7 @@ const CFG_DEFAULT: = {
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
     "skCap": 5000.0, "skArea": 5.3, "skUA": 0.2, "skSteel": 500.0, "skRetentionLkg": 1.0, "spargeEndP": 1.0, "ambientT": 20.0, "skContactUA": 4.0, "skPerm": 1.5e-11, "skSuction": 20000.0, 
     "spCap": 6000.0, 
-    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, "mainsBar": 4.0, "iboKeep": 0.44, 
+    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, "mainsBar": 4.0, "iboKeep": 0.44, "whirlTau": 1.5, "trubKstill": 0.0111, "trubKwhirl": 0.2, 
     "coolWaterT": 16.0, "UA1": 25.0, "UA2": 12.0, 
     "boilerKW": 650.0, "hltCap": 12000.0, "hltStart": 11000.0, "hltT0": 83.0, "hltSet": 83.0, 
     "lvVol": 10000.0, "lvStart": 0.0, "lvT0": 2.0, "lvSet": 2.0, "chillerKW": 45.0, "pivLoad": 10.0, 
@@ -105,7 +105,7 @@ const CALIB_RANGE: = {
     "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1],
     "UA1": [1.0, 200.0], "UA2": [1.0, 200.0], "boilerKW": [50.0, 3000.0], "steamBar": [0.2, 8.0], "chillerKW": [5.0, 500.0],
     "hltCap": [1000.0, 30000.0], "lvVol": [1000.0, 30000.0], "tbWater": [95.0, 100.5], "ambientT": [-5.0, 40.0], "coolWaterT": [1.0, 30.0],
-    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
+    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "whirlTau": [0.1, 10.0], "trubKstill": [0.001, 0.2], "trubKwhirl": [0.02, 2.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
     "p1_H0": [3.0, 80.0], "p2_H0": [3.0, 80.0], "p3_H0": [3.0, 80.0], "p1_Qn": [20.0, 1500.0], "p2_Qn": [20.0, 1500.0], "p3_Qn": [20.0, 1500.0],
     "maltExtract": [60.0, 85.0], "maltMoist": [2.0, 10.0], "cipLyeMin": [0.3, 5.0], "cipAcidMin": [0.1, 5.0],
 }
@@ -999,7 +999,10 @@ func sim_step(dt: float) -> void :
     for v in [mp, S.wp]:
         if not v.whirlNow and not v.boiling and v.trubSus > 0:
             v.settleMin += m
-            var k = 1.0 / 5.0 if v.whirlMin >= 3 else 1.0 / 90.0
+            # usazování kalů: bez víření pomalá sedimentace (Stokes), víření (čajový efekt) kaly sbírá do kužele rychleji;
+            # intenzita roste plynule s dobou víření, ne skokem po 3 min:  k = k_klid + (k_vír − k_klid)·(1 − e^(−t_vír/τ))
+            var wi: float = 1.0 - exp(-v.whirlMin / maxf(0.1, float(c.get("whirlTau", 1.5))))
+            var k: float = float(c.get("trubKstill", 1.0 / 90.0)) + (float(c.get("trubKwhirl", 0.2)) - float(c.get("trubKstill", 1.0 / 90.0))) * wi
             var fl: float = 0.1 * v.trubHB; var dd: float = maxf(0.0, v.trubSus - fl) * (1.0 - exp( - k * m))
             v.trubSus -= dd;v.trubSet += dd
     if prof_on: prof["heat"] = prof.get("heat", 0) + Time.get_ticks_usec() - _t0;_t0 = Time.get_ticks_usec()

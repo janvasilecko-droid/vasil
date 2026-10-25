@@ -32,6 +32,7 @@ public partial class S_audit_tests : GdObject {
     _ferm_cip_tests();
     _mains_tests();
     _reference_tests();
+    _whirl_tests();
     return Gv.Null;
   }
   public Gv _open(Gv a = default(Gv), Gv b = default(Gv), Gv pumps = default(Gv), Gv where = default(Gv)) {
@@ -1051,6 +1052,43 @@ public partial class S_audit_tests : GdObject {
     T.C("chk", Gv.S("REF ohřev: T = T0 + (E_dodaná − E_ztracená)/C (C = voda + ocel, kJ/K)"), Gv.B(Gv.Lt(Gd.absf((vh.G("T") - Tref)), Gv.F(0.6))), (Gv.S("%.2f vs %.2f °C") % Gd.Arr(vh.G("T"), Tref)));
     return Gv.Null;
   }
+  public Gv _settle(Gv whirl = default(Gv), Gv minutes = default(Gv)) {
+    whirl = (whirl).AsF();
+    minutes = (minutes).AsF();
+    T.C("fresh");
+    Gv S = sim.G("S");
+    Gv v = S.G("wp");
+    v = v.S("w", Gv.F(3800.0));
+    v = v.S("T", Gv.F(85.0));
+    v = v.S("Tsens", Gv.F(85.0));
+    v = v.S("trubSus", Gv.F(10.0));
+    v = v.S("trubHB", Gv.F(10.0));
+    v = v.S("whirlMin", whirl);
+    v = v.S("whirlNow", Gv.B(false));
+    v = v.S("boiling", Gv.B(false));
+    foreach (Gv i in (Gd.Dyn("int", (minutes * Gv.F(60.0)))).Iter()) {
+      sim.C("sim_step", Gv.F(1.0));
+    }
+    return (v.G("trubSet")).AsF();
+    return Gv.Null;
+  }
+  public Gv _whirl_tests() {
+    Gv c = sim.G("S").G("cfg");
+    Gv s0 = (_settle(Gv.F(0.0), Gv.F(10.0))).AsF();
+    Gv s1 = (_settle(Gv.F(1.0), Gv.F(10.0))).AsF();
+    Gv s3 = (_settle(Gv.F(3.0), Gv.F(10.0))).AsF();
+    Gv s8 = (_settle(Gv.F(8.0), Gv.F(10.0))).AsF();
+    T.C("chk", Gv.S("REF vířivka: čím déle se vířilo, tím víc kalu se za stejný klid usadí (plynule, bez prahu)"), Gv.B(((Gv.Lt(s0, s1) && Gv.Lt(s1, s3)) && Gv.Lt(s3, s8))), (Gv.S("%.2f / %.2f / %.2f / %.2f kg") % Gd.Arr(s0, s1, s3, s8)));
+    Gv kst = (c.G("trubKstill")).AsF();
+    Gv kw = (c.G("trubKwhirl")).AsF();
+    Gv wi = ((Gv.F(1.0) - Gd.exp((Gv.F(-8.0) / c.G("whirlTau"))))).AsF();
+    Gv k8 = ((kst + (((kw - kst)) * wi))).AsF();
+    Gv ref8 = ((Gv.F(9.0) * ((Gv.F(1.0) - Gd.exp(((-k8) * Gv.F(10.0))))))).AsF();
+    T.C("chk", Gv.S("REF vířivka: usazená hmota = (kal − nesedimentující 10 %)·(1 − e^(−k·t))"), Gv.B(Gv.Lt(Gd.absf((s8 - ref8)), ((Gv.F(0.03) * ref8) + Gv.F(0.02)))), (Gv.S("%.3f vs %.3f kg") % Gd.Arr(s8, ref8)));
+    Gv sl = (_settle(Gv.F(8.0), Gv.F(40.0))).AsF();
+    T.C("chk", Gv.S("REF vířivka: po dlouhém klidu se usadí všechen kal kromě podílu, který zůstane v suspenzi (10 %)"), Gv.B((Gv.Gt(sl, Gv.F(8.5)) && Gv.Le(sl, (Gv.F(9.0) + Gv.F(1e-06))))), (Gv.S("%.2f z 9,0 kg") % sl));
+    return Gv.Null;
+  }
   public override Gv Get(string n) { switch (n) {
     case "T": return this.T;
     case "sim": return this.sim;
@@ -1089,6 +1127,8 @@ public partial class S_audit_tests : GdObject {
     case "_rel": return _rel(Gd.A(a, 0), Gd.A(a, 1));
     case "_mkv": return _mkv(Gd.A(a, 0));
     case "_reference_tests": return _reference_tests();
+    case "_settle": return _settle(Gd.A(a, 0), Gd.A(a, 1));
+    case "_whirl_tests": return _whirl_tests();
     default: return base.Invoke(n, a); } }
   public static Gv StaticGet(string n) { switch (n) {
     default: return Gv.Null; } }

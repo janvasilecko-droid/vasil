@@ -23,6 +23,7 @@ func run(t) -> void:
 	_ferm_cip_tests()
 	_mains_tests()
 	_reference_tests()
+	_whirl_tests()
 
 func _open(a: String, b: String, pumps: Array, where := -1) -> void:
 	var vv = sim.route_valves(a, b, pumps, where)
@@ -633,3 +634,26 @@ func _reference_tests() -> void:
 		sim.sim_step(1.0); Ein += vh.Pin; Lo += c.rvpUA*(vh.T - c.ambientT)
 	var Tref: float = T0 + (Ein - Lo)/Cth
 	T.chk("REF ohřev: T = T0 + (E_dodaná − E_ztracená)/C (C = voda + ocel, kJ/K)", absf(vh.T - Tref) < 0.6, "%.2f vs %.2f °C" % [vh.T, Tref])
+
+
+# ---------- 14. vířivka: usazení kalů závisí na procesu (době víření a době klidu), ne na pevném časovači ----------
+func _settle(whirl: float, minutes: float) -> float:
+	T.fresh(); var S = sim.S
+	var v = S.wp; v.w = 3800.0; v.T = 85.0; v.Tsens = 85.0
+	v.trubSus = 10.0; v.trubHB = 10.0; v.whirlMin = whirl; v.whirlNow = false; v.boiling = false
+	for i in int(minutes*60.0): sim.sim_step(1.0)
+	return v.trubSet
+
+func _whirl_tests() -> void:
+	var c = sim.S.cfg
+	var s0: float = _settle(0.0, 10.0)
+	var s1: float = _settle(1.0, 10.0)
+	var s3: float = _settle(3.0, 10.0)
+	var s8: float = _settle(8.0, 10.0)
+	T.chk("REF vířivka: čím déle se vířilo, tím víc kalu se za stejný klid usadí (plynule, bez prahu)", s0 < s1 and s1 < s3 and s3 < s8, "%.2f / %.2f / %.2f / %.2f kg" % [s0, s1, s3, s8])
+	var kst: float = c.trubKstill; var kw: float = c.trubKwhirl
+	var wi: float = 1.0 - exp(-8.0/c.whirlTau); var k8: float = kst + (kw - kst)*wi
+	var ref8: float = 9.0*(1.0 - exp(-k8*10.0))
+	T.chk("REF vířivka: usazená hmota = (kal − nesedimentující 10 %)·(1 − e^(−k·t))", absf(s8 - ref8) < 0.03*ref8 + 0.02, "%.3f vs %.3f kg" % [s8, ref8])
+	var sl: float = _settle(8.0, 40.0)
+	T.chk("REF vířivka: po dlouhém klidu se usadí všechen kal kromě podílu, který zůstane v suspenzi (10 %)", sl > 8.5 and sl <= 9.0 + 1e-6, "%.2f z 9,0 kg" % sl)
