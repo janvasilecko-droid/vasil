@@ -192,7 +192,7 @@ namespace Pivovar.Gd
             switch (n)
             {
                 case "create_timer": { var t = new GdNode(); t.TypeName = "Timer"; return t.Self; }
-                case "quit": return Gv.Null;
+                case "quit": Gd.QuitCode = a.Length > 0 ? (int)a[0].d : 0; Gd.Quit = true; return Gv.Null;
             }
             return base.Invoke(n, a);
         }

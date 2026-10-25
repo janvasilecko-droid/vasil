@@ -12,8 +12,39 @@ static class Program
         else { fail++; Console.WriteLine("FAIL  " + name + (info.Length > 0 ? "  [" + info + "]" : "")); }
     }
 
+    static int RunGdTests(string resDir)
+    {
+        int gp = 0, gf = 0;
+        Pivovar.Gd.Gd.PrintHook = line =>
+        {
+            Console.WriteLine(line);
+            if (line.StartsWith("PASS")) gp++; else if (line.StartsWith("FAIL")) gf++;
+        };
+        Pivovar.Gd.Gd.ResDir = resDir;
+        Pivovar.Gd.Gd.UserDir = Path.Combine(Path.GetTempPath(), "zajic_user_" + Environment.ProcessId);
+        Pivovar.Gd.Gd.CmdArgs = new[] { Pivovar.Gd.Gv.S("--tests") };
+        try
+        {
+            Pivovar.Gd.Gen.GdRegistry.Init();
+            var mv = Pivovar.Gd.Gen.S_main.New();
+            ((Pivovar.Gd.GdNode)mv.Obj).EnterTree();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Unhandled výjimka v přeloženém kódu: " + ex.GetType().Name + ": " + ex.Message);
+            var st = ex.StackTrace ?? "";
+            var lines = st.Split('\n');
+            for (int i = 0; i < Math.Min(14, lines.Length); i++) Console.WriteLine("   " + lines[i].Trim());
+            Console.WriteLine("celkem (Godot testy, přerušeno) PASS " + gp + " / FAIL " + gf);
+            return 2;
+        }
+        Console.WriteLine("celkem (Godot testy) PASS " + gp + " / FAIL " + gf + (Pivovar.Gd.Gd.Quit ? "" : "  [nedoběhly do konce]"));
+        return (gf == 0 && Pivovar.Gd.Gd.Quit) ? 0 : 1;
+    }
+
     static int Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--gdtests") return RunGdTests(args.Length > 1 ? args[1] : "../Assets/StreamingAssets");
         MiniJsonTests();
         string planPath = args.Length > 0 ? args[0] : "../Assets/StreamingAssets/plan.json";
         PlanTests(planPath);

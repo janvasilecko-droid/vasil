@@ -28,6 +28,25 @@ jobs:
           cat out.txt
           exit $code
 
+  godot-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Původní testy z Godotu (přeložené do C#)
+        working-directory: unity/CoreTests
+        run: |
+          set +e
+          dotnet run -c Release -- --gdtests ../Assets/StreamingAssets > gd.txt 2>&1
+          code=$?
+          { grep -E "FAIL|rror|Unhandled|výjimka|celkem|   at |   S_" gd.txt | head -c 6000; echo; tail -n 5 gd.txt; } > gdsum.txt
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' gdsum.txt)
+          if [ $code -eq 0 ]; then echo "::notice title=gd-tests::$msg"; else echo "::error title=gd-tests::$msg"; fi
+          cat gd.txt
+          exit $code
+
   compile-unity-scripts:
     runs-on: ubuntu-latest
     steps:

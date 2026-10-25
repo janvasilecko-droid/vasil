@@ -104,6 +104,8 @@ namespace Pivovar.Gd
             }
         }
         public static Gv MousePos = Gv.Vec(0, 0);
+        public static int QuitCode; public static bool Quit;
+        public static string DisplayName = "headless";
 
         public static string MapPath(string p)
         {
@@ -355,7 +357,7 @@ namespace Pivovar.Gd
                     switch (n) { case "is_action_pressed": case "is_key_pressed": case "is_mouse_button_pressed": case "is_action_just_pressed": return Gv.B(false); case "get_mouse_position": return MousePos; }
                     return Gv.Null;
                 case "DisplayServer": case "RenderingServer": case "Engine": case "Performance":
-                    switch (n) { case "get_frames_per_second": return Gv.I(60); case "get_time_scale": return Gv.F(1.0); case "is_editor_hint": return Gv.B(false); case "window_get_size": return Gv.Veci(1920, 1080); case "screen_get_size": return Gv.Veci(1920, 1080); }
+                    switch (n) { case "get_name": return Gv.S(DisplayName); case "get_frames_per_second": return Gv.I(60); case "get_time_scale": return Gv.F(1.0); case "is_editor_hint": return Gv.B(false); case "window_get_size": return Gv.Veci(1920, 1080); case "screen_get_size": return Gv.Veci(1920, 1080); }
                     return Gv.Null;
                 case "Color":
                     if (n == "html") return ParseColorGv(A(a, 0).Str);
