@@ -51,12 +51,12 @@ func _ends(b: String) -> Dictionary:
 func _level_frac(b: String) -> float:
 	var cap: float = 0.0
 	match b:
-		"rvp": cap = _S().cfg.get("rvpCap", 5000.0)
-		"mp": cap = _S().cfg.get("mpCap", 5000.0)
-		"wp": cap = _S().cfg.get("wpCap", 5000.0)
+		"rvp": cap = _S().cfg.rvpCap
+		"mp": cap = _S().cfg.mpCap
+		"wp": cap = _S().cfg.wpCap
 		"sk": cap = _S().cfg.skCap
 		"hlt": cap = _S().cfg.hltCap
-		"spilka": cap = _S().cfg.get("spCap", 5000.0)
+		"spilka": cap = _S().cfg.spCap
 		"lv": cap = _S().cfg.lvVol
 	if cap <= 0.0: return 0.5
 	return sim._src_level(b) / cap if b != "lv" else _S().lv.w / cap

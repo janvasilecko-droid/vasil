@@ -28,6 +28,22 @@ jobs:
           cat out.txt
           exit $code
 
+  param-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit registru parametrů + kalibrační dokumentace (musí být aktuální)
+        run: |
+          set +e
+          python3 unity/Tools/audit_params.py > audit.txt 2>&1; a=$?
+          python3 unity/Tools/gen_calib_doc.py >> audit.txt 2>&1; b=$?
+          git diff --stat -- unity/docs >> audit.txt
+          git diff --quiet -- unity/docs; c=$?
+          msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' audit.txt)
+          if [ $a -eq 0 ] && [ $b -eq 0 ] && [ $c -eq 0 ]; then echo "::notice title=param-audit::$msg"; else echo "::error title=param-audit::registr=$a generator=$b dokumentace-aktualni=$c $msg"; fi
+          cat audit.txt
+          exit $((a+b+c))
+
   godot-tests:
     runs-on: ubuntu-latest
     steps:

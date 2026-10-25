@@ -71,13 +71,13 @@ public partial class S_practice : GdObject {
     {
       Gv _t1 = b;
       if (Gv.Eq(_t1, Gv.S("rvp"))) {
-        cap = (_S().G("cfg").C("get", Gv.S("rvpCap"), Gv.F(5000.0))).AsF();
+        cap = (_S().G("cfg").G("rvpCap")).AsF();
       }
       else if (Gv.Eq(_t1, Gv.S("mp"))) {
-        cap = (_S().G("cfg").C("get", Gv.S("mpCap"), Gv.F(5000.0))).AsF();
+        cap = (_S().G("cfg").G("mpCap")).AsF();
       }
       else if (Gv.Eq(_t1, Gv.S("wp"))) {
-        cap = (_S().G("cfg").C("get", Gv.S("wpCap"), Gv.F(5000.0))).AsF();
+        cap = (_S().G("cfg").G("wpCap")).AsF();
       }
       else if (Gv.Eq(_t1, Gv.S("sk"))) {
         cap = (_S().G("cfg").G("skCap")).AsF();
@@ -86,7 +86,7 @@ public partial class S_practice : GdObject {
         cap = (_S().G("cfg").G("hltCap")).AsF();
       }
       else if (Gv.Eq(_t1, Gv.S("spilka"))) {
-        cap = (_S().G("cfg").C("get", Gv.S("spCap"), Gv.F(5000.0))).AsF();
+        cap = (_S().G("cfg").G("spCap")).AsF();
       }
       else if (Gv.Eq(_t1, Gv.S("lv"))) {
         cap = (_S().G("cfg").G("lvVol")).AsF();

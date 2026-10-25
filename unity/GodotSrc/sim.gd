@@ -18,7 +18,7 @@ const CFG_DEFAULT: = {
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
     "skCap": 5000.0, "skArea": 5.3, "skUA": 0.2, "skSteel": 500.0, "skRetentionLkg": 1.0, "spargeEndP": 1.0, "ambientT": 20.0, "skContactUA": 4.0, "skPerm": 1.5e-11, "skSuction": 20000.0, 
     "spCap": 6000.0, 
-    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, "mainsBar": 4.0, "iboKeep": 0.44, "whirlTau": 1.5, "trubKstill": 0.0111, "trubKwhirl": 0.2, 
+    "waterFlow": 250.0, "maltRate": 40.0, "mainsQ": 900.0, "mainsBar": 4.0, "iboKeep": 0.44, "lvUA": 0.15, "skBedLkg": 2.7, "ferMu": 0.05, "ferQ": 0.2, "ferKsMu": 8.0, "ferKsQ": 6.0, "ferXmax": 4.0, "ferTa": 0.095, "ferHeat": 0.6, "ferCool": 0.25, "ferDiaK": 0.012, "ferDiaT": 0.11, "ferDiaRed": 0.06, "cipHeat": 1.2, "cipLyeT": 75.0, "cipAcidT": 60.0, "cipMin": 20.0, "cipRinseMin": 5.0, "whirlTau": 1.5, "trubKstill": 0.0111, "trubKwhirl": 0.2, 
     "coolWaterT": 16.0, "UA1": 25.0, "UA2": 12.0, 
     "boilerKW": 650.0, "hltCap": 12000.0, "hltStart": 11000.0, "hltT0": 83.0, "hltSet": 83.0, 
     "lvVol": 10000.0, "lvStart": 0.0, "lvT0": 2.0, "lvSet": 2.0, "chillerKW": 45.0, "pivLoad": 10.0, 
@@ -61,8 +61,7 @@ const RECIPES: = [RECIPE,
         "grist": {"plzS": 560.0, "cpl": 30.0}, "water": 1900.0, "boil": 80.0, "pitch": 8.5,
         "hops": [{"min": 0.0, "hop": "sla", "kg": 4.2}, {"min": 60.0, "hop": "zpc", "kg": 2.0}]},
 ]
-const TSAT: = [[1.0, 100.0], [2.0, 120.2], [3.0, 133.5], [4.0, 143.6], [5.0, 151.8], [6.0, 158.8], [8.0, 170.4]]
-const PIPE_L_PER_M: = 2.0
+const TSAT: = [[1.0, 100.0], [2.0, 120.2], [3.0, 133.5], [4.0, 143.6], [5.0, 151.8], [6.0, 158.8], [8.0, 170.4], [10.0, 179.9]]
 const PX_PER_M: = 100.0
 
 var S = {}
@@ -105,7 +104,10 @@ const CALIB_RANGE: = {
     "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1],
     "UA1": [1.0, 200.0], "UA2": [1.0, 200.0], "boilerKW": [50.0, 3000.0], "steamBar": [0.2, 8.0], "chillerKW": [5.0, 500.0],
     "hltCap": [1000.0, 30000.0], "lvVol": [1000.0, 30000.0], "tbWater": [95.0, 100.5], "ambientT": [-5.0, 40.0], "coolWaterT": [1.0, 30.0],
-    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "whirlTau": [0.1, 10.0], "trubKstill": [0.001, 0.2], "trubKwhirl": [0.02, 2.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
+    "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "lvUA": [0.0, 2.0], "skBedLkg": [1.5, 4.5], "ferMu": [0.005, 0.3], "ferQ": [0.02, 1.0], "ferKsMu": [0.5, 50.0], "ferKsQ": [0.5, 50.0], "ferXmax": [1.0, 15.0], "ferTa": [0.03, 0.15], "ferHeat": [0.2, 1.0], "ferCool": [0.02, 5.0], "ferDiaK": [0.001, 0.2], "ferDiaT": [0.02, 0.2], "ferDiaRed": [0.005, 0.5], "cipHeat": [0.2, 5.0], "cipLyeT": [60.0, 90.0], "cipAcidT": [30.0, 70.0], "cipMin": [5.0, 60.0], "cipRinseMin": [1.0, 30.0],
+    "rvpDead": [0.0, 500.0], "mpDead": [0.0, 500.0], "wpDead": [0.0, 500.0], "spargeEndP": [0.1, 4.0], "skContactUA": [0.1, 30.0], "hltStart": [0.0, 30000.0], "hltT0": [5.0, 99.0], "hltSet": [30.0, 99.0],
+    "lvStart": [0.0, 30000.0], "lvT0": [-0.5, 25.0], "lvSet": [0.0, 12.0], "pivLoad": [0.0, 100.0], "malt": [50.0, 2500.0], "mill": [1.0, 3.0], "targetEBC": [2.0, 120.0], "pitchT": [4.0, 22.0],
+    "targetV": [5.0, 100.0], "targetP": [3.0, 25.0], "targetIBU": [0.0, 120.0], "boilMin": [10.0, 240.0], "skTeigRho": [50.0, 1200.0], "skTeigK": [0.001, 1.0], "skCreepK": [0.0, 0.1], "skCompK": [0.0, 1.0], "skChanK": [0.0, 1.0], "whirlTau": [0.1, 10.0], "trubKstill": [0.001, 0.2], "trubKwhirl": [0.02, 2.0], "maltRate": [5.0, 200.0], "pipeLenScale": [0.05, 3.0], "bore25": [15.0, 120.0], "bore40": [15.0, 120.0], "bore50": [15.0, 150.0],
     "p1_H0": [3.0, 80.0], "p2_H0": [3.0, 80.0], "p3_H0": [3.0, 80.0], "p1_Qn": [20.0, 1500.0], "p2_Qn": [20.0, 1500.0], "p3_Qn": [20.0, 1500.0],
     "maltExtract": [60.0, 85.0], "maltMoist": [2.0, 10.0], "cipLyeMin": [0.3, 5.0], "cipAcidMin": [0.1, 5.0],
 }
@@ -127,6 +129,13 @@ func apply_calibration(c: Dictionary) -> Array:
         if float(v) < r[0] or float(v) > r[1] or is_nan(float(v)):
             calib_rejected.append("%s = %s (mimo rozsah %s–%s)" % [k, str(v), str(r[0]), str(r[1])]);continue
         c[k] = float(v);used.append(k)
+    # vazby mezi parametry (každý je v rozsahu, ale spolu nedávají smysl)
+    if c.hltStart > c.hltCap:
+        calib_rejected.append("hltStart = %s > hltCap = %s (sníženo na kapacitu)" % [str(c.hltStart), str(c.hltCap)]);c.hltStart = c.hltCap
+    if c.lvStart > c.lvVol:
+        calib_rejected.append("lvStart = %s > lvVol = %s (sníženo na kapacitu)" % [str(c.lvStart), str(c.lvVol)]);c.lvStart = c.lvVol
+    if c.skDpCompact >= c.skDpChannel:
+        calib_rejected.append("skDpCompact >= skDpChannel (práh slehávání musí být pod prahem kanálků – vráceno na výchozí)");c.skDpCompact = CFG_DEFAULT.skDpCompact;c.skDpChannel = CFG_DEFAULT.skDpChannel
     return used
 
 func new_state() -> void :
@@ -158,7 +167,7 @@ func new_state() -> void :
         "lv": {"w": c.lvStart, "T": c.lvT0 if c.lvStart > 0 else c.coolWaterT, "set": c.lvSet, "chill": c.lvStart > 0, "chillOn": false, 
             "varna": true, "piv": true, "pump": c.lvStart > 0, "reached": false, "glyk": null, "glykWhy": "", "_circ": false}, 
         "cab": {"main": true, "key": true, "estop": false, "dead": false, "hs": 0.0, "lmp": true, "lsk": true, "interlock": true, "mpAuto": false, "mpHeatOn": false, "hydOn": false, "potsk": 0.5, "mpSet": 50.0, "fault": false, "heatMem": 1.0}, 
-        "boiler": {"on": true, "load": 0.0, "scale": 1.0, "hltScale": 1.0, "p": 2.5}, "clog": {"rvp": 0.0, "sk": 0.0}, "rek": true, "usedHot": 0.0, "aer": true, "mixAuto": false, 
+        "boiler": {"on": true, "load": 0.0, "scale": 1.0, "hltScale": 1.0, "p": c.steamBar}, "clog": {"rvp": 0.0, "sk": 0.0}, "rek": true, "usedHot": 0.0, "aer": true, "mixAuto": false, 
         "hops": [], "log": [], "once": {}, "hist": [], 
         "flags": {"rest52": 0.0, "decCount": 0, "dmsPre": null, "knock": null, "boilStart": null, "decStart": 0, "r63": 0.0, "r72": 0.0, 
             "r72b": 0.0, "r63b": 0.0, "inSK": 0, "under": 0, "clearOK": 0, "full": 0, "wortBoil": 0.0, "whirlDone": 0, "castStart": null, "pushed": 0}, 
@@ -206,7 +215,7 @@ func tsat(pAbs: float) -> float:
         if pAbs <= TSAT[i][0]:
             var a = TSAT[i - 1]; var b = TSAT[i]
             return a[1] + (b[1] - a[1]) * (maxf(a[0], pAbs) - a[0]) / (b[0] - a[0])
-    return 170.0
+    return TSAT[TSAT.size() - 1][1]      # nad tabulkou (>10 bar abs.) nikdy nespadnout zpět na nižší teplotu
 
 
 func lp() -> Dictionary:
@@ -305,7 +314,7 @@ func iodine_info(v, include_grist: = false) -> Dictionary:
     return {"empty": false, "color": col, "name": name, "starch": s, "dextrin": d, "grist": include_grist}
 
 func skMalt() -> float: return S.sk.g / 0.191
-func skBedH() -> float: return skMalt() * 0.0027 / S.cfg.skArea
+func skBedH() -> float: return skMalt() * S.cfg.skBedLkg / 1000.0 / S.cfg.skArea     # výška lože [m] = sladu × objem lože na kg / plocha
 
 func skRet() -> float: return skMalt() * S.cfg.skRetentionLkg
 func skC() -> float:
@@ -573,6 +582,9 @@ func react(v, m: float) -> void :
 
 
 const HA_REF: = 25.0
+## Součinitel přestupu na straně náplně při referenčním míchání (35 Hz, voda) [kW/K]. Musí být větší než celkové UA (rvpUAst),
+## jinak by odpor stěny a páry vyšel záporný; při vyšší kalibrované hodnotě rvpUAst se dorovná na dvojnásobek.
+func ha_ref() -> float: return maxf(HA_REF, 2.0 * float(S.cfg.rvpUAst))
 
 func thick_factor(v) -> float:
     return clampf((sol(v) + v.sg) / maxf(1.0, vol(v)) * 6.0, 0.0, 1.0)
@@ -581,16 +593,16 @@ func film_hA(v) -> float:
     var hz: float = v.hz if v.stir else 4.0
     # hustý rmut předává teplo mnohem hůř než voda/mladina (viskózní film u stěny); kalibrace: plná pánev rmutu ~1 K/min (Weihenstephan)
     var visc: float = 1.0 / (1.0 + S.cfg.get("mashFilmK", 4.6) * thick_factor(v))
-    var hA: float = HA_REF * pow(maxf(hz, 4.0) / 35.0, 0.67) * visc
+    var hA: float = ha_ref() * pow(maxf(hz, 4.0) / 35.0, 0.67) * visc
 
 
-    if v.get("boiling", false): hA = maxf(hA, 2.0 * HA_REF * visc)
+    if v.get("boiling", false): hA = maxf(hA, 2.0 * ha_ref() * visc)
     return hA
 
 
 func film_factor(v) -> float:
     var ua_ref: float = S.cfg.rvpUAst
-    var gs: float = 1.0 / maxf(1e-06, 1.0 / ua_ref - 1.0 / HA_REF)
+    var gs: float = 1.0 / maxf(1e-06, 1.0 / ua_ref - 1.0 / ha_ref())   # odpor stěny + páry = celkový odpor − odpor na straně náplně
     var ua: float = 1.0 / (1.0 / gs + 1.0 / film_hA(v))
     return ua / ua_ref
 
@@ -612,8 +624,6 @@ func heat(v, m: float, dt: float, name: String) -> void :
 
     var thick = thick_factor(v)
     var hA: float = film_hA(v)
-    var ff: float = film_factor(v)
-    Pin *= ff
     v.Twall = v.T + Pin / maxf(0.5, hA)
     if v.heat > 0 and pdv.wet <= 0 and S.boiler.on: once("dry%s%d" % [name, tb(600)], "%s: parní plášť není zaplavený – ohřev neběží, napusť víc." % VN(name), "warn")
     v.Pin = Pin
@@ -824,6 +834,8 @@ func sim_step(dt: float) -> void :
     S.Tsteam = Tst
     S._pd = {"rvp": _pd(rvp, c.rvpUAst, c.rvpJacketL, Tst), "mp": _pd(mp, c.mpUAst, c.mpJacketL, Tst), 
         "hlt": {"P": c.hltUAst * h.heat * maxf(0.0, Tst - h.T), "wet": 1.0}}
+    # skutečně předaný výkon = UA × (T_páry − T_náplně) × zhoršení filmu u husté náplně; stejné číslo musí vidět kotel i nádoba
+    S._pd.rvp.P *= film_factor(rvp);S._pd.mp.P *= film_factor(mp)
     if not S.boiler.on and pb <= 0.05:
         for k_ in ["rvp", "mp", "hlt"]: S._pd[k_].P = 0.0
     var dem: float = S._pd.rvp.P + S._pd.mp.P + S._pd.hlt.P
@@ -844,7 +856,7 @@ func sim_step(dt: float) -> void :
         var ev: float = minf(h.w, (h.T - c.tbWater) * Ch / 2257.0);h.w -= ev;S.evapTot = S.get("evapTot", 0.0) + ev
         h.T = c.tbWater;once("hltboil%d" % tb(1800), "Horká voda v bojleru vře – pára uniká odvětráním (%s L/h). Ubírej páru." % fmt0(ev / maxf(1e-06, dt) * 3600.0), "warn")
 
-    var Cl: float = maxf(200.0, lv.w) * 4.19; var Q: float = 0.15 * (c.ambientT - lv.T) * maxf(0.2, lv.w / c.lvVol)
+    var Cl: float = maxf(200.0, lv.w) * 4.19; var Q: float = c.lvUA * (c.ambientT - lv.T) * maxf(0.2, lv.w / c.lvVol)
     if lv.pump and lv.piv: Q += c.pivLoad
     if lv.chill:
         if lv.T > lv.set + 0.5: lv.chillOn = true
@@ -1002,7 +1014,7 @@ func sim_step(dt: float) -> void :
             # usazování kalů: bez víření pomalá sedimentace (Stokes), víření (čajový efekt) kaly sbírá do kužele rychleji;
             # intenzita roste plynule s dobou víření, ne skokem po 3 min:  k = k_klid + (k_vír − k_klid)·(1 − e^(−t_vír/τ))
             var wi: float = 1.0 - exp(-v.whirlMin / maxf(0.1, float(c.get("whirlTau", 1.5))))
-            var k: float = float(c.get("trubKstill", 1.0 / 90.0)) + (float(c.get("trubKwhirl", 0.2)) - float(c.get("trubKstill", 1.0 / 90.0))) * wi
+            var k: float = float(c.get("trubKstill", 0.0111)) + (float(c.get("trubKwhirl", 0.2)) - float(c.get("trubKstill", 0.0111))) * wi
             var fl: float = 0.1 * v.trubHB; var dd: float = maxf(0.0, v.trubSus - fl) * (1.0 - exp( - k * m))
             v.trubSus -= dd;v.trubSet += dd
     if prof_on: prof["heat"] = prof.get("heat", 0) + Time.get_ticks_usec() - _t0;_t0 = Time.get_ticks_usec()
@@ -1439,7 +1451,7 @@ func build_net(items: Array, joints: Array) -> void :
             var id: String = p.id + "|" + na.k + "|" + nb.k
             var o = old.get(id)
             var e = {"id": id, "pipe": p.id, "medium": p.medium, "a": na.k, "b": nb.k, "ax": na.x, "ay": na.y, "bx": nb.x, "by": nb.y, "len": ln, "dn": p.dn, 
-                "cap": maxf(0.3, ln / PX_PER_M * PIPE_L_PER_M * pow(p.dn / 50.0, 2)), "c": o.c if o != null else lp(), "q": o.q if o != null else [], "from": o.from if o != null else "a", "flow": 0, "steam": false}
+                "cap": maxf(0.3, pipe_hold_L(ln, float(p.dn))), "c": o.c if o != null else lp(), "q": o.q if o != null else [], "from": o.from if o != null else "a", "flow": 0, "steam": false}
             edges.append(e);na.edges.append(e);nb.edges.append(e)
     for v in valves:
         var n = nodes.get(K(Vector2(v.x, v.y)))
@@ -2615,7 +2627,6 @@ func _src_fluid(b: String) -> Dictionary:
     return {}
 
 ## čerpadla: H₀ při 50 Hz [m], jmenovitý průtok [L/min] (modelové hodnoty, nejsou z typových štítků)
-const PUMPS: = {"p1": {"H0": 32.0, "Qn": 400.0}, "p2": {"H0": 22.0, "Qn": 150.0}, "p3": {"H0": 26.0, "Qn": 200.0}}
 const DN_REAL: = {25.0: 50.0, 40.0: 50.0, 50.0: 75.0}   # DN v plánku → skutečné (Vasil: silné DN75, ostatní DN50)
 
 ## Vodovodní řad jako ZDROJ TLAKU (ne jako pevný limit průtoku).
@@ -2701,6 +2712,10 @@ func path_head(path: Array, Q: float, rho: float, mu: float) -> float:
         H += (fr * Lm / D + K) * v * v / (2.0 * g)
     return H
 
+## objem kapaliny v úseku trubky [L] – STEJNÁ geometrie jako hydraulika (vnitřní průměr bore_mm(DN), délka z plánku × pipeLenScale)
+func pipe_hold_L(len_px: float, dn: float) -> float:
+    return Physics.pipe_capacity(len_px / PX_PER_M * float(S.cfg.get("pipeLenScale", 0.4)), bore_mm(dn))
+
 ## vnitřní průměr potrubí [mm] podle DN z plánku – kalibrovatelné (bore25/40/50)
 func bore_mm(dn: float) -> float:
     var c = S.cfg
@@ -2712,7 +2727,7 @@ func bore_mm(dn: float) -> float:
 ## pracovní bod: měnič drží nastavený průtok až do 50 Hz; když trasa víc nedovolí, teče míň
 func pump_point(key: String, Qset: float, Hst: float, sp_: Array, dpaths: Array, rho: float, mu: float, th: float) -> Dictionary:
     var cfg_ = S.cfg; var kk: String = key if key in ["p1", "p2", "p3"] else "p1"
-    var P: Dictionary = {"H0": float(cfg_.get(kk + "_H0", PUMPS[kk].H0)), "Qn": float(cfg_.get(kk + "_Qn", PUMPS[kk].Qn))}
+    var P: Dictionary = {"H0": float(cfg_.get(kk + "_H0", CFG_DEFAULT[kk + "_H0"])), "Qn": float(cfg_.get(kk + "_Qn", CFG_DEFAULT[kk + "_Qn"]))}   # jediný zdroj výchozích hodnot = CFG_DEFAULT
     var H0: float = P.H0 / (1.0 + 0.3 * th)          # hustý rmut: viskózní korekce výtlačné výšky
     var A: float = 0.25 * H0 / (P.Qn * P.Qn)
     var nd: int = maxi(1, dpaths.size())

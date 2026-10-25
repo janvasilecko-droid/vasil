@@ -6058,6 +6058,9 @@ public partial class S_main : GdNode {
       sim = sim.S("S", sim.G("S").S("cfg", sim.G("S").G("cfg").S("skRetentionLkg", Gv.F(1.0))));
     }
     _fix_parts(sim.G("S"));
+    if (Gv.Lt(Gd.Dyn("float", sim.G("S").G("cfg").C("get", Gv.S("skPerm"), sim.G("CFG_DEFAULT").G("skPerm"))), Gv.F(5e-12))) {
+      sim = sim.S("S", sim.G("S").S("cfg", sim.G("S").G("cfg").S("skPerm", sim.G("CFG_DEFAULT").G("skPerm"))));
+    }
     sim = sim.S("calib_applied", sim.C("apply_calibration", sim.G("S").G("cfg")));
     if ((sim.G("calib_applied").C("size")).T()) {
       sim.C("logm", (Gv.S("Kalibrace z kalibrace.json (i pro uloženou várku): %s") % Gv.S(", ").C("join", Gd.Ctor("PackedStringArray", sim.G("calib_applied")))));
@@ -6067,9 +6070,6 @@ public partial class S_main : GdNode {
     }
     if (!(sim.G("S").G("cab").C("get", Gv.S("estop"), Gv.B(false))).T()) {
       sim = sim.S("S", sim.G("S").S("cab", sim.G("S").G("cab").S("key", Gv.B(true))));
-    }
-    if (Gv.Lt(Gd.Dyn("float", sim.G("S").G("cfg").C("get", Gv.S("skPerm"), Gv.F(1e-11))), Gv.F(5e-12))) {
-      sim = sim.S("S", sim.G("S").S("cfg", sim.G("S").G("cfg").S("skPerm", Gv.F(1e-11))));
     }
     if ((!(had_mode).T() && Gv.Gt(sim.G("S").G("sk").G("g"), Gv.I(1L)))) {
       sim = sim.S("S", sim.G("S").S("sk", sim.G("S").G("sk").S("mode", Gv.S("lauter"))));

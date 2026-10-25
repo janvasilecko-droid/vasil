@@ -19,10 +19,10 @@ rb = sim[sim.index("const CALIB_RANGE"):]
 rb = rb[:rb.index("\n}\n")]
 for m in re.finditer(r'"([A-Za-z0-9_]+)":\s*\[([-0-9.eE+]+),\s*([-0-9.eE+]+)\]', rb):
     rng[m.group(1)] = (m.group(2), m.group(3))
-order = {"MEASURED": 0, "MANUFACTURER": 1, "LITERATURE": 2, "CALIBRATED": 3, "ESTIMATED": 4, "UNKNOWN": 5}
+order = {"MEASURED": 0, "MANUFACTURER": 1, "LITERATURE": 2, "CALIBRATED": 3, "CALIBRATED (na referenční scénář, ne na měření)": 3, "STATED": 3, "ESTIMATED": 4, "RECEPT": 6, "UNKNOWN": 7}
 out = ["# Kalibrace modelu – přehled parametrů", "",
        "Soubor je **generovaný** skriptem `unity/Tools/gen_calib_doc.py` z `sim.gd` (výchozí hodnoty, povolené rozsahy) a `params.gd` (jednotka, zdroj, nejistota, co a jak změřit). Neupravuj ručně.", "",
-       "Zdroj hodnoty: **MEASURED** změřeno na varně · **MANUFACTURER** údaj provozovatele / štítek · **LITERATURE** hodnota z literatury uvedená v kódu · **ESTIMATED** technický odhad, nutné změřit · **CALIBRATED** upraveno podle měření.", "",
+       "Zdroj hodnoty: **MEASURED** změřeno na varně · **MANUFACTURER** údaj provozovatele / štítek · **LITERATURE** hodnota z literatury uvedená v kódu · **ESTIMATED** technický odhad, nutné změřit · **CALIBRATED** upraveno podle měření (u „na referenční scénář, ne na měření“ jde o ladění modelu na referenční údaj, ne o měření na této varně) · **RECEPT** cíl nebo provozní nastavení receptu, ne fyzikální veličina (jeho nejistota je tolerance receptu, ne chyba modelu) · **STATED** údaj sdělený provozovatelem bez dokladu.", "",
        "Kalibraci lze zadat bez zásahu do kódu v souboru `user://kalibrace.json` (klíč → hodnota); hodnota mimo povolený rozsah se odmítne.", ""]
 stats = {}
 for k, v in meta.items(): stats[v[1]] = stats.get(v[1], 0) + 1

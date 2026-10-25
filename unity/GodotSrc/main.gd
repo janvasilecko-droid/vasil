@@ -1130,13 +1130,13 @@ func load_game() -> bool:
     # verze 12: zadržení v mlátě kalibrováno na údaj Vasila (700 kg → 40 hl vyrážky, ~12,5 °P)
     if absf(float(sim.S.cfg.get("skRetentionLkg", 1.0)) - 1.56) < 1e-06: sim.S.cfg.skRetentionLkg = 1.0
     _fix_parts(sim.S)   # verze 15: nová složka aBs (stabilní β-amyláza)
+    # starší uložení (před modelem Darcy): lože s propustností pod 5e-12 m² přepočítat na výchozí hodnotu – PŘED kalibrací, aby ruční hodnota z kalibrace.json nikdy nebyla přepsána
+    if float(sim.S.cfg.get("skPerm", sim.CFG_DEFAULT.skPerm)) < 5e-12: sim.S.cfg.skPerm = sim.CFG_DEFAULT.skPerm
     sim.calib_applied = sim.apply_calibration(sim.S.cfg)   # kalibrace platí i pro rozjetou várku
     if sim.calib_applied.size(): sim.logm("Kalibrace z kalibrace.json (i pro uloženou várku): %s" % ", ".join(PackedStringArray(sim.calib_applied)))
     if sim.calib_rejected.size(): sim.logm("Kalibrace – odmítnuto: %s" % "; ".join(PackedStringArray(sim.calib_rejected)), "warn")
     if not sim.S.cab.get("estop", false): sim.S.cab.key = true   # klíč START na rozvaděči už není
 
-    # starší uložení: přepočítat kalibraci lože na nový model (propustnost ~10 darcy)
-    if float(sim.S.cfg.get("skPerm", 1e-11)) < 5e-12: sim.S.cfg.skPerm = 1.0e-11
     if not had_mode and sim.S.sk.g > 1: sim.S.sk.mode = "lauter"
     sim.build_net(items, plan.get("joints", []))
     for e in sim.net.edges:

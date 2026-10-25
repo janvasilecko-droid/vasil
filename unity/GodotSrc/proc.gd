@@ -60,16 +60,18 @@ func fer_step(dt: float) -> void:
 	var S = sim.S; var f = S.fer
 	if not f.on: return
 	var h: float = dt / 3600.0
-	var a: float = exp(0.095 * (f.T - 12.0))
-	var mu: float = 0.05 * a * f.Sf / (8.0 + f.Sf) * (1.0 - f.X / 4.0)
-	var dS: float = minf(f.Sf, (0.2 * a * f.X * f.Sf / (6.0 + f.Sf)) * h)
+	var c = S.cfg
+	# VLASTNÍ fenomenologický model (ne změřený průběh): Monodův růst a příjem extraktu, teplotní faktor e^(ferTa·(T−12)); parametry ferXxx = ODHAD
+	var a: float = exp(float(c.ferTa) * (f.T - 12.0))
+	var mu: float = float(c.ferMu) * a * f.Sf / (float(c.ferKsMu) + f.Sf) * (1.0 - f.X / float(c.ferXmax))
+	var dS: float = minf(f.Sf, (float(c.ferQ) * a * f.X * f.Sf / (float(c.ferKsQ) + f.Sf)) * h)
 	f.X += maxf(0.0, mu * f.X * h)
 	f.Sf -= dS; f.E += dS / 2.0665; f.CO2 = f.get("CO2", 0.0) + dS * 0.9565 / 2.0665; f.XB = f.get("XB", 0.0) + dS * 0.11 / 2.0665   # Balling
-	f.T += dS * 0.6 * 1000.0 / 4100.0 - (f.T - f.set) * (1.0 - exp(-0.25 * h))
+	f.T += dS * float(c.ferHeat) * 1000.0 / 4100.0 - (f.T - f.set) * (1.0 - exp(-float(c.ferCool) * h))   # dS [g/L] × kJ/g ÷ (4,1 kJ/(L·K))
 	f.AL += mu * f.X * h * 0.9
-	var k1: float = 0.012 * exp(0.11 * (f.T - 12.0))
+	var k1: float = float(c.ferDiaK) * exp(float(c.ferDiaT) * (f.T - 12.0))
 	var conv: float = f.AL * (1.0 - exp(-k1 * h)); f.AL -= conv; f.D += conv * 1000.0
-	f.D -= f.D * (1.0 - exp(-0.06 * a * minf(1.0, f.X / 1.5) * h))
+	f.D -= f.D * (1.0 - exp(-float(c.ferDiaRed) * a * minf(1.0, f.X / 1.5) * h))
 	f.t += dt
 	if f.D < 100 and f.Sf < 0.25 * f.S0: sim.once("dia_ok", "Diacetyl %d ppb – pod prahem chuti (≈ 100 ppb), hlavní kvašení končí. Můžeš chladit na ležení." % roundi(f.D))
 	if f.Sf < 0.3 * f.S0 and f.D > 150 and f.set < 10: sim.once("dia_rest", "Diacetyl %d ppb je vysoko a kvašení končí – zvaž diacetylovou pauzu (12–14 °C na 1–2 dny)." % roundi(f.D), "warn")
@@ -94,23 +96,23 @@ func cip_step(dt: float) -> void:
 	var S = sim.S; var c = S.cip
 	if not c.run: return
 	var m: float = dt / 60.0
-	c.T += clampf(c.set - c.T, -1.5 * m, 1.2 * m)      # CIP stanice ohřívá ~1,2 K/min (modelový předpoklad)
+	c.T += clampf(c.set - c.T, -1.5 * m, float(sim.S.cfg.cipHeat) * m)      # CIP stanice ohřívá cipHeat K/min (ODHAD)
 	c.min += m
 	var ok := false
 	match c.medium:
 		"louh":
-			ok = c.T >= 75.0 and c.get("conc", 1.5) >= sim.S.cfg.get("cipLyeMin", 1.0)
+			ok = c.T >= float(sim.S.cfg.cipLyeT) and c.get("conc", 1.5) >= sim.S.cfg.get("cipLyeMin", 1.0)
 			if c.get("conc", 1.5) < sim.S.cfg.get("cipLyeMin", 1.0) and c.min > 2: sim.once("lyeweak%d" % sim.tb(600), "CIP: louh má jen %s %% NaOH – pod %s %% nerozpustí úsady. Doplň koncentrát." % [sim.fmt1(c.get("conc", 1.5)), sim.fmt1(sim.S.cfg.get("cipLyeMin", 1.0))], "warn")
-			if c.T < 75.0 and c.min > 5: sim.once("lyecold%s%d" % [c.target, sim.tb(600)], "CIP: louh má jen %d °C – pod 75 °C nerozpustí bílkovinné úsady a pivní kámen." % roundi(c.T), "warn")
+			if c.T < float(sim.S.cfg.cipLyeT) and c.min > 5: sim.once("lyecold%s%d" % [c.target, sim.tb(600)], "CIP: louh má jen %d °C – pod %d °C nerozpustí bílkovinné úsady a pivní kámen." % [roundi(c.T), roundi(sim.S.cfg.cipLyeT)], "warn")
 			if c.T > 90.0: sim.once("lyehot%d" % sim.tb(600), "CIP: louh nad 90 °C – zbytečně vysoká teplota, hrozí opaření a poškození těsnění.", "warn")
 		"kyselina":
-			ok = c.T >= 20.0 and c.T <= 60.0 and c.get("conc", 1.0) >= sim.S.cfg.get("cipAcidMin", 0.5)
+			ok = c.T >= 20.0 and c.T <= float(sim.S.cfg.cipAcidT) and c.get("conc", 1.0) >= sim.S.cfg.get("cipAcidMin", 0.5)
 			if c.get("conc", 1.0) < sim.S.cfg.get("cipAcidMin", 0.5) and c.min > 2: sim.once("acidweak%d" % sim.tb(600), "CIP: kyselina má jen %s %% – pod %s %% neodstraní pivní kámen." % [sim.fmt1(c.get("conc", 1.0)), sim.fmt1(sim.S.cfg.get("cipAcidMin", 0.5))], "warn")
-			if c.T > 60.5: sim.once("acidhot%d" % sim.tb(600), "CIP: kyselina nad 60 °C – koroze nerezu a výpary. Uber teplotu.", "bad")
+			if c.T > float(sim.S.cfg.cipAcidT) + 0.5: sim.once("acidhot%d" % sim.tb(600), "CIP: kyselina nad %d °C – koroze nerezu a výpary. Uber teplotu." % roundi(sim.S.cfg.cipAcidT), "bad")
 		"voda": ok = true
 	var key: String = c.target + ":" + c.medium
 	if ok: c.done[key] = c.done.get(key, 0.0) + m
-	var need: float = 20.0 if c.medium != "voda" else 5.0
+	var need: float = float(sim.S.cfg.cipMin) if c.medium != "voda" else float(sim.S.cfg.cipRinseMin)
 	if c.done.get(key, 0.0) >= need and not c.done.has(key + "!"):
 		c.done[key + "!"] = 1
 		var nxt: String = {"voda": "pokračuj louhem", "louh": "proplach vodou a kyselina", "kyselina": "proplach vodou, nádoba je čistá"}.get(c.medium, "")

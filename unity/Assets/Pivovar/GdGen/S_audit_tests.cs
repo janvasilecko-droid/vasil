@@ -33,6 +33,7 @@ public partial class S_audit_tests : GdObject {
     _mains_tests();
     _reference_tests();
     _whirl_tests();
+    _regrese_zadani();
     return Gv.Null;
   }
   public Gv _open(Gv a = default(Gv), Gv b = default(Gv), Gv pumps = default(Gv), Gv where = default(Gv)) {
@@ -1089,6 +1090,321 @@ public partial class S_audit_tests : GdObject {
     T.C("chk", Gv.S("REF vířivka: po dlouhém klidu se usadí všechen kal kromě podílu, který zůstane v suspenzi (10 %)"), Gv.B((Gv.Gt(sl, Gv.F(8.5)) && Gv.Le(sl, (Gv.F(9.0) + Gv.F(1e-06))))), (Gv.S("%.2f z 9,0 kg") % sl));
     return Gv.Null;
   }
+  public Gv _vsum(Gv v = default(Gv)) {
+    return ((((v.G("sg") + v.G("dx")) + v.G("ld")) + v.G("f"))).AsF();
+    return Gv.Null;
+  }
+  public Gv _mash(Gv Tc = default(Gv), Gv minutes = default(Gv), Gv dt = default(Gv), Gv betaAct = default(Gv), Gv kdB = default(Gv)) {
+    Tc = (Tc).AsF();
+    minutes = (minutes).AsF();
+    dt = (dt).AsF();
+    if (betaAct.k == 0) betaAct = Gv.F(4.5);
+    if (kdB.k == 0) kdB = Gv.F(0.13);
+    T.C("fresh");
+    Gv S = sim.G("S");
+    S = S.S("cfg", S.G("cfg").S("betaAct", betaAct));
+    S = S.S("cfg", S.G("cfg").S("kdBeta63", kdB));
+    Gv v = sim.C("vessel");
+    v = v.S("w", Gv.F(2000.0));
+    v = v.S("T", Tc);
+    v = v.S("Tsens", Tc);
+    v = v.S("aA", Gv.F(560.0));
+    v = v.S("aB", (Gv.F(560.0) * Gv.F(0.87)));
+    v = v.S("aBs", (Gv.F(560.0) * Gv.F(0.13)));
+    v = v.S("sg", Gv.F(300.0));
+    Gv s0 = (_vsum(v)).AsF();
+    Gv n = (Gd.Dyn("int", ((minutes / dt) + Gv.F(0.5)))).AsI();
+    foreach (Gv i in (n).Iter()) {
+      sim.C("react", v, dt);
+    }
+    return Gd.Dict(Gv.S("f"), v.G("f"), Gv.S("dx"), v.G("dx"), Gv.S("sum0"), s0, Gv.S("sum"), _vsum(v), Gv.S("aB"), v.G("aB"), Gv.S("frac"), (v.G("f") / Gd.maxf(Gv.F(1e-09), _vsum(v))));
+    return Gv.Null;
+  }
+  public Gv _fer_run(Gv mods = default(Gv), Gv hours = default(Gv)) {
+    hours = (hours).AsI();
+    T.C("fresh");
+    Gv S = sim.G("S");
+    Gv P = sim.G("proc");
+    foreach (Gv k in (mods).Iter()) {
+      S = S.S("cfg", S.G("cfg").SI(k, mods.I(k)));
+    }
+    Gv e = (((Gv.F(4000.0) * Gv.F(1.048)) * Gv.F(0.12))).AsF();
+    S = S.S("sp", S.G("sp").S("L", Gv.F(4000.0)));
+    S = S.S("sp", S.G("sp").S("w", ((Gv.F(4000.0) * Gv.F(1.048)) - e)));
+    S = S.S("sp", S.G("sp").S("f", (e * Gv.F(0.78))));
+    S = S.S("sp", S.G("sp").S("n", (e * Gv.F(0.22))));
+    S = S.S("sp", S.G("sp").S("H", (Gv.F(9.0) * Gv.F(4000.0))));
+    S = S.S("fer", S.G("fer").S("set", Gv.F(9.0)));
+    P.C("fer_start");
+    Gv Tmax = (S.G("fer").G("T")).AsF();
+    foreach (Gv i in ((hours * Gv.I(60L))).Iter()) {
+      P.C("fer_step", Gv.F(60.0));
+      Tmax = (Gd.maxf(Tmax, S.G("fer").G("T"))).AsF();
+    }
+    return Gd.Dict(Gv.S("Sf"), S.G("fer").G("Sf"), Gv.S("S0"), S.G("fer").G("S0"), Gv.S("E"), S.G("fer").G("E"), Gv.S("Tmax"), Tmax, Gv.S("X"), S.G("fer").G("X"), Gv.S("ok"), Gv.B((Gv.Eq(S.G("fer").G("Sf"), S.G("fer").G("Sf")) && Gv.Eq(S.G("fer").G("T"), S.G("fer").G("T")))));
+    return Gv.Null;
+  }
+  public Gv _fin(Gv x = default(Gv)) {
+    x = (x).AsF();
+    return Gv.B((Gv.Eq(x, x) && Gv.Lt(Gd.absf(x), Gv.F(1000000000.0))));
+    return Gv.Null;
+  }
+  public Gv _regrese_zadani() {
+    Gv Pm = Gd.Script("physics");
+    _delcal();
+    T.C("fresh");
+    Gv S = sim.G("S");
+    Gv c = S.G("cfg");
+    Gv bad = Gd.Arr();
+    foreach (Gv k in (sim.G("CFG_DEFAULT")).Iter()) {
+      if (!(sim.G("CALIB_RANGE").C("has", k)).T()) {
+        bad.C("append", (k + Gv.S(" (bez rozsahu)")));
+        continue;
+      }
+      Gv r = sim.G("CALIB_RANGE").I(k);
+      Gv d = (Gd.Dyn("float", sim.G("CFG_DEFAULT").I(k))).AsF();
+      if ((Gv.Lt(d, r.I(Gv.I(0L))) || Gv.Gt(d, r.I(Gv.I(1L))))) {
+        bad.C("append", (Gv.S("%s=%s mimo %s…%s") % Gd.Arr(k, Gd.Dyn("str", d), Gd.Dyn("str", r.I(Gv.I(0L))), Gd.Dyn("str", r.I(Gv.I(1L))))));
+      }
+    }
+    T.C("chk", (Gv.S("REGRESE registr: všech %d parametrů má rozsah a výchozí hodnotu v něm") % sim.G("CFG_DEFAULT").C("size")), bad.C("is_empty"), Gv.S(", ").C("join", Gd.Ctor("PackedStringArray", bad)));
+    _wcal(Gv.S("{\"steamBar\": 4.0}"));
+    sim.C("new_state");
+    T.C("chk", Gv.S("REGRESE kotel: počáteční tlak páry = kalibrované steamBar (4 bar), ne natvrdo 2,5"), Gv.B(Gv.Lt(Gd.absf((sim.G("S").G("boiler").G("p") - Gv.F(4.0))), Gv.F(1e-09))), (Gv.S("%.2f bar") % sim.G("S").G("boiler").G("p")));
+    _delcal();
+    sim.C("new_state");
+    T.C("chk", Gv.S("REGRESE tabulka sytosti: 8 bar přetlaku (9,013 bar abs.) ≈ 175,4 °C a nad tabulkou teplota neklesá"), Gv.B((Gv.Lt(Gd.absf((sim.C("tsat", Gv.F(9.013)) - Gv.F(175.4))), Gv.F(1.0)) && Gv.Ge(sim.C("tsat", Gv.F(12.0)), sim.C("tsat", Gv.F(10.0))))), (Gv.S("%.1f °C, 12 bar abs. %.1f °C") % Gd.Arr(sim.C("tsat", Gv.F(9.013)), sim.C("tsat", Gv.F(12.0)))));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv w = sim.C("vessel");
+    w = w.S("w", Gv.F(2000.0));
+    w = w.S("stir", Gv.B(true));
+    w = w.S("hz", Gv.F(35.0));
+    Gv thick = sim.C("vessel");
+    thick = thick.S("w", Gv.F(1900.0));
+    thick = thick.S("g", Gv.F(400.0));
+    thick = thick.S("sg", Gv.F(300.0));
+    thick = thick.S("stir", Gv.B(true));
+    thick = thick.S("hz", Gv.F(35.0));
+    Gv ff_w = (sim.C("film_factor", w)).AsF();
+    Gv ff_t = (sim.C("film_factor", thick)).AsF();
+    c = c.S("rvpUAst", Gv.F(30.0));
+    Gv ff_w30 = (sim.C("film_factor", w)).AsF();
+    T.C("chk", Gv.S("REGRESE přestup tepla: voda při 35 Hz = referenční UA (faktor 1) i při kalibrovaném rvpUAst = 30 kW/K"), Gv.B((Gv.Lt(Gd.absf((ff_w - Gv.F(1.0))), Gv.F(1e-09)) && Gv.Lt(Gd.absf((ff_w30 - Gv.F(1.0))), Gv.F(1e-09)))), (Gv.S("%.6f / %.6f") % Gd.Arr(ff_w, ff_w30)));
+    T.C("chk", Gv.S("REGRESE přestup tepla: hustý rmut předá jen 25–70 % výkonu vody (viskózní film)"), Gv.B((Gv.Gt(ff_t, Gv.F(0.25)) && Gv.Lt(ff_t, Gv.F(0.7)))), (Gv.S("%.2f") % ff_t));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv v = S.G("rvp");
+    v = v.S("w", Gv.F(1900.0));
+    v = v.S("g", Gv.F(400.0));
+    v = v.S("sg", Gv.F(300.0));
+    v = v.S("T", Gv.F(40.0));
+    v = v.S("Tsens", Gv.F(40.0));
+    v = v.S("stir", Gv.B(true));
+    v = v.S("heat", Gv.F(0.1));
+    Gv Eb = Gv.F(0.0);
+    Gv Ed = Gv.F(0.0);
+    foreach (Gv i in (Gv.I(300L)).Iter()) {
+      sim.C("sim_step", Gv.F(1.0));
+      Eb = (Eb + (S.G("boiler").G("load") * c.G("boilerKW")));
+      Ed = (Ed + (S.G("rvp").G("Pin") + S.G("mp").G("Pin")));
+    }
+    T.C("chk", Gv.S("REGRESE kotel: vyrobená energie páry = energie přijatá hustým rmutem (chyba < 1 %)"), Gv.B((Gv.Gt(Ed, Gv.F(1000.0)) && Gv.Lt((Gd.absf((Eb - Ed)) / Ed), Gv.F(0.01)))), (Gv.S("kotel %.0f MJ, nádoba %.0f MJ") % Gd.Arr((Eb / Gv.F(1000.0)), (Ed / Gv.F(1000.0)))));
+    T.C("chk", Gv.S("REGRESE kotel: při odběru pod výkonem drží tlak na steamBar"), Gv.B(Gv.Lt(Gd.absf((S.G("boiler").G("p") - c.G("steamBar"))), Gv.F(0.02))), (Gv.S("%.2f bar") % S.G("boiler").G("p")));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    S = S.S("rvp", S.G("rvp").S("w", Gv.F(2000.0)));
+    S = S.S("rvp", S.G("rvp").S("T", Gv.F(20.0)));
+    S = S.S("rvp", S.G("rvp").S("Tsens", Gv.F(20.0)));
+    S = S.S("rvp", S.G("rvp").S("stir", Gv.B(true)));
+    S = S.S("rvp", S.G("rvp").S("heat", Gv.F(1.0)));
+    S = S.S("mp", S.G("mp").S("w", Gv.F(2000.0)));
+    S = S.S("mp", S.G("mp").S("T", Gv.F(20.0)));
+    S = S.S("mp", S.G("mp").S("Tsens", Gv.F(20.0)));
+    S = S.S("mp", S.G("mp").S("stir", Gv.B(true)));
+    S = S.S("mp", S.G("mp").S("heat", Gv.F(1.0)));
+    Gv p0 = (S.G("boiler").G("p")).AsF();
+    Gv Eb2 = Gv.F(0.0);
+    Gv Ed2 = Gv.F(0.0);
+    foreach (Gv i_2 in (Gv.I(120L)).Iter()) {
+      sim.C("sim_step", Gv.F(1.0));
+      Eb2 = (Eb2 + (S.G("boiler").G("load") * c.G("boilerKW")));
+      Ed2 = (Ed2 + (S.G("rvp").G("Pin") + S.G("mp").G("Pin")));
+    }
+    Gv Est = (((((S.G("boiler").G("p") - p0)) * c.G("boilerWaterKg")) * Gv.F(57.0))).AsF();
+    T.C("chk", Gv.S("REGRESE kotel přetížen: tlak klesne a Σvýroba − Σodběr = změna energie bubnu"), Gv.B((Gv.Lt(S.G("boiler").G("p"), (p0 - Gv.F(0.05))) && Gv.Lt(Gd.absf((((Eb2 - Ed2)) - Est)), (Gv.F(0.03) * Eb2)))), (Gv.S("p %.2f→%.2f bar, výroba %.0f MJ, odběr %.0f MJ, buben %.0f MJ") % Gd.Arr(p0, S.G("boiler").G("p"), (Eb2 / Gv.F(1000.0)), (Ed2 / Gv.F(1000.0)), (Est / Gv.F(1000.0)))));
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv nchk = Gv.I(0L);
+    Gv maxrel = Gv.F(0.0);
+    foreach (Gv e in (sim.G("net").G("edges")).Iter()) {
+      if (Gv.Le(Gd.Dyn("float", e.G("cap")), Gv.F(0.31))) {
+        continue;
+      }
+      Gv exp_cap = (Pm.C("pipe_capacity", ((Gd.Dyn("float", e.G("len")) / sim.G("PX_PER_M")) * Gd.Dyn("float", c.G("pipeLenScale"))), sim.C("bore_mm", Gd.Dyn("float", e.G("dn"))))).AsF();
+      maxrel = Gd.maxf(maxrel, (Gd.absf((Gd.Dyn("float", e.G("cap")) - exp_cap)) / Gd.maxf(Gv.F(1e-09), exp_cap)));
+      nchk = (nchk + Gv.I(1L));
+    }
+    T.C("chk", Gv.S("REGRESE potrubí: zásoba kapaliny v úsecích = π/4·d²·L·pipeLenScale (stejné bore a délka jako tlakové ztráty)"), Gv.B((Gv.Gt(nchk, Gv.I(5L)) && Gv.Lt(maxrel, Gv.F(1e-09)))), (Gv.S("%d úseků, max. odchylka %.2g") % Gd.Arr(nchk, maxrel)));
+    Gv vel = (((Gv.F(400.0) / Gv.F(60000.0)) / (((Gd.K("PI") * Gd.pow((sim.C("bore_mm", Gv.F(50.0)) / Gv.F(1000.0)), Gv.F(2.0))) / Gv.F(4.0))))).AsF();
+    T.C("chk", Gv.S("REGRESE potrubí: 400 L/min v DN50 má rychlost 0,5–3 m/s (kontrola vnitřního průměru bore50)"), Gv.B((Gv.Gt(vel, Gv.F(0.5)) && Gv.Lt(vel, Gv.F(3.0)))), (Gv.S("%.2f m/s při průměru %.0f mm") % Gd.Arr(vel, sim.C("bore_mm", Gv.F(50.0)))));
+    Gv dTs = Gd.Arr();
+    foreach (Gv ua in (Gd.Arr(Gv.F(0.0), Gv.F(0.15))).Iter()) {
+      T.C("fresh");
+      S = sim.G("S");
+      S = S.S("cfg", S.G("cfg").S("ambientT", Gv.F(30.0)));
+      S = S.S("cfg", S.G("cfg").S("lvUA", ua));
+      S = S.S("lv", S.G("lv").S("w", Gv.F(8000.0)));
+      S = S.S("lv", S.G("lv").S("T", Gv.F(2.0)));
+      S = S.S("lv", S.G("lv").S("chill", Gv.B(false)));
+      S = S.S("lv", S.G("lv").S("pump", Gv.B(false)));
+      foreach (Gv i_3 in (Gv.I(3600L)).Iter()) {
+        sim.C("sim_step", Gv.F(1.0));
+      }
+      dTs.C("append", (S.G("lv").G("T") - Gv.F(2.0)));
+    }
+    T.C("chk", Gv.S("REGRESE ledovka: lvUA = 0 → žádný přísun tepla z okolí, lvUA 0,15 kW/K → ohřev (dřív pevných 0,15 mimo kalibraci)"), Gv.B((Gv.Lt(Gd.absf(dTs.I(Gv.I(0L))), Gv.F(0.01)) && Gv.Gt(dTs.I(Gv.I(1L)), Gv.F(0.05)))), (Gv.S("%.3f vs %.3f K/h") % Gd.Arr(dTs.I(Gv.I(0L)), dTs.I(Gv.I(1L)))));
+    T.C("fresh");
+    S = sim.G("S");
+    S = S.S("sk", S.G("sk").S("g", Gv.F(100.0)));
+    Gv h1 = (sim.C("skBedH")).AsF();
+    S = S.S("cfg", S.G("cfg").S("skBedLkg", (S.G("cfg").G("skBedLkg") * Gv.F(0.5))));
+    Gv h2 = (sim.C("skBedH")).AsF();
+    T.C("chk", Gv.S("REGRESE lože: výška = slad × skBedLkg / plocha (dřív pevné 2,7 L/kg)"), Gv.B((Gv.Lt(Gd.absf(((h1 / h2) - Gv.F(2.0))), Gv.F(1e-09)) && Gv.Gt(h1, Gv.F(0.05)))), (Gv.S("%.3f m → %.3f m") % Gd.Arr(h1, h2)));
+    _wcal(Gv.S("{\"hltStart\": 20000, \"hltCap\": 5000}"));
+    sim.C("new_state");
+    T.C("chk", Gv.S("KALIBRACE vazba: hltStart nad hltCap se sníží na kapacitu a hlásí se"), Gv.B((Gv.Le(sim.G("S").G("cfg").G("hltStart"), (sim.G("S").G("cfg").G("hltCap") + Gv.F(1e-09))) && Gv.Gt(sim.G("calib_rejected").C("size"), Gv.I(0L)))), (Gv.S("%s / %s") % Gd.Arr(Gd.Dyn("str", sim.G("S").G("cfg").G("hltStart")), Gd.Dyn("str", sim.G("S").G("cfg").G("hltCap")))));
+    _wcal(Gv.S("{\"skDpCompact\": 300, \"skDpChannel\": 100}"));
+    sim.C("new_state");
+    T.C("chk", Gv.S("KALIBRACE vazba: práh slehávání nad prahem kanálků se vrátí na výchozí dvojici"), Gv.B((Gv.Lt(sim.G("S").G("cfg").G("skDpCompact"), sim.G("S").G("cfg").G("skDpChannel")) && Gv.Gt(sim.G("calib_rejected").C("size"), Gv.I(0L)))), (Gv.S("%s < %s") % Gd.Arr(Gd.Dyn("str", sim.G("S").G("cfg").G("skDpCompact")), Gd.Dyn("str", sim.G("S").G("cfg").G("skDpChannel")))));
+    _delcal();
+    T.C("fresh");
+    m.C("save_game");
+    _wcal(Gv.S("{\"skPerm\": 3e-12}"));
+    m.C("load_game");
+    T.C("chk", Gv.S("KALIBRACE skPerm 3e-12 z kalibrace.json přežije načtení várky (dřív ji migrace starých uložení přepsala na 1e-11)"), Gv.B(Gv.Lt(Gd.absf((sim.G("S").G("cfg").G("skPerm") - Gv.F(3e-12))), Gv.F(1e-15))), (Gv.S("%s") % Gd.Dyn("str", sim.G("S").G("cfg").G("skPerm"))));
+    _delcal();
+    T.C("fresh");
+    sim = sim.S("S", sim.G("S").S("cfg", sim.G("S").G("cfg").S("skPerm", Gv.F(1e-12))));
+    m.C("save_game");
+    m.C("load_game");
+    T.C("chk", Gv.S("KALIBRACE staré uložení s nízkou propustností se přepočítá na výchozí skPerm"), Gv.B(Gv.Lt(Gd.absf((sim.G("S").G("cfg").G("skPerm") - sim.G("CFG_DEFAULT").G("skPerm"))), Gv.F(1e-15))), (Gv.S("%s") % Gd.Dyn("str", sim.G("S").G("cfg").G("skPerm"))));
+    _delcal();
+    T.C("fresh");
+    T.C("fresh");
+    S = sim.G("S");
+    c = S.G("cfg");
+    Gv pid = Gv.S("");
+    foreach (Gv it in (m.G("items")).Iter()) {
+      if ((Gv.Eq(it.G("type"), Gv.S("vessel")) && Gv.Eq(it.C("get", Gv.S("shape"), Gv.S("")), Gv.S("plate")))) {
+        pid = it.G("id");
+      }
+    }
+    if (Gv.Ne(pid, Gv.S(""))) {
+      Gv ua0 = ((Gv.Eq(sim.G("net").G("byId").I(pid).C("get", Gv.S("bind")), Gv.S("ch2")) ? c.G("UA2") : c.G("UA1"))).AsF();
+      S = S.S("plates", S.G("plates").SI(pid, Gd.Dict(Gv.S("kind"), Gv.S("water"), Gv.S("T"), Gv.F(16.0), Gv.S("flow"), (c.G("plateRefQ") * Gv.F(1.1)))));
+      Gv Tout = (sim.C("plate_cool", pid, Gv.F(95.0), c.G("plateRefQ"), (Gv.F(1.0) / Gv.F(60.0)))).AsF();
+      Gv Cw = ((((c.G("plateRefQ") / Gv.F(60.0)) * Gv.F(1.04)) * Gv.F(4.0))).AsF();
+      Gv Cc = ((((c.G("plateRefQ") * Gv.F(1.1)) / Gv.F(60.0)) * Gv.F(4.19))).AsF();
+      Gv Cmin = (Gd.minf(Cw, Cc)).AsF();
+      Gv Cr = ((Cmin / Gd.maxf(Cw, Cc))).AsF();
+      Gv ntu = ((ua0 / Cmin)).AsF();
+      Gv x = (Gd.exp(((-ntu) * ((Gv.F(1.0) - Cr))))).AsF();
+      Gv eff = ((((Gv.F(1.0) - x)) / ((Gv.F(1.0) - (Cr * x))))).AsF();
+      Gv Tref = ((Gv.F(95.0) - (((eff * Cmin) * ((Gv.F(95.0) - Gv.F(16.0)))) / Cw))).AsF();
+      T.C("chk", Gv.S("REGRESE chladič: při referenčním průtoku plateRefQ a UA z kalibrace sedí výstup s nezávislým ε-NTU"), Gv.B(Gv.Lt(Gd.absf((Tout - Tref)), Gv.F(0.05))), (Gv.S("%.2f vs %.2f °C (UA %.0f kW/K, ε %.3f)") % Gd.Arr(Tout, Tref, ua0, eff)));
+      Gv T0 = (sim.C("plate_cool", pid, Gv.F(95.0), Gv.F(0.0), (Gv.F(1.0) / Gv.F(60.0)))).AsF();
+      T.C("chk", Gv.S("REGRESE chladič: nulový průtok mladiny → vrací vstupní teplotu, žádné NaN"), Gv.B(Gv.Lt(Gd.absf((T0 - Gv.F(95.0))), Gv.F(1e-09))));
+      S = S.S("plates", S.G("plates").SI(pid, S.G("plates").I(pid).S("flow", Gv.F(0.0))));
+      Gv Tz = (sim.C("plate_cool", pid, Gv.F(95.0), Gv.F(80.0), (Gv.F(1.0) / Gv.F(60.0)))).AsF();
+      T.C("chk", Gv.S("REGRESE chladič: nulový průtok chladiva → konečný výsledek, mladina se prakticky neochladí"), Gv.B(((_fin(Tz)).T() && Gv.Gt(Tz, Gv.F(90.0)))), (Gv.S("%.2f °C") % Tz));
+      c = c.SI(((Gv.Eq(sim.G("net").G("byId").I(pid).C("get", Gv.S("bind")), Gv.S("ch2")) ? Gv.S("UA2") : Gv.S("UA1"))), (ua0 * Gv.F(0.5)));
+      S = S.S("plates", S.G("plates").SI(pid, Gd.Dict(Gv.S("kind"), Gv.S("water"), Gv.S("T"), Gv.F(16.0), Gv.S("flow"), (c.G("plateRefQ") * Gv.F(1.1)))));
+      Gv Tlow = (sim.C("plate_cool", pid, Gv.F(95.0), c.G("plateRefQ"), (Gv.F(1.0) / Gv.F(60.0)))).AsF();
+      T.C("chk", Gv.S("REGRESE chladič: poloviční UA → teplejší výstup mladiny"), Gv.B(Gv.Gt(Tlow, (Tout + Gv.F(0.5)))), (Gv.S("%.1f → %.1f °C") % Gd.Arr(Tout, Tlow)));
+    }
+    Gv m63 = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.5));
+    T.C("chk", Gv.S("REGRESE rmutování: extrakt (škrob + dextriny + dlouhé + zkvasitelné) se při 30 min při 63 °C zachová"), Gv.B(Gv.Lt(Gd.absf((m63.G("sum") - m63.G("sum0"))), (Gv.F(1e-06) * m63.G("sum0")))), (Gv.S("%.4f vs %.4f kg") % Gd.Arr(m63.G("sum"), m63.G("sum0"))));
+    Gv m63b = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.05));
+    T.C("chk", Gv.S("REGRESE rmutování: zkvasitelné cukry nezávisí na kroku (0,5 vs 0,05 min) o víc než 5 %"), Gv.B(Gv.Lt(Gd.absf((m63.G("f") - m63b.G("f"))), (Gv.F(0.05) * Gd.maxf(Gv.F(1.0), m63b.G("f"))))), (Gv.S("%.1f vs %.1f kg") % Gd.Arr(m63.G("f"), m63b.G("f"))));
+    Gv mb2 = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.5), Gv.F(9.0));
+    T.C("chk", Gv.S("REGRESE rmutování: betaAct ×2 → víc zkvasitelných cukrů (parametr opravdu působí)"), Gv.B(Gv.Gt(mb2.G("f"), (m63.G("f") * Gv.F(1.05)))), (Gv.S("%.1f → %.1f kg") % Gd.Arr(m63.G("f"), mb2.G("f"))));
+    Gv mk = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.5), Gv.F(4.5), Gv.F(0.52));
+    T.C("chk", Gv.S("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → míň zkvasitelných cukrů a míň zbylého enzymu"), Gv.B((Gv.Lt(mk.G("f"), (m63.G("f") * Gv.F(0.95))) && Gv.Lt(mk.G("aB"), m63.G("aB")))), (Gv.S("%.1f vs %.1f kg, aB %.1f vs %.1f") % Gd.Arr(mk.G("f"), m63.G("f"), mk.G("aB"), m63.G("aB"))));
+    Gv m72 = _mash(Gv.F(72.0), Gv.F(30.0), Gv.F(0.5));
+    T.C("chk", Gv.S("REGRESE rmutování: při 72 °C je podíl zkvasitelných cukrů nižší než při 63 °C (β-amyláza se tepelně ničí) – výsledek není nastaven na cíl"), Gv.B(Gv.Lt(m72.G("frac"), (m63.G("frac") * Gv.F(0.7)))), (Gv.S("%.2f vs %.2f") % Gd.Arr(m72.G("frac"), m63.G("frac"))));
+    Gv m0 = _mash(Gv.F(63.0), Gv.F(0.0), Gv.F(0.5));
+    T.C("chk", Gv.S("REGRESE rmutování: nulový čas = beze změny"), Gv.B((Gv.Eq(m0.G("f"), Gv.F(0.0)) && Gv.Eq(m0.G("sum"), m0.G("sum0")))));
+    Gv f0 = _fer_run(Gd.Dict(), Gv.I(48L));
+    Gv fq = _fer_run(Gd.Dict(Gv.S("ferQ"), Gv.F(0.1)), Gv.I(48L));
+    T.C("chk", Gv.S("REGRESE kvašení: ferQ ×0,5 → po 48 h zbývá víc extraktu (parametr působí)"), Gv.B(((Gv.Gt(fq.G("Sf"), (f0.G("Sf") + Gv.F(1.0))) && (f0.G("ok")).T()) && (fq.G("ok")).T())), (Gv.S("%.1f vs %.1f g/L") % Gd.Arr(fq.G("Sf"), f0.G("Sf"))));
+    Gv fh = _fer_run(Gd.Dict(Gv.S("ferHeat"), Gv.F(0.2)), Gv.I(48L));
+    T.C("chk", Gv.S("REGRESE kvašení: menší reakční teplo (ferHeat 0,2 vs 0,6 kJ/g) → nižší nárůst teploty"), Gv.B((Gv.Lt(((fh.G("Tmax") - Gv.F(9.0))), ((f0.G("Tmax") - Gv.F(9.0)))) && Gv.Gt(f0.G("Tmax"), Gv.F(9.0)))), (Gv.S("+%.2f vs +%.2f K") % Gd.Arr((fh.G("Tmax") - Gv.F(9.0)), (f0.G("Tmax") - Gv.F(9.0)))));
+    T.C("fresh");
+    S = sim.G("S");
+    S = S.S("cfg", S.G("cfg").S("cipMin", Gv.F(5.0)));
+    S = S.S("cip", S.G("cip").S("target", Gv.S("rvp")));
+    S = S.S("cip", S.G("cip").S("medium", Gv.S("louh")));
+    S = S.S("cip", S.G("cip").S("set", Gv.F(80.0)));
+    S = S.S("cip", S.G("cip").S("T", Gv.F(80.0)));
+    S = S.S("cip", S.G("cip").S("conc", Gv.F(1.5)));
+    S = S.S("cip", S.G("cip").S("run", Gv.B(true)));
+    foreach (Gv i_4 in (Gv.I(6L)).Iter()) {
+      sim.G("proc").C("cip_step", Gv.F(60.0));
+    }
+    Gv quick = S.G("cip").G("done").C("has", Gv.S("rvp:louh!"));
+    T.C("fresh");
+    S = sim.G("S");
+    S = S.S("cfg", S.G("cfg").S("cipLyeT", Gv.F(85.0)));
+    S = S.S("cip", S.G("cip").S("target", Gv.S("rvp")));
+    S = S.S("cip", S.G("cip").S("medium", Gv.S("louh")));
+    S = S.S("cip", S.G("cip").S("set", Gv.F(80.0)));
+    S = S.S("cip", S.G("cip").S("T", Gv.F(80.0)));
+    S = S.S("cip", S.G("cip").S("conc", Gv.F(1.5)));
+    S = S.S("cip", S.G("cip").S("run", Gv.B(true)));
+    foreach (Gv i_5 in (Gv.I(40L)).Iter()) {
+      sim.G("proc").C("cip_step", Gv.F(60.0));
+    }
+    T.C("chk", Gv.S("REGRESE CIP: cipMin = 5 min stačí na splnění; cipLyeT = 85 °C se při 80 °C nesplní ani za 40 min"), Gv.B(((quick).T() && !(S.G("cip").G("done").C("has", Gv.S("rvp:louh!"))).T())));
+    Gv offenders = Gd.Arr();
+    foreach (Gv k_2 in (sim.G("CALIB_RANGE")).Iter()) {
+      Gv r_2 = sim.G("CALIB_RANGE").I(k_2);
+      foreach (Gv side in (Gv.I(2L)).Iter()) {
+        T.C("fresh");
+        S = sim.G("S");
+        c = S.G("cfg");
+        c = c.SI(k_2, Gd.Dyn("float", r_2.I(side)));
+        S = S.S("rvp", S.G("rvp").S("w", Gv.F(2000.0)));
+        S = S.S("rvp", S.G("rvp").S("T", Gv.F(40.0)));
+        S = S.S("rvp", S.G("rvp").S("Tsens", Gv.F(40.0)));
+        S = S.S("rvp", S.G("rvp").S("stir", Gv.B(true)));
+        S = S.S("rvp", S.G("rvp").S("heat", Gv.F(1.0)));
+        S = S.S("rvp", S.G("rvp").S("g", Gv.F(200.0)));
+        S = S.S("mp", S.G("mp").S("w", Gv.F(1500.0)));
+        S = S.S("mp", S.G("mp").S("T", Gv.F(90.0)));
+        S = S.S("mp", S.G("mp").S("Tsens", Gv.F(90.0)));
+        S = S.S("mp", S.G("mp").S("heat", Gv.F(1.0)));
+        S = S.S("hlt", S.G("hlt").S("heat", Gv.F(1.0)));
+        S = S.S("lv", S.G("lv").S("chill", Gv.B(true)));
+        foreach (Gv i_6 in (Gv.I(60L)).Iter()) {
+          sim.C("sim_step", Gv.F(5.0));
+        }
+        sim.C("skQmax");
+        Gv okv = Gv.B((((((((_fin(S.G("rvp").G("T"))).T() && (_fin(S.G("mp").G("T"))).T()) && (_fin(S.G("hlt").G("T"))).T()) && (_fin(S.G("lv").G("T"))).T()) && (_fin(S.G("boiler").G("p"))).T()) && (_fin(S.G("hlt").G("w"))).T()) && (_fin(S.G("sk").G("Qmax"))).T()));
+        if (!(okv).T()) {
+          offenders.C("append", (Gv.S("%s=%s") % Gd.Arr(k_2, Gd.Dyn("str", r_2.I(side)))));
+        }
+      }
+    }
+    T.C("chk", (Gv.S("REGRESE extrémní hodnoty: žádný z %d parametrů na mezi rozsahu nevyrobí NaN/∞ v teplotách, tlaku páry ani propustnosti") % sim.G("CALIB_RANGE").C("size")), offenders.C("is_empty"), Gv.S(", ").C("join", Gd.Ctor("PackedStringArray", offenders)));
+    _delcal();
+    T.C("fresh");
+    return Gv.Null;
+  }
   public override Gv Get(string n) { switch (n) {
     case "T": return this.T;
     case "sim": return this.sim;
@@ -1129,6 +1445,11 @@ public partial class S_audit_tests : GdObject {
     case "_reference_tests": return _reference_tests();
     case "_settle": return _settle(Gd.A(a, 0), Gd.A(a, 1));
     case "_whirl_tests": return _whirl_tests();
+    case "_vsum": return _vsum(Gd.A(a, 0));
+    case "_mash": return _mash(Gd.A(a, 0), Gd.A(a, 1), Gd.A(a, 2), Gd.A(a, 3), Gd.A(a, 4));
+    case "_fer_run": return _fer_run(Gd.A(a, 0), Gd.A(a, 1));
+    case "_fin": return _fin(Gd.A(a, 0));
+    case "_regrese_zadani": return _regrese_zadani();
     default: return base.Invoke(n, a); } }
   public static Gv StaticGet(string n) { switch (n) {
     default: return Gv.Null; } }

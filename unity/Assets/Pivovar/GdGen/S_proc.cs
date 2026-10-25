@@ -106,21 +106,22 @@ public partial class S_proc : GdObject {
       return Gv.Null;
     }
     Gv h = ((dt / Gv.F(3600.0))).AsF();
-    Gv a = (Gd.exp((Gv.F(0.095) * ((f.G("T") - Gv.F(12.0)))))).AsF();
-    Gv mu = (((((Gv.F(0.05) * a) * f.G("Sf")) / ((Gv.F(8.0) + f.G("Sf")))) * ((Gv.F(1.0) - (f.G("X") / Gv.F(4.0)))))).AsF();
-    Gv dS = (Gd.minf(f.G("Sf"), ((((((Gv.F(0.2) * a) * f.G("X")) * f.G("Sf")) / ((Gv.F(6.0) + f.G("Sf"))))) * h))).AsF();
+    Gv c = S.G("cfg");
+    Gv a = (Gd.exp((Gd.Dyn("float", c.G("ferTa")) * ((f.G("T") - Gv.F(12.0)))))).AsF();
+    Gv mu = (((((Gd.Dyn("float", c.G("ferMu")) * a) * f.G("Sf")) / ((Gd.Dyn("float", c.G("ferKsMu")) + f.G("Sf")))) * ((Gv.F(1.0) - (f.G("X") / Gd.Dyn("float", c.G("ferXmax"))))))).AsF();
+    Gv dS = (Gd.minf(f.G("Sf"), ((((((Gd.Dyn("float", c.G("ferQ")) * a) * f.G("X")) * f.G("Sf")) / ((Gd.Dyn("float", c.G("ferKsQ")) + f.G("Sf"))))) * h))).AsF();
     f = f.S("X", (f.G("X") + Gd.maxf(Gv.F(0.0), ((mu * f.G("X")) * h))));
     f = f.S("Sf", (f.G("Sf") - dS));
     f = f.S("E", (f.G("E") + (dS / Gv.F(2.0665))));
     f = f.S("CO2", (f.C("get", Gv.S("CO2"), Gv.F(0.0)) + ((dS * Gv.F(0.9565)) / Gv.F(2.0665))));
     f = f.S("XB", (f.C("get", Gv.S("XB"), Gv.F(0.0)) + ((dS * Gv.F(0.11)) / Gv.F(2.0665))));
-    f = f.S("T", (f.G("T") + ((((dS * Gv.F(0.6)) * Gv.F(1000.0)) / Gv.F(4100.0)) - (((f.G("T") - f.G("set"))) * ((Gv.F(1.0) - Gd.exp((Gv.F(-0.25) * h))))))));
+    f = f.S("T", (f.G("T") + ((((dS * Gd.Dyn("float", c.G("ferHeat"))) * Gv.F(1000.0)) / Gv.F(4100.0)) - (((f.G("T") - f.G("set"))) * ((Gv.F(1.0) - Gd.exp(((-Gd.Dyn("float", c.G("ferCool"))) * h))))))));
     f = f.S("AL", (f.G("AL") + (((mu * f.G("X")) * h) * Gv.F(0.9))));
-    Gv k1 = ((Gv.F(0.012) * Gd.exp((Gv.F(0.11) * ((f.G("T") - Gv.F(12.0))))))).AsF();
+    Gv k1 = ((Gd.Dyn("float", c.G("ferDiaK")) * Gd.exp((Gd.Dyn("float", c.G("ferDiaT")) * ((f.G("T") - Gv.F(12.0))))))).AsF();
     Gv conv = ((f.G("AL") * ((Gv.F(1.0) - Gd.exp(((-k1) * h)))))).AsF();
     f = f.S("AL", (f.G("AL") - conv));
     f = f.S("D", (f.G("D") + (conv * Gv.F(1000.0))));
-    f = f.S("D", (f.G("D") - (f.G("D") * ((Gv.F(1.0) - Gd.exp((((Gv.F(-0.06) * a) * Gd.minf(Gv.F(1.0), (f.G("X") / Gv.F(1.5)))) * h)))))));
+    f = f.S("D", (f.G("D") - (f.G("D") * ((Gv.F(1.0) - Gd.exp(((((-Gd.Dyn("float", c.G("ferDiaRed"))) * a) * Gd.minf(Gv.F(1.0), (f.G("X") / Gv.F(1.5)))) * h)))))));
     f = f.S("t", (f.G("t") + dt));
     if ((Gv.Lt(f.G("D"), Gv.I(100L)) && Gv.Lt(f.G("Sf"), (Gv.F(0.25) * f.G("S0"))))) {
       get_sim().C("once", Gv.S("dia_ok"), (Gv.S("Diacetyl %d ppb – pod prahem chuti (≈ 100 ppb), hlavní kvašení končí. Můžeš chladit na ležení.") % Gd.roundi(f.G("D"))));
@@ -162,30 +163,30 @@ public partial class S_proc : GdObject {
       return Gv.Null;
     }
     Gv m = ((dt / Gv.F(60.0))).AsF();
-    c = c.S("T", (c.G("T") + Gd.clampf((c.G("set") - c.G("T")), (Gv.F(-1.5) * m), (Gv.F(1.2) * m))));
+    c = c.S("T", (c.G("T") + Gd.clampf((c.G("set") - c.G("T")), (Gv.F(-1.5) * m), (Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipHeat")) * m))));
     c = c.S("min", (c.G("min") + m));
     Gv ok = Gv.B(false);
     {
       Gv _t1 = c.G("medium");
       if (Gv.Eq(_t1, Gv.S("louh"))) {
-        ok = Gv.B((Gv.Ge(c.G("T"), Gv.F(75.0)) && Gv.Ge(c.C("get", Gv.S("conc"), Gv.F(1.5)), get_sim().G("S").G("cfg").C("get", Gv.S("cipLyeMin"), Gv.F(1.0)))));
+        ok = Gv.B((Gv.Ge(c.G("T"), Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipLyeT"))) && Gv.Ge(c.C("get", Gv.S("conc"), Gv.F(1.5)), get_sim().G("S").G("cfg").C("get", Gv.S("cipLyeMin"), Gv.F(1.0)))));
         if ((Gv.Lt(c.C("get", Gv.S("conc"), Gv.F(1.5)), get_sim().G("S").G("cfg").C("get", Gv.S("cipLyeMin"), Gv.F(1.0))) && Gv.Gt(c.G("min"), Gv.I(2L)))) {
           get_sim().C("once", (Gv.S("lyeweak%d") % get_sim().C("tb", Gv.I(600L))), (Gv.S("CIP: louh má jen %s %% NaOH – pod %s %% nerozpustí úsady. Doplň koncentrát.") % Gd.Arr(get_sim().C("fmt1", c.C("get", Gv.S("conc"), Gv.F(1.5))), get_sim().C("fmt1", get_sim().G("S").G("cfg").C("get", Gv.S("cipLyeMin"), Gv.F(1.0))))), Gv.S("warn"));
         }
-        if ((Gv.Lt(c.G("T"), Gv.F(75.0)) && Gv.Gt(c.G("min"), Gv.I(5L)))) {
-          get_sim().C("once", (Gv.S("lyecold%s%d") % Gd.Arr(c.G("target"), get_sim().C("tb", Gv.I(600L)))), (Gv.S("CIP: louh má jen %d °C – pod 75 °C nerozpustí bílkovinné úsady a pivní kámen.") % Gd.roundi(c.G("T"))), Gv.S("warn"));
+        if ((Gv.Lt(c.G("T"), Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipLyeT"))) && Gv.Gt(c.G("min"), Gv.I(5L)))) {
+          get_sim().C("once", (Gv.S("lyecold%s%d") % Gd.Arr(c.G("target"), get_sim().C("tb", Gv.I(600L)))), (Gv.S("CIP: louh má jen %d °C – pod %d °C nerozpustí bílkovinné úsady a pivní kámen.") % Gd.Arr(Gd.roundi(c.G("T")), Gd.roundi(get_sim().G("S").G("cfg").G("cipLyeT")))), Gv.S("warn"));
         }
         if (Gv.Gt(c.G("T"), Gv.F(90.0))) {
           get_sim().C("once", (Gv.S("lyehot%d") % get_sim().C("tb", Gv.I(600L))), Gv.S("CIP: louh nad 90 °C – zbytečně vysoká teplota, hrozí opaření a poškození těsnění."), Gv.S("warn"));
         }
       }
       else if (Gv.Eq(_t1, Gv.S("kyselina"))) {
-        ok = Gv.B(((Gv.Ge(c.G("T"), Gv.F(20.0)) && Gv.Le(c.G("T"), Gv.F(60.0))) && Gv.Ge(c.C("get", Gv.S("conc"), Gv.F(1.0)), get_sim().G("S").G("cfg").C("get", Gv.S("cipAcidMin"), Gv.F(0.5)))));
+        ok = Gv.B(((Gv.Ge(c.G("T"), Gv.F(20.0)) && Gv.Le(c.G("T"), Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipAcidT")))) && Gv.Ge(c.C("get", Gv.S("conc"), Gv.F(1.0)), get_sim().G("S").G("cfg").C("get", Gv.S("cipAcidMin"), Gv.F(0.5)))));
         if ((Gv.Lt(c.C("get", Gv.S("conc"), Gv.F(1.0)), get_sim().G("S").G("cfg").C("get", Gv.S("cipAcidMin"), Gv.F(0.5))) && Gv.Gt(c.G("min"), Gv.I(2L)))) {
           get_sim().C("once", (Gv.S("acidweak%d") % get_sim().C("tb", Gv.I(600L))), (Gv.S("CIP: kyselina má jen %s %% – pod %s %% neodstraní pivní kámen.") % Gd.Arr(get_sim().C("fmt1", c.C("get", Gv.S("conc"), Gv.F(1.0))), get_sim().C("fmt1", get_sim().G("S").G("cfg").C("get", Gv.S("cipAcidMin"), Gv.F(0.5))))), Gv.S("warn"));
         }
-        if (Gv.Gt(c.G("T"), Gv.F(60.5))) {
-          get_sim().C("once", (Gv.S("acidhot%d") % get_sim().C("tb", Gv.I(600L))), Gv.S("CIP: kyselina nad 60 °C – koroze nerezu a výpary. Uber teplotu."), Gv.S("bad"));
+        if (Gv.Gt(c.G("T"), (Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipAcidT")) + Gv.F(0.5)))) {
+          get_sim().C("once", (Gv.S("acidhot%d") % get_sim().C("tb", Gv.I(600L))), (Gv.S("CIP: kyselina nad %d °C – koroze nerezu a výpary. Uber teplotu.") % Gd.roundi(get_sim().G("S").G("cfg").G("cipAcidT"))), Gv.S("bad"));
         }
       }
       else if (Gv.Eq(_t1, Gv.S("voda"))) {
@@ -196,7 +197,7 @@ public partial class S_proc : GdObject {
     if ((ok).T()) {
       c = c.S("done", c.G("done").SI(key, (c.G("done").C("get", key, Gv.F(0.0)) + m)));
     }
-    Gv need = ((Gv.Ne(c.G("medium"), Gv.S("voda")) ? Gv.F(20.0) : Gv.F(5.0))).AsF();
+    Gv need = ((Gv.Ne(c.G("medium"), Gv.S("voda")) ? Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipMin")) : Gd.Dyn("float", get_sim().G("S").G("cfg").G("cipRinseMin")))).AsF();
     if ((Gv.Ge(c.G("done").C("get", key, Gv.F(0.0)), need) && !(c.G("done").C("has", (key + Gv.S("!")))).T())) {
       c = c.S("done", c.G("done").SI((key + Gv.S("!")), Gv.I(1L)));
       Gv nxt = Gd.Dict(Gv.S("voda"), Gv.S("pokračuj louhem"), Gv.S("louh"), Gv.S("proplach vodou a kyselina"), Gv.S("kyselina"), Gv.S("proplach vodou, nádoba je čistá")).C("get", c.G("medium"), Gv.S(""));

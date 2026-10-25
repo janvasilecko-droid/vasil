@@ -24,6 +24,7 @@ func run(t) -> void:
 	_mains_tests()
 	_reference_tests()
 	_whirl_tests()
+	_regrese_zadani()
 
 func _open(a: String, b: String, pumps: Array, where := -1) -> void:
 	var vv = sim.route_valves(a, b, pumps, where)
@@ -657,3 +658,181 @@ func _whirl_tests() -> void:
 	T.chk("REF vířivka: usazená hmota = (kal − nesedimentující 10 %)·(1 − e^(−k·t))", absf(s8 - ref8) < 0.03*ref8 + 0.02, "%.3f vs %.3f kg" % [s8, ref8])
 	var sl: float = _settle(8.0, 40.0)
 	T.chk("REF vířivka: po dlouhém klidu se usadí všechen kal kromě podílu, který zůstane v suspenzi (10 %)", sl > 8.5 and sl <= 9.0 + 1e-6, "%.2f z 9,0 kg" % sl)
+
+
+# ---------- 15. kontrola parametrů a nejrizikovějších výpočtů (25. 10.): každá oprava má svůj regresní test ----------
+func _vsum(v) -> float: return v.sg + v.dx + v.ld + v.f
+
+func _mash(Tc: float, minutes: float, dt: float, betaAct := 4.5, kdB := 0.13) -> Dictionary:
+	T.fresh(); var S = sim.S
+	S.cfg.betaAct = betaAct; S.cfg.kdBeta63 = kdB
+	var v = sim.vessel(); v.w = 2000.0; v.T = Tc; v.Tsens = Tc
+	v.aA = 560.0; v.aB = 560.0*0.87; v.aBs = 560.0*0.13; v.sg = 300.0
+	var s0: float = _vsum(v)
+	var n: int = int(minutes/dt + 0.5)
+	for i in n: sim.react(v, dt)
+	return {"f": v.f, "dx": v.dx, "sum0": s0, "sum": _vsum(v), "aB": v.aB, "frac": v.f/maxf(1e-9, _vsum(v))}
+
+func _fer_run(mods: Dictionary, hours: int) -> Dictionary:
+	T.fresh(); var S = sim.S; var P = sim.proc
+	for k in mods: S.cfg[k] = mods[k]
+	var e: float = 4000.0*1.048*0.12
+	S.sp.L = 4000.0; S.sp.w = 4000.0*1.048 - e; S.sp.f = e*0.78; S.sp.n = e*0.22; S.sp.H = 9.0*4000.0
+	S.fer.set = 9.0; P.fer_start()
+	var Tmax: float = S.fer.T
+	for i in hours*60:
+		P.fer_step(60.0); Tmax = maxf(Tmax, S.fer.T)
+	return {"Sf": S.fer.Sf, "S0": S.fer.S0, "E": S.fer.E, "Tmax": Tmax, "X": S.fer.X, "ok": S.fer.Sf == S.fer.Sf and S.fer.T == S.fer.T}
+
+func _fin(x: float) -> bool: return x == x and absf(x) < 1e9
+
+func _regrese_zadani() -> void:
+	var Pm = preload("res://physics.gd")
+	_delcal(); T.fresh(); var S = sim.S; var c = S.cfg
+
+	# --- registr parametrů: každý klíč má rozsah, výchozí hodnota v rozsahu ---
+	var bad := []
+	for k in sim.CFG_DEFAULT:
+		if not sim.CALIB_RANGE.has(k): bad.append(k + " (bez rozsahu)"); continue
+		var r = sim.CALIB_RANGE[k]; var d: float = float(sim.CFG_DEFAULT[k])
+		if d < r[0] or d > r[1]: bad.append("%s=%s mimo %s…%s" % [k, str(d), str(r[0]), str(r[1])])
+	T.chk("REGRESE registr: všech %d parametrů má rozsah a výchozí hodnotu v něm" % sim.CFG_DEFAULT.size(), bad.is_empty(), ", ".join(PackedStringArray(bad)))
+
+	# --- kotel: počáteční tlak = steamBar (dřív natvrdo 2,5), tabulka sytosti pokrývá 8 bar ---
+	_wcal('{"steamBar": 4.0}'); sim.new_state()
+	T.chk("REGRESE kotel: počáteční tlak páry = kalibrované steamBar (4 bar), ne natvrdo 2,5", absf(sim.S.boiler.p - 4.0) < 1e-9, "%.2f bar" % sim.S.boiler.p)
+	_delcal(); sim.new_state()
+	T.chk("REGRESE tabulka sytosti: 8 bar přetlaku (9,013 bar abs.) ≈ 175,4 °C a nad tabulkou teplota neklesá", absf(sim.tsat(9.013) - 175.4) < 1.0 and sim.tsat(12.0) >= sim.tsat(10.0), "%.1f °C, 12 bar abs. %.1f °C" % [sim.tsat(9.013), sim.tsat(12.0)])
+
+	# --- film u husté náplně: voda = beze změny, hustý rmut zhorší přestup; celkové UA zůstane referenční ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var w = sim.vessel(); w.w = 2000.0; w.stir = true; w.hz = 35.0
+	var thick = sim.vessel(); thick.w = 1900.0; thick.g = 400.0; thick.sg = 300.0; thick.stir = true; thick.hz = 35.0
+	var ff_w: float = sim.film_factor(w); var ff_t: float = sim.film_factor(thick)
+	c.rvpUAst = 30.0
+	var ff_w30: float = sim.film_factor(w)
+	T.chk("REGRESE přestup tepla: voda při 35 Hz = referenční UA (faktor 1) i při kalibrovaném rvpUAst = 30 kW/K", absf(ff_w - 1.0) < 1e-9 and absf(ff_w30 - 1.0) < 1e-9, "%.6f / %.6f" % [ff_w, ff_w30])
+	T.chk("REGRESE přestup tepla: hustý rmut předá jen 25–70 % výkonu vody (viskózní film)", ff_t > 0.25 and ff_t < 0.7, "%.2f" % ff_t)
+
+	# --- bilance páry: výkon, který kotel vyrábí, = výkon, který nádoba skutečně přijala (dřív kotel počítal bez filmu) ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var v = S.rvp; v.w = 1900.0; v.g = 400.0; v.sg = 300.0; v.T = 40.0; v.Tsens = 40.0; v.stir = true; v.heat = 0.1
+	var Eb := 0.0; var Ed := 0.0
+	for i in 300:
+		sim.sim_step(1.0)
+		Eb += S.boiler.load * c.boilerKW; Ed += S.rvp.Pin + S.mp.Pin
+	T.chk("REGRESE kotel: vyrobená energie páry = energie přijatá hustým rmutem (chyba < 1 %)", Ed > 1000.0 and absf(Eb - Ed)/Ed < 0.01, "kotel %.0f MJ, nádoba %.0f MJ" % [Eb/1000.0, Ed/1000.0])
+	T.chk("REGRESE kotel: při odběru pod výkonem drží tlak na steamBar", absf(S.boiler.p - c.steamBar) < 0.02, "%.2f bar" % S.boiler.p)
+	# přetížení: obě pánve naplno → tlak klesá a rozdíl výroby a odběru je uložen v bubnu (Cst = boilerWaterKg·57 kJ/bar)
+	T.fresh(); S = sim.S; c = S.cfg
+	S.rvp.w = 2000.0; S.rvp.T = 20.0; S.rvp.Tsens = 20.0; S.rvp.stir = true; S.rvp.heat = 1.0
+	S.mp.w = 2000.0; S.mp.T = 20.0; S.mp.Tsens = 20.0; S.mp.stir = true; S.mp.heat = 1.0
+	var p0: float = S.boiler.p; var Eb2 := 0.0; var Ed2 := 0.0
+	for i in 120:
+		sim.sim_step(1.0)
+		Eb2 += S.boiler.load * c.boilerKW; Ed2 += S.rvp.Pin + S.mp.Pin
+	var Est: float = (S.boiler.p - p0) * c.boilerWaterKg * 57.0
+	T.chk("REGRESE kotel přetížen: tlak klesne a Σvýroba − Σodběr = změna energie bubnu", S.boiler.p < p0 - 0.05 and absf((Eb2 - Ed2) - Est) < 0.03*Eb2, "p %.2f→%.2f bar, výroba %.0f MJ, odběr %.0f MJ, buben %.0f MJ" % [p0, S.boiler.p, Eb2/1000.0, Ed2/1000.0, Est/1000.0])
+
+	# --- zásoba v potrubí: STEJNÁ geometrie jako hydraulika (π/4·d²·L·pipeLenScale) ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var nchk := 0; var maxrel := 0.0
+	for e in sim.net.edges:
+		if float(e.cap) <= 0.31: continue
+		var exp_cap: float = Pm.pipe_capacity(float(e.len)/sim.PX_PER_M*float(c.pipeLenScale), sim.bore_mm(float(e.dn)))
+		maxrel = maxf(maxrel, absf(float(e.cap) - exp_cap)/maxf(1e-9, exp_cap)); nchk += 1
+	T.chk("REGRESE potrubí: zásoba kapaliny v úsecích = π/4·d²·L·pipeLenScale (stejné bore a délka jako tlakové ztráty)", nchk > 5 and maxrel < 1e-9, "%d úseků, max. odchylka %.2g" % [nchk, maxrel])
+	var vel: float = 400.0/60000.0 / (PI*pow(sim.bore_mm(50.0)/1000.0, 2.0)/4.0)
+	T.chk("REGRESE potrubí: 400 L/min v DN50 má rychlost 0,5–3 m/s (kontrola vnitřního průměru bore50)", vel > 0.5 and vel < 3.0, "%.2f m/s při průměru %.0f mm" % [vel, sim.bore_mm(50.0)])
+
+	# --- ledovka: ztráty do okolí z lvUA, lože z skBedLkg ---
+	var dTs := []
+	for ua in [0.0, 0.15]:
+		T.fresh(); S = sim.S; S.cfg.ambientT = 30.0; S.cfg.lvUA = ua; S.lv.w = 8000.0; S.lv.T = 2.0; S.lv.chill = false; S.lv.pump = false
+		for i in 3600: sim.sim_step(1.0)
+		dTs.append(S.lv.T - 2.0)
+	T.chk("REGRESE ledovka: lvUA = 0 → žádný přísun tepla z okolí, lvUA 0,15 kW/K → ohřev (dřív pevných 0,15 mimo kalibraci)", absf(dTs[0]) < 0.01 and dTs[1] > 0.05, "%.3f vs %.3f K/h" % [dTs[0], dTs[1]])
+	T.fresh(); S = sim.S; S.sk.g = 100.0
+	var h1: float = sim.skBedH(); S.cfg.skBedLkg = S.cfg.skBedLkg*0.5; var h2: float = sim.skBedH()
+	T.chk("REGRESE lože: výška = slad × skBedLkg / plocha (dřív pevné 2,7 L/kg)", absf(h1/h2 - 2.0) < 1e-9 and h1 > 0.05, "%.3f m → %.3f m" % [h1, h2])
+
+	# --- kalibrace: vazby mezi parametry a stará migrace skPerm už nepřepíše ruční hodnotu ---
+	_wcal('{"hltStart": 20000, "hltCap": 5000}'); sim.new_state()
+	T.chk("KALIBRACE vazba: hltStart nad hltCap se sníží na kapacitu a hlásí se", sim.S.cfg.hltStart <= sim.S.cfg.hltCap + 1e-9 and sim.calib_rejected.size() > 0, "%s / %s" % [str(sim.S.cfg.hltStart), str(sim.S.cfg.hltCap)])
+	_wcal('{"skDpCompact": 300, "skDpChannel": 100}'); sim.new_state()
+	T.chk("KALIBRACE vazba: práh slehávání nad prahem kanálků se vrátí na výchozí dvojici", sim.S.cfg.skDpCompact < sim.S.cfg.skDpChannel and sim.calib_rejected.size() > 0, "%s < %s" % [str(sim.S.cfg.skDpCompact), str(sim.S.cfg.skDpChannel)])
+	_delcal(); T.fresh(); m.save_game()
+	_wcal('{"skPerm": 3e-12}'); m.load_game()
+	T.chk("KALIBRACE skPerm 3e-12 z kalibrace.json přežije načtení várky (dřív ji migrace starých uložení přepsala na 1e-11)", absf(sim.S.cfg.skPerm - 3e-12) < 1e-15, "%s" % str(sim.S.cfg.skPerm))
+	_delcal(); T.fresh(); sim.S.cfg.skPerm = 1e-12; m.save_game(); m.load_game()
+	T.chk("KALIBRACE staré uložení s nízkou propustností se přepočítá na výchozí skPerm", absf(sim.S.cfg.skPerm - sim.CFG_DEFAULT.skPerm) < 1e-15, "%s" % str(sim.S.cfg.skPerm))
+	_delcal(); T.fresh()
+
+	# --- deskový chladič: ε-NTU nezávisle, nulový průtok, UA1 ---
+	T.fresh(); S = sim.S; c = S.cfg
+	var pid := ""
+	for it in m.items: if it.type == "vessel" and it.get("shape", "") == "plate": pid = it.id
+	if pid != "":
+		var ua0: float = c.UA2 if sim.net.byId[pid].get("bind") == "ch2" else c.UA1
+		S.plates[pid] = {"kind": "water", "T": 16.0, "flow": c.plateRefQ*1.1}
+		var Tout: float = sim.plate_cool(pid, 95.0, c.plateRefQ, 1.0/60.0)
+		var Cw: float = c.plateRefQ/60.0*1.04*4.0; var Cc: float = c.plateRefQ*1.1/60.0*4.19
+		var Cmin: float = minf(Cw, Cc); var Cr: float = Cmin/maxf(Cw, Cc); var ntu: float = ua0/Cmin
+		var x: float = exp(-ntu*(1.0 - Cr)); var eff: float = (1.0 - x)/(1.0 - Cr*x)
+		var Tref: float = 95.0 - eff*Cmin*(95.0 - 16.0)/Cw
+		T.chk("REGRESE chladič: při referenčním průtoku plateRefQ a UA z kalibrace sedí výstup s nezávislým ε-NTU", absf(Tout - Tref) < 0.05, "%.2f vs %.2f °C (UA %.0f kW/K, ε %.3f)" % [Tout, Tref, ua0, eff])
+		var T0: float = sim.plate_cool(pid, 95.0, 0.0, 1.0/60.0)
+		T.chk("REGRESE chladič: nulový průtok mladiny → vrací vstupní teplotu, žádné NaN", absf(T0 - 95.0) < 1e-9)
+		S.plates[pid].flow = 0.0
+		var Tz: float = sim.plate_cool(pid, 95.0, 80.0, 1.0/60.0)
+		T.chk("REGRESE chladič: nulový průtok chladiva → konečný výsledek, mladina se prakticky neochladí", _fin(Tz) and Tz > 90.0, "%.2f °C" % Tz)
+		c[("UA2" if sim.net.byId[pid].get("bind") == "ch2" else "UA1")] = ua0*0.5
+		S.plates[pid] = {"kind": "water", "T": 16.0, "flow": c.plateRefQ*1.1}
+		var Tlow: float = sim.plate_cool(pid, 95.0, c.plateRefQ, 1.0/60.0)
+		T.chk("REGRESE chladič: poloviční UA → teplejší výstup mladiny", Tlow > Tout + 0.5, "%.1f → %.1f °C" % [Tout, Tlow])
+
+	# --- rmutování: bilance extraktu, krok, citlivost na parametry, teplotní optimum; nic není nastaveno na cílové prokvašení ---
+	var m63 := _mash(63.0, 30.0, 0.5)
+	T.chk("REGRESE rmutování: extrakt (škrob + dextriny + dlouhé + zkvasitelné) se při 30 min při 63 °C zachová", absf(m63.sum - m63.sum0) < 1e-6*m63.sum0, "%.4f vs %.4f kg" % [m63.sum, m63.sum0])
+	var m63b := _mash(63.0, 30.0, 0.05)
+	T.chk("REGRESE rmutování: zkvasitelné cukry nezávisí na kroku (0,5 vs 0,05 min) o víc než 5 %", absf(m63.f - m63b.f) < 0.05*maxf(1.0, m63b.f), "%.1f vs %.1f kg" % [m63.f, m63b.f])
+	var mb2 := _mash(63.0, 30.0, 0.5, 9.0)
+	T.chk("REGRESE rmutování: betaAct ×2 → víc zkvasitelných cukrů (parametr opravdu působí)", mb2.f > m63.f*1.05, "%.1f → %.1f kg" % [m63.f, mb2.f])
+	var mk: Dictionary = _mash(63.0, 30.0, 0.5, 4.5, 0.52)
+	T.chk("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → míň zkvasitelných cukrů a míň zbylého enzymu", mk.f < m63.f*0.95 and mk.aB < m63.aB, "%.1f vs %.1f kg, aB %.1f vs %.1f" % [mk.f, m63.f, mk.aB, m63.aB])
+	var m72 := _mash(72.0, 30.0, 0.5)
+	T.chk("REGRESE rmutování: při 72 °C je podíl zkvasitelných cukrů nižší než při 63 °C (β-amyláza se tepelně ničí) – výsledek není nastaven na cíl", m72.frac < m63.frac*0.7, "%.2f vs %.2f" % [m72.frac, m63.frac])
+	var m0 := _mash(63.0, 0.0, 0.5)
+	T.chk("REGRESE rmutování: nulový čas = beze změny", m0.f == 0.0 and m0.sum == m0.sum0)
+
+	# --- kvašení a CIP: parametry z konfigurace opravdu mění výsledek ---
+	var f0: Dictionary = _fer_run({}, 48)
+	var fq: Dictionary = _fer_run({"ferQ": 0.1}, 48)
+	T.chk("REGRESE kvašení: ferQ ×0,5 → po 48 h zbývá víc extraktu (parametr působí)", fq.Sf > f0.Sf + 1.0 and f0.ok and fq.ok, "%.1f vs %.1f g/L" % [fq.Sf, f0.Sf])
+	var fh: Dictionary = _fer_run({"ferHeat": 0.2}, 48)
+	T.chk("REGRESE kvašení: menší reakční teplo (ferHeat 0,2 vs 0,6 kJ/g) → nižší nárůst teploty", (fh.Tmax - 9.0) < (f0.Tmax - 9.0) and f0.Tmax > 9.0, "+%.2f vs +%.2f K" % [fh.Tmax - 9.0, f0.Tmax - 9.0])
+	T.fresh(); S = sim.S; S.cfg.cipMin = 5.0
+	S.cip.target = "rvp"; S.cip.medium = "louh"; S.cip.set = 80.0; S.cip.T = 80.0; S.cip.conc = 1.5; S.cip.run = true
+	for i in 6: sim.proc.cip_step(60.0)
+	var quick: bool = S.cip.done.has("rvp:louh!")
+	T.fresh(); S = sim.S; S.cfg.cipLyeT = 85.0
+	S.cip.target = "rvp"; S.cip.medium = "louh"; S.cip.set = 80.0; S.cip.T = 80.0; S.cip.conc = 1.5; S.cip.run = true
+	for i in 40: sim.proc.cip_step(60.0)
+	T.chk("REGRESE CIP: cipMin = 5 min stačí na splnění; cipLyeT = 85 °C se při 80 °C nesplní ani za 40 min", quick and not S.cip.done.has("rvp:louh!"))
+
+	# --- extrémní hodnoty: každý parametr na dolní i horní mez rozsahu, simulace zůstane konečná ---
+	var offenders := []
+	for k in sim.CALIB_RANGE:
+		var r = sim.CALIB_RANGE[k]
+		for side in 2:
+			T.fresh(); S = sim.S; c = S.cfg
+			c[k] = float(r[side])
+			S.rvp.w = 2000.0; S.rvp.T = 40.0; S.rvp.Tsens = 40.0; S.rvp.stir = true; S.rvp.heat = 1.0; S.rvp.g = 200.0
+			S.mp.w = 1500.0; S.mp.T = 90.0; S.mp.Tsens = 90.0; S.mp.heat = 1.0
+			S.hlt.heat = 1.0; S.lv.chill = true
+			for i in 60: sim.sim_step(5.0)
+			sim.skQmax()
+			var okv: bool = _fin(S.rvp.T) and _fin(S.mp.T) and _fin(S.hlt.T) and _fin(S.lv.T) and _fin(S.boiler.p) and _fin(S.hlt.w) and _fin(S.sk.Qmax)
+			if not okv: offenders.append("%s=%s" % [k, str(r[side])])
+	T.chk("REGRESE extrémní hodnoty: žádný z %d parametrů na mezi rozsahu nevyrobí NaN/∞ v teplotách, tlaku páry ani propustnosti" % sim.CALIB_RANGE.size(), offenders.is_empty(), ", ".join(PackedStringArray(offenders)))
+	_delcal(); T.fresh()
