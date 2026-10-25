@@ -380,7 +380,14 @@ namespace Pivovar.Gd
                 case K.Color:
                     {
                         var c = (GdColor)o;
-                        switch (name) { case "r": return F(c.r); case "g": return F(c.g); case "b": return F(c.b); case "a": return F(c.a); }
+                        switch (name) { case "r": return F(c.r); case "g": return F(c.g); case "b": return F(c.b); case "a": return F(c.a);
+                            case "r8": return I((long)Math.Round(c.r * 255)); case "g8": return I((long)Math.Round(c.g * 255)); case "b8": return I((long)Math.Round(c.b * 255)); case "a8": return I((long)Math.Round(c.a * 255));
+                            case "h": case "s": case "v":
+                                {
+                                    double mx = Math.Max(c.r, Math.Max(c.g, c.b)), mn = Math.Min(c.r, Math.Min(c.g, c.b)), dl = mx - mn, h = 0;
+                                    if (dl != 0) { if (mx == c.r) h = ((c.g - c.b) / dl) % 6; else if (mx == c.g) h = (c.b - c.r) / dl + 2; else h = (c.r - c.g) / dl + 4; h /= 6; if (h < 0) h += 1; }
+                                    return F(name == "h" ? h : (name == "s" ? (mx == 0 ? 0 : dl / mx) : mx));
+                                } }
                         break;
                     }
                 case K.Rect2:
