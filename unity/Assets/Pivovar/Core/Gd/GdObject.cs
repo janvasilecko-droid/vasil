@@ -1,0 +1,200 @@
+// Objekty běhové knihovny: GdObject (základ všech přeložených skriptů), GdNode (stín uzlů Godotu), GdSignal.
+using System;
+using System.Collections.Generic;
+
+namespace Pivovar.Gd
+{
+    public sealed class GdSignal : GdObject
+    {
+        public readonly List<Gv> targets = new List<Gv>();
+        public override string ScriptName { get { return "Signal"; } }
+        public void Connect(Gv f) { targets.Add(f); }
+        public void Emit(Gv[] a) { foreach (var t in targets.ToArray()) t.Call(a); }
+        public override Gv Invoke(string n, Gv[] a)
+        {
+            switch (n)
+            {
+                case "connect": Connect(Gd.A(a, 0)); return Gv.Null;
+                case "emit": Emit(a); return Gv.Null;
+                case "disconnect": targets.Clear(); return Gv.Null;
+                case "is_connected": return Gv.B(targets.Count > 0);
+            }
+            return base.Invoke(n, a);
+        }
+    }
+
+    /// <summary>Základ všech přeložených skriptů (obdoba Object/RefCounted).</summary>
+    public class GdObject
+    {
+        public Gv Self;
+        protected Dictionary<string, Gv> props;
+        public GdObject() { Self = Gv.O(this); }
+
+        public virtual string ScriptName { get { return "Object"; } }
+        public virtual bool IsA(string t) { return t == "Object" || t == "RefCounted" || t == ScriptName; }
+
+        public virtual Gv Get(string n)
+        {
+            Gv v;
+            if (props != null && props.TryGetValue(n, out v)) return v;
+            return Gv.Null;
+        }
+        public virtual Gv Set(string n, Gv v)
+        {
+            if (props == null) props = new Dictionary<string, Gv>();
+            props[n] = v;
+            return v;
+        }
+        public bool HasProp(string n) { return props != null && props.ContainsKey(n); }
+
+        public virtual Gv Invoke(string n, Gv[] a)
+        {
+            switch (n)
+            {
+                case "call": return Gv.Null;
+                case "get": return Get(Gd.A(a, 0).Str);
+                case "set": Set(Gd.A(a, 0).Str, Gd.A(a, 1)); return Gv.Null;
+                case "has_method": return Gv.B(false);
+                case "is_instance_valid": return Gv.B(true);
+                case "free": case "queue_free": return Gv.Null;
+                case "get_class": return Gv.S(ScriptName);
+                case "set_meta": Set("meta:" + Gd.A(a, 0).Str, Gd.A(a, 1)); return Gv.Null;
+                case "get_meta": { var key = "meta:" + Gd.A(a, 0).Str; return HasProp(key) ? Get(key) : Gd.A(a, 1); }
+                case "has_meta": return Gv.B(HasProp("meta:" + Gd.A(a, 0).Str));
+                case "connect": return Gv.Null;
+                case "emit_signal": return Gv.Null;
+                case "get_ref": return Self;
+            }
+            return Gv.Null;
+        }
+
+        public override string ToString() { return "<" + ScriptName + ">"; }
+    }
+
+    /// <summary>Plátno, na které uzly kreslí (implementuje Unity vrstva). V testech je null.</summary>
+    public interface IGdCanvas
+    {
+        void Call(GdNode node, string method, Gv[] a);
+    }
+
+    /// <summary>Stín uzlu Godotu (Node/Node2D/Control…): strom potomků, signály, kreslení předává plátnu.</summary>
+    public class GdNode : GdObject
+    {
+        public string TypeName = "Node";
+        public GdNode Parent;
+        public readonly List<GdNode> Children = new List<GdNode>();
+        public IGdCanvas Canvas;
+        public bool InTree;
+        public bool Ready;
+        public bool QueuedFree;
+        readonly Dictionary<string, GdSignal> sigs = new Dictionary<string, GdSignal>();
+
+        public override string ScriptName { get { return TypeName; } }
+        public override bool IsA(string t) { return t == TypeName || t == "Node" || t == "CanvasItem" || t == "Object" || t == "Node2D" || t == "Control" || base.IsA(t); }
+
+        public GdSignal Sig(string n)
+        {
+            GdSignal s; if (!sigs.TryGetValue(n, out s)) { s = new GdSignal(); sigs[n] = s; }
+            return s;
+        }
+
+        public virtual void OnEnterTree() { }
+
+        public void EnterTree()
+        {
+            if (InTree) return;
+            InTree = true;
+            foreach (var c in Children.ToArray()) c.EnterTree();
+            if (!Ready) { Ready = true; Invoke("_ready", new Gv[0]); }
+        }
+
+        public override Gv Get(string n)
+        {
+            switch (n)
+            {
+                case "process_frame": case "timeout": case "pressed": case "toggled": case "visibility_changed": case "resized": case "size_changed":
+                case "gui_input": case "item_selected": case "text_changed": case "value_changed": case "mouse_entered": case "mouse_exited":
+                    return Gv.O(Sig(n));
+            }
+            return base.Get(n);
+        }
+
+        public override Gv Invoke(string n, Gv[] a)
+        {
+            switch (n)
+            {
+                case "add_child":
+                    {
+                        var c = Gd.A(a, 0).Obj as GdNode;
+                        if (c != null) { if (c.Parent != null) c.Parent.Children.Remove(c); c.Parent = this; Children.Add(c); c.Canvas = Canvas; if (InTree) c.EnterTree(); }
+                        return Gv.Null;
+                    }
+                case "remove_child": { var c = Gd.A(a, 0).Obj as GdNode; if (c != null) { Children.Remove(c); c.Parent = null; } return Gv.Null; }
+                case "queue_free": case "free": QueuedFree = true; if (Parent != null) Parent.Children.Remove(this); Parent = null; return Gv.Null;
+                case "get_children": { var l = new List<Gv>(); foreach (var c in Children) l.Add(c.Self); return Gv.A(new GdArray(l)); }
+                case "get_child": { int i = (int)Gd.A(a, 0).d; return i >= 0 && i < Children.Count ? Children[i].Self : Gv.Null; }
+                case "get_child_count": return Gv.I(Children.Count);
+                case "get_parent": return Parent != null ? Parent.Self : Gv.Null;
+                case "is_inside_tree": return Gv.B(InTree);
+                case "get_tree": return Gd.Tree;
+                case "get_viewport": return Gd.Viewport;
+                case "get_window": return Gd.Viewport;
+                case "queue_redraw": case "queue_sort": case "update": if (Canvas != null) Canvas.Call(this, "queue_redraw", a); return Gv.Null;
+                case "connect":
+                    {
+                        var sv = Get(Gd.A(a, 0).Str).o as GdSignal;
+                        if (sv != null) sv.Connect(Gd.A(a, 1));
+                        return Gv.Null;
+                    }
+                case "emit_signal":
+                    {
+                        var sv = Get(Gd.A(a, 0).Str).o as GdSignal;
+                        if (sv != null) sv.Emit(Slice(a, 1));
+                        return Gv.Null;
+                    }
+                case "set_process": case "set_physics_process": case "set_process_input": case "set_process_unhandled_input": case "set_process_unhandled_key_input": return Gv.Null;
+                case "show": Set("visible", Gv.B(true)); return Gv.Null;
+                case "hide": Set("visible", Gv.B(false)); return Gv.Null;
+                case "is_visible_in_tree": return Gv.B(!HasProp("visible") || Get("visible").T());
+                case "get_global_mouse_position": case "get_local_mouse_position": return Gd.MousePos;
+                case "get_node": case "get_node_or_null": case "find_child": return Gv.Null;
+                case "accept_event": case "grab_focus": case "release_focus": case "move_child": case "set_anchors_preset": case "set_anchor": case "set_offset":
+                case "add_theme_stylebox_override": case "add_theme_color_override": case "add_theme_font_size_override": case "add_theme_font_override":
+                case "add_theme_constant_override": case "set_deferred": case "call_deferred": case "make_current": case "reparent": case "add_to_group": case "set_size": case "set_position":
+                    return Gv.Null;
+                case "get_size": return Get("size");
+                case "get_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }
+                case "get_global_rect": { var p = Get("position"); var s = Get("size"); return Gv.Rect(p.d, p.e, s.d, s.e); }
+                case "get_theme_default_font": return Gv.Null;
+            }
+            if (n.StartsWith("draw_") || n.StartsWith("get_theme_") || n == "get_string_size")
+            {
+                if (Canvas != null) { Canvas.Call(this, n, a); }
+                if (n == "get_string_size") return Gd.StringSize(Gd.A(a, 1), Gd.A(a, 3));
+                return Gv.Null;
+            }
+            return base.Invoke(n, a);
+        }
+
+        public static Gv[] Slice(Gv[] a, int from)
+        {
+            if (a.Length <= from) return new Gv[0];
+            var r = new Gv[a.Length - from]; Array.Copy(a, from, r, 0, r.Length); return r;
+        }
+    }
+
+    /// <summary>Strom scény (get_tree()): jen signál process_frame a časovač (v testech beze smyčky).</summary>
+    public sealed class GdTree : GdNode
+    {
+        public GdTree() { TypeName = "SceneTree"; }
+        public override Gv Invoke(string n, Gv[] a)
+        {
+            switch (n)
+            {
+                case "create_timer": { var t = new GdNode(); t.TypeName = "Timer"; return t.Self; }
+                case "quit": return Gv.Null;
+            }
+            return base.Invoke(n, a);
+        }
+    }
+}

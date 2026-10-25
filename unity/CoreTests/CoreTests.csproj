@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Assets/Pivovar/Core/**/*.cs" />
+    <Compile Include="../Assets/Pivovar/GdGen/**/*.cs" />
     <Compile Include="*.cs" />
   </ItemGroup>
 </Project>
