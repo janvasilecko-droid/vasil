@@ -178,11 +178,11 @@ namespace Pivovar
             HdrpUtil.Set(gs, "middle", new Color(0.55f, 0.55f, 0.55f));
             HdrpUtil.Set(gs, "bottom", new Color(0.30f, 0.30f, 0.33f));
             HdrpUtil.Set(gs, "gradientDiffusion", 3f);
-            HdrpUtil.Set(gs, "multiplier", 1.0f);
+            HdrpUtil.Set(gs, "skyIntensityMode", "Multiplier");
+            HdrpUtil.Set(gs, "multiplier", 350f);          // nity: bez toho je obloha ~1 nit a kov odráží černo
             var ex = HdrpUtil.Add(vol, "Exposure");
-            HdrpUtil.Set(ex, "mode", "Automatic");
-            HdrpUtil.Set(ex, "limitMin", 5f);
-            HdrpUtil.Set(ex, "limitMax", 12f);
+            HdrpUtil.Set(ex, "mode", "Fixed");
+            HdrpUtil.Set(ex, "fixedExposure", 9.5f);
             HdrpUtil.Set(ex, "compensation", 0f);
             var tm = HdrpUtil.Add(vol, "Tonemapping");
             HdrpUtil.Set(tm, "mode", "ACES");
@@ -230,7 +230,7 @@ namespace Pivovar
 
             // okna (svítící plochy) s příčkami
             Material win = HdrpUtil.Lit(new Color(0.7f, 0.82f, 1f), 0f, 0.1f, false);
-            HdrpUtil.SetEmissive(win, new Color(0.7f, 0.82f, 1f), 450f);
+            HdrpUtil.SetEmissive(win, new Color(0.7f, 0.82f, 1f), 3500f);
             Material frame = HdrpUtil.Lit(new Color(0.2f, 0.2f, 0.22f), 0.2f, 0.5f, false);
             for (int i = 0; i < 6; i++)
             {
