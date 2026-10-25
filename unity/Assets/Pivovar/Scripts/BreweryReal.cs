@@ -63,8 +63,8 @@ namespace Pivovar
             Box(n, new Vector3(0.012f, 0.006f, 0.052f), steelP, new Vector3(x, rp * 2.2f + 0.020f, 0), Vector3.zero);
         }
 
-        /// <summary>Tyto 3 klapky jdou plynule přiškrcovat (stejně jako v Godot aplikaci): škrtidlo SK, ventil u čerpadla C4, Belimo.</summary>
-        public static readonly string[] ThrottleIds = { "valve_muraqe36", "valve_murbq6e1", "valve_murciy3u" };
+        /// <summary>Tyto 4 klapky jdou plynule přiškrcovat (stejně jako v Godot aplikaci): škrtidlo SK, ventil u čerpadla C4, Belimo.</summary>
+        public static readonly string[] ThrottleIds = { "valve_muraqe36", "valve_murbq6e1", "valve_murciy3u", "valve_murcle2n" };
         public static bool CanThrottle(PlanItem it) { return it != null && System.Array.IndexOf(ThrottleIds, it.Id) >= 0; }
 
         /// <summary>Otevření klapky v % (0 zavřeno, 100 otevřeno) – stejná pravidla jako v Godotu (pct u škrtidla, part u mezipolohy).</summary>

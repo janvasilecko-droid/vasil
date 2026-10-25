@@ -1294,7 +1294,7 @@ func _set_valve_pct(best, pct: int) -> void:
     redraw_valves()
 
 ## přiškrcovat (plynule 0–100 %) jdou jen tyto 3 klapky; všechny ostatní jsou jen otevřeno / zavřeno
-const THROTTLE_IDS: = ["valve_muraqe36", "valve_murbq6e1", "valve_murciy3u"]   # škrtidlo scezování u SK, ventil u čerpadla C4, Belimo
+const THROTTLE_IDS: = ["valve_muraqe36", "valve_murbq6e1", "valve_murciy3u", "valve_murcle2n"]   # škrtidlo scezování u SK, ventil u čerpadla C4, Belimo, kulový ventil u studené vody z řadu
 func can_throttle(it) -> bool:
     return it != null and THROTTLE_IDS.has(str(it.get("id", "")))
 
