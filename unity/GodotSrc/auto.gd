@@ -337,6 +337,8 @@ func tick(dt: float) -> void :
     var id: = _id()
     _pump_wait()
 
+    # nad 57 °C míchat pomaleji (Kunze s. 241, obvodová rychlost < 1 m/s ≈ 20 Hz), jinak vzniká gel z β-glukanu
+    if r.stir and sim.thick_factor(r) > 0.1: r.hz = 20.0 if r.T > 57.0 else 35.0
     if T_set > 0:
         if _is_hold(id) and absf(r.Tsens - T_set) <= 1.5: held += dt / 60.0
         _regulate()

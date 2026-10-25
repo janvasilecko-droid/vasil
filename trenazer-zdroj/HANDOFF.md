@@ -1,5 +1,5 @@
 # Trenažér varny Zajíc – předávací dokument pro dalšího Clauda
-> **POZOR (2026-10-25)**: Tento dokument a záloha zdrojů `zdroj-2d-*.tar.gz` / `zdroj-3d-*.tar.gz` jsou z 2D **v50** / 3D **v133**. Jiná relace mezitím vydala 2D **v68** (a Unity verzi) přímo do repa. **Nepublikovat z této zálohy** (přepsalo by se v68 a novější). Nejdřív `git pull` repa a zjistit aktuální `trenazer2d/version.json` a zdroje; z této zálohy jen přenést změny z v50 (whirlpool usazení 20 min v sim.gd; spargeEndP 1,0 v sim.gd a params.gd), pokud v novějším zdroji ještě nejsou.
+> **STAV 2026-10-25**: vydáno 2D **v69**, 3D **v151** (základ: aktuální zdroj z `unity/GodotSrc/` v tomto repu, ne ze zálohy v50 v `trenazer-zdroj/*.tar.gz`, ta je zastaralá). **Pracovat vždy z `unity/GodotSrc/`** (`git pull` nejdřív). Pozor: `unity/GodotSrc/updater.gd` je Unity varianta (UnityUpdate) a v Godotu se nezkompiluje – pro Godot pck použít čistý updater.gd (je v záloze `zdroj-2d-godot43.tar.gz`). 3D = stejné skripty + `view3d.gd/tscn` + project.godot (Godot 4.7.2, Forward+). Poslední změny: smyk míchadla (gel β-glukanu, `gelK` ODHAD, Kunze s. 241), usazování ve vířivce 20 min, konec vyslazování 1,0 °P.
 Stav: 2026-10-24, 2D verze 50 (Godot 4.3), 3D verze 133 (Godot 4.7.2). Uživatel: Vasil (Pivovar Zajíc, varna 40 hl), komunikuje česky, neformálně, stručně.
 
 ## Pravidla od Vasila

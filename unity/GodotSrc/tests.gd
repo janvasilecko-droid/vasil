@@ -570,6 +570,17 @@ func run() -> int:
         sim.skQmax()
     chk("nános: několik trhnutí odstraní nános a zvedne Qmax", S.sk.get("dep", 1.0) < 0.4 and S.sk.Qmax > qm_dep * 1.2, "Qmax %.0f → %.0f, nános %.2f" % [qm_dep, S.sk.Qmax, S.sk.get("dep", 1.0)])
     sim.deposit_on = false
+    # --- smyk míchadla: nad 57 °C a rychle = gel β-glukanu, pomalu ne ---
+    for hzt in [20.0, 45.0]:
+        fresh();S = sim.S
+        S.rvp.w = 3000.0;S.rvp.g = 700.0;S.rvp.T = 63.0;S.rvp.stir = true;S.rvp.hz = hzt
+        for i in 60: sim.sim_step(10.0)
+        if hzt < 30.0: chk("smyk: pomalé míchání (20 Hz) nad 57 °C gel netvoří", S.get("gel", 0.0) < 0.01, "gel %.3f" % S.get("gel", 0.0))
+        else: chk("smyk: rychlé míchání (45 Hz) nad 57 °C tvoří gel a zvyšuje odpor lože", S.get("gel", 0.0) > 0.1, "gel %.3f" % S.get("gel", 0.0))
+    var res0: float = sim.skRes(0.001)
+    S.gel = 0.0;var res_g0: float = sim.skRes(0.001);S.gel = 1.0
+    chk("smyk: gel zvýší odpor lože", sim.skRes(0.001) > res_g0 * 1.2, "%.3g → %.3g" % [res_g0, sim.skRes(0.001)])
+    S.gel = 0.0
     # --- víčko spilky: zavřené = tlakuje se ---
     fresh();S = sim.S
     S.sp["lidOpen"] = false;S.sp.L = 100.0;sim.sim_step(1.0)

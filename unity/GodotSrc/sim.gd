@@ -31,7 +31,7 @@ const CFG_DEFAULT: = {
     "cpSteel": 0.50, "hltSteel": 600.0, "hltUA": 0.01, "skMuP": 0.047, 
     "pipeLenScale": 0.4, "bore25": 50.0, "bore40": 50.0, "bore50": 75.0, 
     "p1_H0": 32.0, "p1_Qn": 400.0, "p2_H0": 22.0, "p2_Qn": 150.0, "p3_H0": 26.0, "p3_Qn": 200.0, 
-    "skDpComp": 30000.0, "skTeigRho": 350.0, "skTeigK": 0.03, "skCreepK": 0.0015, "skDpCompact": 80.0, "skCompK": 0.05, "skDpChannel": 160.0, "skChanK": 0.02, 
+    "skDpComp": 30000.0, "skTeigRho": 350.0, "skTeigK": 0.03, "skCreepK": 0.0015, "skDpCompact": 80.0, "skCompK": 0.05, "skDpChannel": 160.0, "skChanK": 0.02, "gelK": 0.4, 
 }
 const HOPS: = [
     {"id": "zpc", "name": "Žatecký poloraný červeňák", "a": 3.5}, 
@@ -101,7 +101,7 @@ const CALIB_RANGE: = {
     "rvpSteel": [0.0, 3000.0], "mpSteel": [0.0, 3000.0], "wpSteel": [0.0, 3000.0], "skSteel": [0.0, 3000.0], "hltSteel": [0.0, 5000.0], "cpSteel": [0.4, 0.6],
     "rvpUAst": [0.5, 30.0], "mpUAst": [0.5, 30.0], "hltUAst": [0.1, 20.0], "rvpJacketL": [200.0, 6000.0], "mpJacketL": [200.0, 6000.0],
     "skArea": [1.0, 20.0], "skPerm": [1e-13, 1e-9], "skDpComp": [1000.0, 200000.0], "skSuction": [0.0, 60000.0], "skRetentionLkg": [0.5, 3.0], "preboilV": [2000.0, 5000.0], "mashFilmK": [0.0, 30.0], "boilerWaterKg": [50.0, 20000.0], "plateRefQ": [10.0, 500.0], "betaAct": [0.1, 50.0], "kdAlpha63": [0.001, 1.0], "kdBeta63": [0.005, 3.0],
-    "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1],
+    "skDpCompact": [10.0, 500.0], "skDpChannel": [20.0, 800.0], "skMuP": [0.0, 0.1], "gelK": [0.0, 2.0],
     "UA1": [1.0, 200.0], "UA2": [1.0, 200.0], "boilerKW": [50.0, 3000.0], "steamBar": [0.2, 8.0], "chillerKW": [5.0, 500.0],
     "hltCap": [1000.0, 30000.0], "lvVol": [1000.0, 30000.0], "tbWater": [95.0, 100.5], "ambientT": [-5.0, 40.0], "coolWaterT": [1.0, 30.0],
     "waterFlow": [10.0, 600.0], "mainsQ": [100.0, 2000.0], "mainsBar": [0.5, 10.0], "iboKeep": [0.2, 1.0], "lvUA": [0.0, 2.0], "skBedLkg": [1.5, 4.5], "ferMu": [0.005, 0.3], "ferQ": [0.02, 1.0], "ferKsMu": [0.5, 50.0], "ferKsQ": [0.5, 50.0], "ferXmax": [1.0, 15.0], "ferTa": [0.03, 0.15], "ferHeat": [0.2, 1.0], "ferCool": [0.02, 5.0], "ferDiaK": [0.001, 0.2], "ferDiaT": [0.02, 0.2], "ferDiaRed": [0.005, 0.5], "cipHeat": [0.2, 5.0], "cipLyeT": [60.0, 90.0], "cipAcidT": [30.0, 70.0], "cipMin": [5.0, 60.0], "cipRinseMin": [1.0, 30.0],
@@ -171,7 +171,7 @@ func new_state() -> void :
         "hops": [], "log": [], "once": {}, "hist": [], 
         "flags": {"rest52": 0.0, "decCount": 0, "dmsPre": null, "knock": null, "boilStart": null, "decStart": 0, "r63": 0.0, "r72": 0.0, 
             "r72b": 0.0, "r63b": 0.0, "inSK": 0, "under": 0, "clearOK": 0, "full": 0, "wortBoil": 0.0, "whirlDone": 0, "castStart": null, "pushed": 0}, 
-        "extIn": 0.0, "pH": 5.6, "tannin": 0.0, "usedWater": 0.0, "maxSparge": 0.0, "drainL": 0.0, "drainExt": 0.0, "spillL": 0.0, "turbSum": 0.0, "turbVol": 0.0, 
+        "extIn": 0.0, "pH": 5.6, "tannin": 0.0, "gel": 0.0, "usedWater": 0.0, "maxSparge": 0.0, "drainL": 0.0, "drainExt": 0.0, "spillL": 0.0, "turbSum": 0.0, "turbVol": 0.0, 
         "steamOK": {"rvp": true, "mp": true, "hlt": true}, "_pd": {}, "Tsteam": 20.0, 
         "plates": {}, "plateDuty": {}, "plateFlow": {}, "lastDuty": {}, "lastPlateFlow": {}, "flows": [], 
         "_skTop": 0, "_skLow": 0, "_rvpIn": 0, "skFillNow": false, "lvFillLog": false, 
@@ -364,7 +364,7 @@ func skRes(mu: float) -> float:
     var L: float = maxf(0.05, skBedH())
     var Lt: float = sk.get("teig", 0.0) / (c.skArea * c.skTeigRho)
     var kt: float = c.skPerm * c.skTeigK
-    return mu * (L / maxf(1e-16, k_bed) + Lt / kt) / pow(1.0 - 0.62 * sk.get("dep", 0.0), 2) / (c.skArea * (1.0 + 1.5 * sk.ch))
+    return mu * (L / maxf(1e-16, k_bed) + Lt / kt) / pow(1.0 - 0.62 * sk.get("dep", 0.0), 2) * (1.0 + c.get("gelK", 0.4) * S.get("gel", 0.0)) / (c.skArea * (1.0 + 1.5 * sk.ch))
 
 func skQmax() -> void :
     var sk = S.sk; var c = S.cfg
@@ -955,6 +955,13 @@ func sim_step(dt: float) -> void :
     for pair in [[rvp, "rvp"], [mp, "mp"]]:
         var v = pair[0]; var n: String = pair[1]
         heat(v, m, dt, n);react(v, m)
+        # smyk míchadla (Kunze s. 241): nad 57–58 °C a při obvodové rychlosti > 1 m/s se z β-glukanu tvoří gel → horší scezování.
+        # Poloměr lopatek 0,6 m a rpm = 0,8·Hz jsou stejné odhady jako u vírového kuželu; míra gelu a gelK jsou ODHAD.
+        if v.stir and v.g > 5.0 and v.T > 57.5 and vol(v) > 200.0:
+            var us: float = v.hz * 0.8 / 60.0 * TAU * 0.6
+            if us > 1.0:
+                S.gel = minf(1.0, S.get("gel", 0.0) + clampf((us - 1.0) / 1.0, 0.0, 1.5) * 0.02 * m)
+                if S.gel > 0.15: once("gel%d" % tb(3600), "Míchadlo %s se točí příliš rychle při %s °C (obvodová rychlost %s m/s, kniha: pod 1 m/s): β-glukany tvoří gel a scezování bude pomalejší. Sniž otáčky." % [VN(n), fmt0(v.T), fmt1(us)], "warn")
         if n == "rvp":
 
             var on: bool = v.stir and v.w > 200

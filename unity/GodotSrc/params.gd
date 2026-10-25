@@ -14,6 +14,7 @@ const META: = {
 	"mpUA": ["kW/K", "ESTIMATED", "±50 %", "ztráty mladinové pánve"], "skUA": ["kW/K", "ESTIMATED", "±50 %", "ztráty SK"], "skContactUA": ["kW/K", "ESTIMATED", "±50 %", "přestup náplň ↔ stěna SK"],
 	"mpUAst": ["kW/K", "ESTIMATED", "±40 %", "pára → náplň mladinové pánve"], "mpJacketL": ["L", "ESTIMATED", "±20 %", "smáčení pláště mladinové pánve"],
 	"mpCap": ["L", "ESTIMATED", "±10 %", "mladinová pánev"], "mpDead": ["L", "ESTIMATED", "±50 %", "mrtvý objem"], "wpDead": ["L", "ESTIMATED", "±50 %", "kaly + mrtvý objem vířivky"],
+	"gelK": ["-", "ESTIMATED", "0–1", "zvýšení odporu lože při plném gelu β-glukanu (smyk míchadla nad 57 °C, Kunze s. 241); směr z knihy, velikost ODHAD – ověřit scezovacím časem při rychlém míchání"],
 	"skMuP": ["1/°P", "LITERATURE", "0,04–0,055", "μ_sladiny/μ_vody = e^(skMuP·°P); EBC kongresní sladina 8,6 % má ~1,4–1,7 mPa·s při 20 °C (≈1,5× vody)"],
 	"skSuction": ["Pa", "ESTIMATED", "±50 %", "největší podtlak pod sítem, který C2 vytvoří – vakuometr pod sítem"],
 	"spargeEndP": ["°P", "LITERATURE", "0,7–1 % (Kosa s. 147, 156)", "konec vyslazování (poslední podíl)"],
