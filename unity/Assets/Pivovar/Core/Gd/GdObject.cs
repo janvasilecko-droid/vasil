@@ -16,7 +16,8 @@ namespace Pivovar.Gd
             {
                 case "connect": Connect(Gd.A(a, 0)); return Gv.Null;
                 case "emit": Emit(a); return Gv.Null;
-                case "disconnect": targets.Clear(); return Gv.Null;
+                case "disconnect": { var f = Gd.A(a, 0); if (f.IsNull) targets.Clear(); else targets.RemoveAll(t => ReferenceEquals(t.o, f.o)); return Gv.Null; }
+                case "get_connections": { var arr = new GdArray(); foreach (var t in targets) { var d = new GdDict(); d.Set(Gv.S("callable"), t); d.Set(Gv.S("signal"), Self); arr.l.Add(Gv.D(d)); } return Gv.A(arr); }
                 case "is_connected": return Gv.B(targets.Count > 0);
             }
             return base.Invoke(n, a);

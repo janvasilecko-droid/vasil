@@ -186,6 +186,7 @@ namespace Pivovar.Gd
                 }
                 tree.Sig("process_frame").Emit(new Gv[0]);
             }
+            GdUi.Tick(dt);
             foreach (var tw in Tweens.ToArray()) { tw.Step_(dt); if (tw.Done) Tweens.Remove(tw); }
             var dtg = new Gv[] { Gv.F(dt) };
             Walk(root, n =>
@@ -229,6 +230,7 @@ namespace Pivovar.Gd
             Walk(root, n => all.Add(n));
             var args = new Gv[] { e.Self };
             for (int i = all.Count - 1; i >= 0; i--) { var n = all[i]; if (n.Get("_input_off").T()) continue; n.Invoke("_input", args); }
+            if (GdUi.Active && GdUi.GuiInput(root, e)) return;
             for (int i = all.Count - 1; i >= 0; i--)
             {
                 var n = all[i];

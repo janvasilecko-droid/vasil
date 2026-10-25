@@ -138,6 +138,8 @@ namespace Pivovar.Gd
                 case "bsearch": { for (int i = 0; i < l.Count; i++) if (!Gv.Lt(l[i], A(a, 0))) return Gv.I(i); return Gv.I(l.Count); }
                 case "sum": { Gv acc = Gv.I(0); foreach (var v in l) acc = acc + v; return acc; }
                 case "to_byte_array": return s;
+                case "encode_s16": { int off = (int)A(a, 0).d; long v = (long)A(a, 1).d; if (off >= 0 && off + 1 < l.Count) { l[off] = Gv.I(v & 0xff); l[off + 1] = Gv.I((v >> 8) & 0xff); } return Gv.Null; }
+                case "encode_u8": { int off = (int)A(a, 0).d; if (off >= 0 && off < l.Count) l[off] = Gv.I((long)A(a, 1).d & 0xff); return Gv.Null; }
             }
             throw NoMethod(s, n);
         }

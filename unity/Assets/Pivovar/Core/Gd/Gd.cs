@@ -194,6 +194,7 @@ namespace Pivovar.Gd
             {
                 case "RandomNumberGenerator": return new GdRng().Self;
                 case "JSON": { var n = new GdNode(); n.TypeName = "JSON"; return n.Self; }
+                case "Curve2D": return new GdCurve2D().Self;
             }
             var node = new GdNode(); node.TypeName = t; return node.Self;
         }
@@ -392,6 +393,7 @@ namespace Pivovar.Gd
                     if (n == "stringify") return Gv.S(Json(A(a, 0), a.Length > 1 && A(a, 1).Str != null && A(a, 1).Str.Length > 0));
                     break;
                 case "Geometry2D":
+                    { Gv gr; if (GdGeom.Call(n, a, out gr)) return gr; }
                     if (n == "get_closest_point_to_segment")
                     {
                         Gv p = A(a, 0), s1 = A(a, 1), s2 = A(a, 2);

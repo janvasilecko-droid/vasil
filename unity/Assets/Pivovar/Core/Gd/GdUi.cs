@@ -145,8 +145,10 @@ namespace Pivovar.Gd
         {
             switch (t)
             {
-                case "Control": case "VBoxContainer": case "HBoxContainer": case "BoxContainer": case "GridContainer": case "HFlowContainer": case "VFlowContainer": case "FlowContainer":
-                case "CenterContainer": case "MarginContainer": case "ColorRect": case "TextureRect": case "Label": case "SubViewportContainer": case "HSeparator": case "VSeparator": return t == "Label" || t == "ColorRect" || t == "TextureRect" ? 2 : (t == "Control" ? 0 : 1);
+                case "Label": case "ColorRect_": return 2;
+                case "VBoxContainer": case "HBoxContainer": case "BoxContainer": case "GridContainer": case "HFlowContainer": case "VFlowContainer": case "FlowContainer":
+                case "CenterContainer": case "MarginContainer": case "PanelContainer": case "ScrollContainer": case "TextureRect": case "HSeparator": case "VSeparator": case "ProgressBar": case "AspectRatioContainer":
+                    return 1;
             }
             return 0;
         }

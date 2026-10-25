@@ -46,6 +46,7 @@ namespace Pivovar.Gd
     public static class GdRender
     {
         public static GdNode CurrentCam;
+        public static List<RenderItem> CtlItems = new List<RenderItem>();   // ovládací prvky v pořadí kreslení (pro zásah myší)
 
         static Gv P(GdNode n, string k) { return n.Get(k); }
 
@@ -123,13 +124,18 @@ namespace Pivovar.Gd
         {
             var list = new List<RenderItem>(); int seq = 0;
             GdUi.LayoutAll(root);
+            if (GdUi.Active) GdUi.LayoutTooltip();
+            CtlItems = new List<RenderItem>();
             Rec(root, Mat.Id, CameraMat(), true, 0, 0, 1, 1, 1, 1, list, ref seq, null);
-            list.Sort((x, y) =>
+            if (GdUi.Active && GdUi.TooltipRoot != null && GdUi.TooltipVisible) Rec(GdUi.TooltipRoot, Mat.Id, CameraMat(), false, 1000, 0, 1, 1, 1, 1, list, ref seq, null);
+            Comparison<RenderItem> cmp = (x, y) =>
             {
                 int c = x.layer.CompareTo(y.layer); if (c != 0) return c;
                 c = x.z.CompareTo(y.z); if (c != 0) return c;
                 return x.seq.CompareTo(y.seq);
-            });
+            };
+            list.Sort(cmp);
+            CtlItems.Sort(cmp);
             return list;
         }
 
@@ -162,6 +168,7 @@ namespace Pivovar.Gd
             }
             if (GdUi.Active && n.IsCtl)
             {
+                CtlItems.Add(new RenderItem { node = n, m = full, layer = layer, z = zz, seq = seq, clip = cl, world = world });
                 var ui = GdUi.Paint(n);
                 if (ui != null)
                 {
