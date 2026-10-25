@@ -40,7 +40,7 @@ public partial class S_iodine : GdNode {
   public Gv _gui_input(Gv e = default(Gv)) {
     if (((Gv.Is(e, "InputEventMouseButton") && (e.G("pressed")).T()) && Gv.Eq(e.G("button_index"), Gd.K("MOUSE_BUTTON_LEFT")))) {
       Gv pos = e.G("position");
-      if ((Gd.Ctor("Rect2", (Gd.K("size").G("x") - Gv.I(40L)), Gv.I(6L), Gv.I(32L), Gv.I(30L)).C("has_point", pos)).T()) {
+      if ((Gd.Ctor("Rect2", (Self.G("size").G("x") - Gv.I(40L)), Gv.I(6L), Gv.I(32L), Gv.I(30L)).C("has_point", pos)).T()) {
         Self.C("queue_free");
       } else if ((Gd.Ctor("Rect2", Gv.I(14L), Gv.I(300L), Gv.I(230L), Gv.I(40L)).C("has_point", pos)).T()) {
         grist = Gv.B(!(grist).T());
@@ -56,9 +56,9 @@ public partial class S_iodine : GdNode {
   public Gv _draw() {
     Gv f = m.G("font");
     Gv fb = m.G("font_b");
-    S_art.rrect_border(Self, Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.K("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.085), Gv.F(0.1), Gv.F(0.97)), Gd.Ctor("Color", Gv.S("f2c230")), Gv.I(2L), Gv.F(8.0));
+    S_art.rrect_border(Self, Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Self.G("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.085), Gv.F(0.1), Gv.F(0.97)), Gd.Ctor("Color", Gv.S("f2c230")), Gv.I(2L), Gv.F(8.0));
     Self.C("draw_string", fb, Gd.Ctor("Vector2", Gv.I(14L), Gv.I(28L)), (Gv.S("JODOVÁ ZKOUŠKA – %s") % ((Gv.Eq(source, Gv.S("rvp")) ? Gv.S("dílo v pánvi") : Gv.S("rmut / sladina v SK")))), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(17L), Gd.Ctor("Color", Gv.S("f2c230")));
-    Self.C("draw_string", fb, Gd.Ctor("Vector2", (Gd.K("size").G("x") - Gv.I(30L)), Gv.I(27L)), Gv.S("X"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(18L), Gd.Ctor("Color", Gv.S("e6ebef")));
+    Self.C("draw_string", fb, Gd.Ctor("Vector2", (Self.G("size").G("x") - Gv.I(30L)), Gv.I(27L)), Gv.S("X"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(18L), Gd.Ctor("Color", Gv.S("e6ebef")));
     Gv c = Gd.Ctor("Vector2", Gv.I(150L), Gv.I(160L));
     Self.C("draw_circle", c, Gv.F(112.0), Gd.Ctor("Color", Gv.S("8f9aa3")));
     Self.C("draw_circle", c, Gv.F(108.0), Gd.Ctor("Color", Gv.S("f4f6f7")));

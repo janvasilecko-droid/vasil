@@ -141,7 +141,7 @@ public partial class S_editor : GdNode {
     hb.C("add_child", t);
     Gv more = Gd.New("VBoxContainer");
     more.C("add_theme_constant_override", Gv.S("separation"), Gv.I(5L));
-    Gv cb = _b(hb, Gv.S("▴ sbalit"), Gd.Fn((_a) => {  _ = Gd.K("pass"); return Gv.Null; }));
+    Gv cb = _b(hb, Gv.S("▴ sbalit"), Gd.Fn((_a) => {  _ = Self.G("pass"); return Gv.Null; }));
     cb.G("pressed").C("connect", Gd.Fn((_a) => {  more = more.S("visible", Gv.B(!(more.G("visible")).T())); info = info.S("visible", more.G("visible")); cb = cb.S("text", ((more.G("visible")).T() ? Gv.S("▴ sbalit") : Gv.S("▾ rozbalit"))); return Gv.Null; }));
     Gv r = _row(v);
     foreach (Gv d in (Gd.Arr(Gd.Arr(Gv.S("select"), Gv.S("⬚ Výběr (V)")), Gd.Arr(Gv.S("pipe"), Gv.S("╱ Trubka (T)")), Gd.Arr(Gv.S("hose"), Gv.S("∿ Nerez. hadice (H)")), Gd.Arr(Gv.S("pitch"), Gv.S("⤳ Spílací hadice")), Gd.Arr(Gv.S("joint"), Gv.S("● Spoj (J)")), Gd.Arr(Gv.S("measure"), Gv.S("⟷ Měřit (M)")), Gd.Arr(Gv.S("route"), Gv.S("➜ Cesta (C)")), Gd.Arr(Gv.S("paint"), Gv.S("▦ Barva (B)")))).Iter()) {

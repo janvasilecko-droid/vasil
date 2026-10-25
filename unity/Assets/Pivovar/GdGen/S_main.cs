@@ -37,13 +37,13 @@ public partial class S_main_CabDock : GdNode {
       return Gv.Null;
     }
     Gv w = _to_world(p);
-    lens = lens.S("size", Gd.Ctor("Vector2", Gd.maxf(Gv.F(250.0), (Gd.K("size").G("x") - Gv.F(16.0))), Gv.F(250.0)));
+    lens = lens.S("size", Gd.Ctor("Vector2", Gd.maxf(Gv.F(250.0), (Self.G("size").G("x") - Gv.F(16.0))), Gv.F(250.0)));
     lens = lens.S("custom_minimum_size", lens.G("size"));
     lcam.C("make_current");
     Gv z = (cam2.G("zoom").G("x") * Gv.F(2.9));
     lcam = lcam.S("position", w);
     lcam = lcam.S("zoom", Gd.Ctor("Vector2", z, z));
-    Gv ly = ((Gv.Lt(p.G("y"), (Gd.K("size").G("y") * Gv.F(0.5))) ? ((Gd.K("size").G("y") - lens.G("size").G("y")) - Gv.F(8.0)) : Gv.F(8.0))).AsF();
+    Gv ly = ((Gv.Lt(p.G("y"), (Self.G("size").G("y") * Gv.F(0.5))) ? ((Self.G("size").G("y") - lens.G("size").G("y")) - Gv.F(8.0)) : Gv.F(8.0))).AsF();
     lens = lens.S("position", Gd.Ctor("Vector2", Gv.F(8.0), ly));
     lens = lens.S("visible", Gv.B(true));
     lens_on = Gv.B(true);
@@ -90,8 +90,8 @@ public partial class S_main_CabDock : GdNode {
     sv.C("add_child", cam2);
     cam2 = cam2.S("enabled", Gv.B(true));
     cam2.C("make_current");
-    Gd.K("resized").C("connect", Gd.Fn((_a) => reset_view()));
-    Gd.K("gui_input").C("connect", Gd.Fn((_a) => _on_input(Gd.A(_a, 0))));
+    Self.G("resized").C("connect", Gd.Fn((_a) => reset_view()));
+    Self.G("gui_input").C("connect", Gd.Fn((_a) => _on_input(Gd.A(_a, 0))));
     lens = Gd.New("SubViewportContainer");
     lens = lens.S("stretch", Gv.B(true));
     lens = lens.S("mouse_filter", Gd.StaticGet("Control", "MOUSE_FILTER_IGNORE"));
@@ -133,7 +133,7 @@ public partial class S_main_CabDock : GdNode {
   }
   public Gv base_zoom() {
     Gv r = rect();
-    return ((!(m.G("dock_big")).T() ? Gd.minf((Gd.K("size").G("x") / r.G("size").G("x")), (Gd.K("size").G("y") / r.G("size").G("y"))) : (Gd.K("size").G("x") / r.G("size").G("x")))).AsF();
+    return ((!(m.G("dock_big")).T() ? Gd.minf((Self.G("size").G("x") / r.G("size").G("x")), (Self.G("size").G("y") / r.G("size").G("y"))) : (Self.G("size").G("x") / r.G("size").G("x")))).AsF();
     return Gv.Null;
   }
   public Gv reset_view() {
@@ -142,7 +142,7 @@ public partial class S_main_CabDock : GdNode {
     return Gv.Null;
   }
   public Gv fit() {
-    if (((Gv.Eq(cam2, Gv.Null) || Gv.Eq(m.G("cabinet"), Gv.Null)) || Gv.Lt(Gd.K("size").G("x"), Gv.I(10L)))) {
+    if (((Gv.Eq(cam2, Gv.Null) || Gv.Eq(m.G("cabinet"), Gv.Null)) || Gv.Lt(Self.G("size").G("x"), Gv.I(10L)))) {
       return Gv.Null;
     }
     if ((user).T()) {
@@ -152,14 +152,14 @@ public partial class S_main_CabDock : GdNode {
     Gv r = rect();
     Gv z = base_zoom();
     cam2 = cam2.S("zoom", Gd.Ctor("Vector2", z, z));
-    cam2 = cam2.S("position", Gd.Ctor("Vector2", r.C("get_center").G("x"), (r.G("position").G("y") + ((Gd.K("size").G("y") * Gv.F(0.5)) / z))));
+    cam2 = cam2.S("position", Gd.Ctor("Vector2", r.C("get_center").G("x"), (r.G("position").G("y") + ((Self.G("size").G("y") * Gv.F(0.5)) / z))));
     _clamp();
     return Gv.Null;
   }
   public Gv _clamp() {
     Gv r = rect();
     Gv z = (cam2.G("zoom").G("x")).AsF();
-    Gv half = ((Gd.K("size") * Gv.F(0.5)) / z);
+    Gv half = ((Self.G("size") * Gv.F(0.5)) / z);
     Gv lo = (r.G("position") + half);
     Gv hi = (r.G("end") - half);
     cam2 = cam2.S("position", cam2.G("position").S("x", (Gv.Gt(lo.G("x"), hi.G("x")) ? r.C("get_center").G("x") : Gd.clampf(cam2.G("position").G("x"), lo.G("x"), hi.G("x")))));
@@ -177,11 +177,11 @@ public partial class S_main_CabDock : GdNode {
     return Gv.Null;
   }
   public Gv _draw() {
-    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.Ctor("Vector2", Gv.I(2L), Gd.K("size").G("y"))), Gd.Ctor("Color", Gv.S("2a323a")));
+    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.Ctor("Vector2", Gv.I(2L), Self.G("size").G("y"))), Gd.Ctor("Color", Gv.S("2a323a")));
     return Gv.Null;
   }
   public Gv _to_world(Gv p = default(Gv)) {
-    return (cam2.G("position") + (((p - (Gd.K("size") * Gv.F(0.5)))) / cam2.G("zoom").G("x")));
+    return (cam2.G("position") + (((p - (Self.G("size") * Gv.F(0.5)))) / cam2.G("zoom").G("x")));
     return Gv.Null;
   }
   public Gv _pot_from(Gv p = default(Gv)) {
@@ -1018,13 +1018,13 @@ public partial class S_main_Mini : GdNode {
     sc = Gd.minf((Gv.F(330.0) / B.G("size").G("x")), (Gv.F(110.0) / B.G("size").G("y")));
     org = B.G("position");
     Self.S("custom_minimum_size", ((B.G("size") * sc)).C("ceil"));
-    Self.S("size", Gd.K("custom_minimum_size"));
+    Self.S("size", Self.G("custom_minimum_size"));
     Self.S("mouse_filter", Gd.StaticGet("Control", "MOUSE_FILTER_STOP"));
     Self.S("anchor_top", Gv.F(1.0));
     Self.S("anchor_bottom", Gv.F(1.0));
     Self.S("offset_left", Gv.I(12L));
-    Self.S("offset_right", (Gv.I(12L) + Gd.K("size").G("x")));
-    Self.S("offset_top", (Gv.I(-14L) - Gd.K("size").G("y")));
+    Self.S("offset_right", (Gv.I(12L) + Self.G("size").G("x")));
+    Self.S("offset_top", (Gv.I(-14L) - Self.G("size").G("y")));
     Self.S("offset_bottom", Gv.I(-14L));
     Self.S("clip_contents", Gv.B(true));
     view = S_main_MiniView.New();
@@ -1178,10 +1178,10 @@ public partial class S_main_MiniView : GdNode {
     Gv z = (m.G("cam").G("zoom").G("x")).AsF();
     Gv avail = (Gd.Ctor("Vector2", (s.G("x") - m.C("right_w")), (s.G("y") - Gv.F(60.0))) / z);
     Gv ctr = (m.G("cam").G("position") - (Gd.Ctor("Vector2", (m.C("right_w") * Gv.F(0.5)), Gv.F(-30.0)) / z));
-    if ((Gv.Lt(Gd.K("size").G("x"), Gv.F(4.0)) || Gv.Lt(Gd.K("size").G("y"), Gv.F(4.0)))) {
+    if ((Gv.Lt(Self.G("size").G("x"), Gv.F(4.0)) || Gv.Lt(Self.G("size").G("y"), Gv.F(4.0)))) {
       return Gv.Null;
     }
-    Gv r = Gd.Ctor("Rect2", mini.C("w2m", (ctr - (avail * Gv.F(0.5)))), (avail * mini.G("sc"))).C("abs").C("intersection", Gd.Ctor("Rect2", Gd.Ctor("Vector2", Gv.I(1L), Gv.I(1L)), (Gd.K("size") - Gd.Ctor("Vector2", Gv.I(2L), Gv.I(2L)))));
+    Gv r = Gd.Ctor("Rect2", mini.C("w2m", (ctr - (avail * Gv.F(0.5)))), (avail * mini.G("sc"))).C("abs").C("intersection", Gd.Ctor("Rect2", Gd.Ctor("Vector2", Gv.I(1L), Gv.I(1L)), (Self.G("size") - Gd.Ctor("Vector2", Gv.I(2L), Gv.I(2L)))));
     if ((Gv.Le(r.G("size").G("x"), Gv.F(0.0)) || Gv.Le(r.G("size").G("y"), Gv.F(0.0)))) {
       return Gv.Null;
     }

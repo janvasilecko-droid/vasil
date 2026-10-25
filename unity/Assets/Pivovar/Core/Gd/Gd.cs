@@ -259,7 +259,31 @@ namespace Pivovar.Gd
                 case "OK": return Gv.I(0);
                 case "FAILED": return Gv.I(1);
             }
-            if (n.StartsWith("KEY_") || n.StartsWith("PRESET_") || n.StartsWith("SIZE_") || n.StartsWith("MOUSE_") || n.StartsWith("ANCHOR") || n.StartsWith("CURSOR_"))
+            if (n.StartsWith("KEY_"))
+            {
+                string kn = n.Substring(4);
+                if (kn.Length == 1) return Gv.I(char.IsDigit(kn[0]) || char.IsLetter(kn[0]) ? kn[0] : 0);
+                switch (kn)
+                {
+                    case "SPACE": return Gv.I(32); case "EQUAL": return Gv.I(61); case "MINUS": return Gv.I(45); case "PLUS": return Gv.I(43);
+                    case "ESCAPE": return Gv.I(4194305); case "TAB": return Gv.I(4194306); case "BACKSPACE": return Gv.I(4194308);
+                    case "ENTER": return Gv.I(4194309); case "KP_ENTER": return Gv.I(4194310); case "INSERT": return Gv.I(4194311); case "DELETE": return Gv.I(4194312);
+                    case "HOME": return Gv.I(4194317); case "END": return Gv.I(4194318); case "LEFT": return Gv.I(4194319); case "UP": return Gv.I(4194320);
+                    case "RIGHT": return Gv.I(4194321); case "DOWN": return Gv.I(4194322); case "PAGEUP": return Gv.I(4194323); case "PAGEDOWN": return Gv.I(4194324);
+                    case "SHIFT": return Gv.I(4194325); case "CTRL": return Gv.I(4194326); case "META": return Gv.I(4194327); case "ALT": return Gv.I(4194328);
+                    case "KP_MULTIPLY": return Gv.I(4194433); case "KP_DIVIDE": return Gv.I(4194434); case "KP_SUBTRACT": return Gv.I(4194435); case "KP_PERIOD": return Gv.I(4194436); case "KP_ADD": return Gv.I(4194437);
+                }
+                if (kn.StartsWith("F") && kn.Length <= 3) { int f; if (int.TryParse(kn.Substring(1), out f)) return Gv.I(4194331 + f); }
+                if (kn.StartsWith("KP_")) { int d; if (int.TryParse(kn.Substring(3), out d)) return Gv.I(4194438 + d); }
+                return Gv.I(0);
+            }
+            switch (n)
+            {
+                case "MOUSE_BUTTON_MASK_LEFT": return Gv.I(1); case "MOUSE_BUTTON_MASK_RIGHT": return Gv.I(2); case "MOUSE_BUTTON_MASK_MIDDLE": return Gv.I(4);
+                case "NOTIFICATION_WM_CLOSE_REQUEST": return Gv.I(1006);
+                case "NOTIFICATION_PREDELETE": return Gv.I(1);
+            }
+            if (n.StartsWith("PRESET_") || n.StartsWith("SIZE_") || n.StartsWith("ANCHOR") || n.StartsWith("CURSOR_") || n.StartsWith("MOUSE_FILTER") || n.StartsWith("TEXT_") || n.StartsWith("BASE_") || n.StartsWith("CLOCK") || n.StartsWith("LINE_"))
                 return Gv.I(Math.Abs(n.GetHashCode() % 100000));
             throw new GdError("Neznámá konstanta '" + n + "'");
         }

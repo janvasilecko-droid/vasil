@@ -38,7 +38,7 @@ public partial class S_sight : GdNode {
   }
   public Gv _gui_input(Gv e = default(Gv)) {
     if (((Gv.Is(e, "InputEventMouseButton") && (e.G("pressed")).T()) && Gv.Eq(e.G("button_index"), Gd.K("MOUSE_BUTTON_LEFT")))) {
-      if ((Gd.Ctor("Rect2", (Gd.K("size").G("x") - Gv.I(34L)), Gv.I(4L), Gv.I(28L), Gv.I(28L)).C("has_point", e.G("position"))).T()) {
+      if ((Gd.Ctor("Rect2", (Self.G("size").G("x") - Gv.I(34L)), Gv.I(4L), Gv.I(28L), Gv.I(28L)).C("has_point", e.G("position"))).T()) {
         Self.C("queue_free");
       }
       Self.C("accept_event");
@@ -182,16 +182,16 @@ public partial class S_sight : GdNode {
   public Gv _draw() {
     Gv f = m.G("font");
     Gv fb = m.G("font_b");
-    S_art.rrect_border(Self, Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.K("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.085), Gv.F(0.1), Gv.F(0.97)), Gd.Ctor("Color", Gv.S("f2c230")), Gv.I(2L), Gv.F(8.0));
+    S_art.rrect_border(Self, Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Self.G("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.085), Gv.F(0.1), Gv.F(0.97)), Gd.Ctor("Color", Gv.S("f2c230")), Gv.I(2L), Gv.F(8.0));
     Self.C("draw_string", fb, Gd.Ctor("Vector2", Gv.I(12L), Gv.I(22L)), Gv.S("PRŮHLEDÍTKO"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(15L), Gd.Ctor("Color", Gv.S("f2c230")));
     Self.C("draw_string", f, Gd.Ctor("Vector2", Gv.I(12L), Gv.I(38L)), Gd.Dyn("str", it.C("get", Gv.S("label"), Gv.S(""))), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(250L), Gv.I(11L), Gd.Ctor("Color", Gv.S("9aa3ab")));
-    Self.C("draw_string", fb, Gd.Ctor("Vector2", (Gd.K("size").G("x") - Gv.I(26L)), Gv.I(22L)), Gv.S("X"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(18L), Gd.Ctor("Color", Gv.S("e6ebef")));
-    Gv c = Gd.Ctor("Vector2", (Gd.K("size").G("x") * Gv.F(0.5)), Gv.I(156L));
+    Self.C("draw_string", fb, Gd.Ctor("Vector2", (Self.G("size").G("x") - Gv.I(26L)), Gv.I(22L)), Gv.S("X"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(18L), Gd.Ctor("Color", Gv.S("e6ebef")));
+    Gv c = Gd.Ctor("Vector2", (Self.G("size").G("x") * Gv.F(0.5)), Gv.I(156L));
     Gv R = Gv.F(106.0);
     _frame(c, R);
     if ((sample.C("get", Gv.S("none"), Gv.B(false))).T()) {
       Self.C("draw_circle", c, R, Gd.Ctor("Color", Gv.F(0.15), Gv.F(0.18), Gv.F(0.2)));
-      Self.C("draw_string", f, Gd.Ctor("Vector2", Gv.I(14L), (Gd.K("size").G("y") - Gv.I(14L))), Gv.S("Průhledítko není na potrubí."), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(13L), Gd.Ctor("Color", Gv.S("ff6b5b")));
+      Self.C("draw_string", f, Gd.Ctor("Vector2", Gv.I(14L), (Self.G("size").G("y") - Gv.I(14L))), Gv.S("Průhledítko není na potrubí."), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(13L), Gd.Ctor("Color", Gv.S("ff6b5b")));
       return Gv.Null;
     }
     Gv flow = (sample.C("get", Gv.S("flow"), Gv.F(0.0))).AsF();
@@ -277,10 +277,10 @@ public partial class S_sight : GdNode {
       cols.C("append", (Gv.Ge(haze, Gv.F(0.2)) ? Gv.S("9aa3ab") : Gv.S("7ee08a")));
     }
     _lines(lines, cols);
-    Gv by0 = (Gd.K("size").G("y") - Gv.F(26.0));
-    Self.C("draw_rect", Gd.Ctor("Rect2", Gv.I(14L), by0, (Gd.K("size").G("x") - Gv.I(28L)), Gv.I(8L)), Gd.Ctor("Color", Gv.F(0.15), Gv.F(0.18), Gv.F(0.2)));
+    Gv by0 = (Self.G("size").G("y") - Gv.F(26.0));
+    Self.C("draw_rect", Gd.Ctor("Rect2", Gv.I(14L), by0, (Self.G("size").G("x") - Gv.I(28L)), Gv.I(8L)), Gd.Ctor("Color", Gv.F(0.15), Gv.F(0.18), Gv.F(0.2)));
     Gv gr = Gd.Ctor("Color", Gv.S("3fbf5f")).C("lerp", Gd.Ctor("Color", Gv.S("e0a020")), Gd.clampf((haze * Gv.F(2.0)), Gv.F(0.0), Gv.F(1.0))).C("lerp", Gd.Ctor("Color", Gv.S("e0452f")), Gd.clampf(((haze * Gv.F(2.0)) - Gv.F(1.0)), Gv.F(0.0), Gv.F(1.0)));
-    Self.C("draw_rect", Gd.Ctor("Rect2", Gv.I(14L), by0, (((Gd.K("size").G("x") - Gv.I(28L))) * haze), Gv.I(8L)), gr);
+    Self.C("draw_rect", Gd.Ctor("Rect2", Gv.I(14L), by0, (((Self.G("size").G("x") - Gv.I(28L))) * haze), Gv.I(8L)), gr);
     Self.C("draw_string", f, Gd.Ctor("Vector2", Gv.I(14L), (by0 - Gv.I(3L))), Gv.S("zákal"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(10L), Gd.Ctor("Color", Gv.S("9aa3ab")));
     return Gv.Null;
   }
@@ -310,7 +310,7 @@ public partial class S_sight : GdNode {
   public Gv _lines(Gv lines = default(Gv), Gv cols = default(Gv)) {
     Gv y = Gv.F(318.0);
     foreach (Gv i in (lines.C("size")).Iter()) {
-      Self.C("draw_string", m.G("font"), Gd.Ctor("Vector2", Gv.I(14L), y), lines.I(i), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), (Gd.K("size").G("x") - Gv.I(28L)), Gv.I(12L), Gd.Ctor("Color", cols.I(i)));
+      Self.C("draw_string", m.G("font"), Gd.Ctor("Vector2", Gv.I(14L), y), lines.I(i), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), (Self.G("size").G("x") - Gv.I(28L)), Gv.I(12L), Gd.Ctor("Color", cols.I(i)));
       y = (y + Gv.F(18.0));
     }
     return Gv.Null;

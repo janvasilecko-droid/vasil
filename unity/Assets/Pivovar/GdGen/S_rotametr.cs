@@ -52,7 +52,7 @@ public partial class S_rotametr : GdNode {
     Gv h = (Gd.clampf((vs.G("y") - Gv.F(400.0)), Gv.F(260.0), Gv.F(360.0))).AsF();
     Self.S("size", Gd.Ctor("Vector2", Gv.I(150L), h));
     Self.S("position", Gd.Ctor("Vector2", Gv.I(12L), (Gv.Gt(vs.G("y"), Gv.I(700L)) ? ((vs.G("y") - h) - Gv.F(80.0)) : Gv.F(250.0))));
-    Gd.K("position").S("y", Gd.maxf(Gd.K("position").G("y"), Gv.F(250.0)));
+    Self.S("position", Self.G("position").S("y", Gd.maxf(Self.G("position").G("y"), Gv.F(250.0))));
     btn = btn.S("position", Gd.Ctor("Vector2", Gv.I(10L), (h - Gv.I(34L))));
     btn = btn.S("size", Gd.Ctor("Vector2", Gv.I(130L), Gv.I(28L)));
     Gv S = m.G("sim").G("S");
@@ -75,11 +75,11 @@ public partial class S_rotametr : GdNode {
     Gv f = m.G("font");
     Gv S = m.G("sim").G("S");
     Gv st = (S.C("get", Gv.S("rota"), Gd.Dict()).C("get", Gv.S("stick"), Gv.F(0.0))).AsF();
-    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.K("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.09), Gv.F(0.11), Gv.F(0.92)), Gv.B(true));
-    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.K("size")), YEL, Gv.B(false), Gv.F(2.0));
+    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Self.G("size")), Gd.Ctor("Color", Gv.F(0.07), Gv.F(0.09), Gv.F(0.11), Gv.F(0.92)), Gv.B(true));
+    Self.C("draw_rect", Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Self.G("size")), YEL, Gv.B(false), Gv.F(2.0));
     Self.C("draw_string", f, Gd.Ctor("Vector2", Gv.I(10L), Gv.I(18L)), Gv.S("ROTAMETR SCEZOVÁNÍ"), Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(12L), YEL);
     Gv top = (Gv.F(34.0)).AsF();
-    Gv bot = ((Gd.K("size").G("y") - Gv.F(120.0))).AsF();
+    Gv bot = ((Self.G("size").G("y") - Gv.F(120.0))).AsF();
     Gv tx = (Gv.F(20.0)).AsF();
     Gv tw = (Gv.F(56.0)).AsF();
     Self.C("draw_rect", Gd.Ctor("Rect2", tx, top, tw, (bot - top)), Gd.Ctor("Color", Gv.F(0.55), Gv.F(0.8), Gv.F(0.95), Gv.F(0.18)), Gv.B(true));

@@ -182,6 +182,19 @@ namespace Pivovar.Gd
                 case "stop":
                     if (TypeName == "Timer") { Set("running", Gv.B(false)); return Gv.Null; }
                     break;
+                case "duplicate":
+                    {
+                        var d = new GdNode(); d.TypeName = TypeName;
+                        if (props != null) foreach (var kv in props) d.Set(kv.Key, kv.Value);
+                        return d.Self;
+                    }
+                case "set_corner_radius_all": { var v = Gd.A(a, 0); foreach (var k in new[] { "top_left", "top_right", "bottom_right", "bottom_left" }) Set("corner_radius_" + k, v); return Gv.Null; }
+                case "set_border_width_all": { var v = Gd.A(a, 0); foreach (var k in new[] { "left", "top", "right", "bottom" }) Set("border_width_" + k, v); return Gv.Null; }
+                case "set_content_margin_all": { var v = Gd.A(a, 0); foreach (var k in new[] { "left", "top", "right", "bottom" }) Set("content_margin_" + k, v); return Gv.Null; }
+                case "set_expand_margin_all": { var v = Gd.A(a, 0); foreach (var k in new[] { "left", "top", "right", "bottom" }) Set("expand_margin_" + k, v); return Gv.Null; }
+                case "set_stylebox": case "set_color": case "set_font_size": case "set_constant": case "set_font": case "set_icon":
+                    Set("theme:" + Gd.A(a, 1).ToStr() + "/" + Gd.A(a, 0).ToStr(), Gd.A(a, 2)); return Gv.Null;
+                case "set_pressed_no_signal": Set("button_pressed", Gd.A(a, 0)); return Gv.Null;
                 case "set_process": case "set_physics_process": case "set_process_input": case "set_process_unhandled_input": case "set_process_unhandled_key_input": return Gv.Null;
                 case "show": Set("visible", Gv.B(true)); return Gv.Null;
                 case "hide": Set("visible", Gv.B(false)); return Gv.Null;

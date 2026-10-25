@@ -22,7 +22,7 @@ public partial class S_oppanel_Knob : GdNode {
     return Gv.Null;
   }
   public Gv _val_from(Gv p = default(Gv)) {
-    Gv d = (p - (Gd.K("size") * Gv.F(0.5)));
+    Gv d = (p - (Self.G("size") * Gv.F(0.5)));
     Gv a = Gd.rad_to_deg(Gd.atan2(d.G("x"), (-d.G("y"))));
     return (Gd.clampf((Gv.F(1.0) + ((Gv.F(9.0) * ((Gd.clampf(a, Gv.F(-135.0), Gv.F(135.0)) + Gv.F(135.0)))) / Gv.F(270.0))), Gv.F(1.0), Gv.F(10.0))).AsF();
     return Gv.Null;
@@ -47,8 +47,8 @@ public partial class S_oppanel_Knob : GdNode {
     return Gv.Null;
   }
   public Gv _draw() {
-    Gv c = (Gd.K("size") * Gv.F(0.5));
-    Gv R = ((Gd.minf(Gd.K("size").G("x"), Gd.K("size").G("y")) * Gv.F(0.5)) - Gv.F(4.0));
+    Gv c = (Self.G("size") * Gv.F(0.5));
+    Gv R = ((Gd.minf(Self.G("size").G("x"), Self.G("size").G("y")) * Gv.F(0.5)) - Gv.F(4.0));
     Gv r_b = (R * Gv.F(0.7));
     Self.C("draw_circle", (c + Gd.Ctor("Vector2", Gv.I(2L), Gv.I(3L))), (r_b + Gv.F(3.0)), Gd.Ctor("Color", Gv.I(0L), Gv.I(0L), Gv.I(0L), Gv.F(0.35)));
     Self.C("draw_circle", c, r_b, Gd.Ctor("Color", Gv.S("c3c7cc")));
@@ -475,7 +475,7 @@ public partial class S_oppanel : GdNode {
   public Gv _process(Gv delta = default(Gv)) {
     delta = (delta).AsF();
     t_acc = (t_acc + delta);
-    if ((Gv.Gt(t_acc, Gv.F(0.2)) && (Gd.K("visible")).T())) {
+    if ((Gv.Gt(t_acc, Gv.F(0.2)) && (Self.G("visible")).T())) {
       t_acc = Gv.F(0.0);
       refresh();
     }

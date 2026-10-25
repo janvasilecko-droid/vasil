@@ -380,7 +380,7 @@ public partial class S_game : GdNode {
     }
     p = p.S("modulate", p.G("modulate").S("a", Gv.F(0.0)));
     p = p.S("position", p.G("position").S("y", (p.G("position").G("y") - Gv.I(20L))));
-    Gv tw = Gd.Dyn("create_tween");
+    Gv tw = Self.C("create_tween");
     tw.C("tween_property", p, Gv.S("modulate:a"), Gv.F(1.0), Gv.F(0.25));
     tw.C("tween_interval", (Gv.F(5.0) + (t.C("length") / Gv.F(30.0))));
     tw.C("tween_property", p, Gv.S("modulate:a"), Gv.F(0.0), Gv.F(0.6));

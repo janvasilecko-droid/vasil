@@ -138,6 +138,13 @@ class Gen:
             if f.cls.get('class_name') == name: return f
         return None
 
+    def is_node_class(self, ci):
+        c = ci
+        while c:
+            if c.engine_base and c.engine_base not in ENGINE_OBJECT_BASES: return True
+            c = c.base
+        return False
+
     def base_cs(self, ci):
         if ci.base: return ci.base.cs
         eb = ci.engine_base
@@ -497,6 +504,7 @@ class Gen:
         if k == 'name':
             if sc.lookup(e[1]): return True
             owner, info = self.lookup_member(ci, e[1])
+            if info is None and e[1][:1].islower() and self.is_node_class(ci): return True
             return info is not None and info[0] in ('var',)
         if k == 'mem': return e[1][0] == 'self' or self.assignable(e[1], ci, sc)
         if k == 'idx': return self.assignable(e[1], ci, sc)
@@ -607,6 +615,8 @@ class Gen:
             if oi[0] == 'class': return 'Gd.Script(%s)' % cs_str(oi[2].cs)
         if n in self.files or self.find_class(ci, n):
             return 'Gd.Script(%s)' % cs_str(n)
+        if n[:1].islower() and not n.isupper() and self.is_node_class(ci):
+            return 'Self.G(%s)' % cs_str(n)    # vlastnost zděděné třídy enginu (position, size, text …)
         self.global_names.add(n)
         return 'Gd.K(%s)' % cs_str(n)
 
@@ -710,7 +720,7 @@ class Gen:
       add_theme_stylebox_override add_theme_color_override add_theme_font_size_override add_theme_font_override add_theme_constant_override
       set_anchors_preset grab_focus release_focus accept_event set_meta get_meta has_meta call_deferred get_size get_rect show hide move_child
       set_anchor set_offset get_global_rect set_size set_position get_theme_default_font get_canvas_transform get_global_transform queue_sort set_physics_process
-      create_timer play stop make_current set_deferred is_node_ready'''.split())
+      create_timer create_tween play stop make_current set_deferred is_node_ready'''.split())
 
     def is_engine_method(self, n):
         return n in self.ENGINE_METHODS or n.startswith('draw_') or n.startswith('add_theme') or n.startswith('get_') or n.startswith('set_') or n.startswith('is_')

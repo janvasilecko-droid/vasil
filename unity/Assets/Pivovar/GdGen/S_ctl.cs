@@ -9,9 +9,9 @@ public partial class S_ctl_Trend : GdNode {
     ctl = Gv.Null;
   }
   public Gv _draw() {
-    Gv r = Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Gd.K("size"));
+    Gv r = Gd.Ctor("Rect2", Gd.StaticGet("Vector2", "ZERO"), Self.G("size"));
     S_art.rrect(Self, r, Gd.Ctor("Color", Gv.S("0b0f13")), Gv.F(6.0));
-    Gv plot = Gd.Ctor("Rect2", Gv.I(28L), Gv.I(8L), (Gd.K("size").G("x") - Gv.I(36L)), (Gd.K("size").G("y") - Gv.I(52L)));
+    Gv plot = Gd.Ctor("Rect2", Gv.I(28L), Gv.I(8L), (Self.G("size").G("x") - Gv.I(36L)), (Self.G("size").G("y") - Gv.I(52L)));
     Gv f = ctl.G("m").G("font");
     foreach (Gv v in (Gd.Arr(Gv.I(0L), Gv.I(25L), Gv.I(50L), Gv.I(75L), Gv.I(100L))).Iter()) {
       Gv y = ((plot.G("end").G("y") - ((plot.G("size").G("y") * v) / Gv.F(100.0)))).AsF();
@@ -57,7 +57,7 @@ public partial class S_ctl_Trend : GdNode {
       Gv txt = (S_ctl.SERIES.I(si_2).I(Gv.I(0L)) + ((Gv.Ne(v2, Gv.Null) ? (Gv.S(" %d°") % Gd.roundi(v2)) : Gv.S(""))));
       Gv col2 = Gd.Ctor("Color", S_ctl.SERIES.I(si_2).I(Gv.I(2L)));
       Gv iw = (f.C("get_string_size", txt, Gd.K("HORIZONTAL_ALIGNMENT_LEFT"), Gv.I(-1L), Gv.I(10L)).G("x") + Gv.F(20.0));
-      if (Gv.Gt((lx + iw), (Gd.K("size").G("x") - Gv.F(2.0)))) {
+      if (Gv.Gt((lx + iw), (Self.G("size").G("x") - Gv.F(2.0)))) {
         lx = Gv.F(6.0);
         ly = (ly + Gv.F(13.0));
       }
