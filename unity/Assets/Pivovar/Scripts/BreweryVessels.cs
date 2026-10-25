@@ -13,6 +13,11 @@ namespace Pivovar
         public GameObject shellCut, shellFull;
         public GameObject liqCyl, liqCone, liqDish;
         public Material liqMat;
+        public GameObject liqTop, bed, bedTop;      // hladina (vlnky), lože mláta a jeho povrch
+        public Material topMat, bedMat;
+        public float tileU = 3f, tileV = 2.2f;
+        bool bodyMashy, topMashy;
+        float bedY0, bedMax;
         public GameObject foam;
         public ParticleSystem bubbles;
         float boil;
@@ -42,6 +47,7 @@ namespace Pivovar
                 float h = Mathf.Max(0.001f, fill * hcyl);
                 liqCyl.transform.localScale = new Vector3(1f, h / hcyl, 1f);
                 liqCyl.transform.localPosition = new Vector3(cx, by + h * 0.5f, -z);
+                if (liqTop != null) { liqTop.SetActive(any); liqTop.transform.localPosition = new Vector3(cx, by + h + 0.003f, -z); }
                 if (foam != null)
                 {
                     foam.SetActive(any);
@@ -69,10 +75,59 @@ namespace Pivovar
 
         public void SetColor(Color c)
         {
-            if (liqMat == null) return;
-            if (liqMat.HasProperty("_BaseColor")) liqMat.SetColor("_BaseColor", c); else liqMat.color = c;
-            HdrpUtil.SetEmissive(liqMat, new Color(c.r, c.g, c.b), 260f);   // vlastní záře kapaliny jako ve videu
+            var st = new LiquidState { kind = LiqKind.Wort, col = c };
+            SetLook(st);
         }
+
+        /// <summary>Vzhled kapaliny podle obsahu: voda / sladina / mladina / rmut (viz LiquidLook).</summary>
+        public void SetLook(LiquidState s)
+        {
+            if (liqMat == null) return;
+            LiquidLook.Params p = LiquidLook.Evaluate(s);
+            LiquidLook.ApplyBody(liqMat, p, ref bodyMashy, tileU, tileV);
+            if (topMat != null)
+            {
+                // hladina: o trochu průhlednější a vlnkující podle míchání a varu, u rmutu zrnitý povrch
+                LiquidLook.Params q = p;
+                q.col.a = Mathf.Clamp01(p.col.a + 0.08f);
+                LiquidLook.ApplyBody(topMat, q, ref topMashy, 1f / 0.45f, 1f / 0.45f);
+                if (topMat.HasProperty("_NormalScale")) topMat.SetFloat("_NormalScale", p.mashy ? 1.1f : 0.2f + 0.9f * Mathf.Clamp01(s.stir + s.boil));
+            }
+            if (foam != null)
+            {
+                var fr = foam.GetComponent<MeshRenderer>();
+                if (fr != null) fr.enabled = s.foam > 0.02f || boil > 0.05f;
+                float fh = 1f + 5f * Mathf.Clamp01(s.foam) + 4f * boil;
+                foam.transform.localScale = new Vector3(1f, fh, 1f);
+            }
+        }
+
+        /// <summary>Otočí hladinu (míchadlo, kopačka): zrnitý povrch se točí s lopatkami.</summary>
+        public void Swirl(float deg)
+        {
+            if (liqTop != null) liqTop.transform.Rotate(0f, deg, 0f, Space.Self);
+        }
+
+        /// <summary>Lože mláta nad sítem: výška h v metrech nad sítem, wet = zakryté sladinou (tmavší).</summary>
+        public void SetBed(float h, bool wet)
+        {
+            if (bed == null) return;
+            h = Mathf.Clamp(h, 0f, bedMax);
+            bool any = h > 0.01f;
+            bed.SetActive(any); if (bedTop != null) bedTop.SetActive(any);
+            if (!any) return;
+            bed.transform.localScale = new Vector3(1f, h, 1f);
+            bed.transform.localPosition = new Vector3(cx, bedY0 + h * 0.5f, -z);
+            if (bedTop != null) bedTop.transform.localPosition = new Vector3(cx, bedY0 + h + 0.004f, -z);
+            if (bedMat != null)
+            {
+                Color c = wet ? new Color(0.62f, 0.52f, 0.37f, 1f) : new Color(0.80f, 0.68f, 0.48f, 1f);
+                if (bedMat.HasProperty("_BaseColor")) bedMat.SetColor("_BaseColor", c); else bedMat.color = c;
+            }
+        }
+
+        public void SetBedRange(float y0, float max) { bedY0 = y0; bedMax = max; }
+        public float BedY0 { get { return bedY0; } }
     }
 
     public partial class BreweryBuilder
@@ -154,10 +209,11 @@ namespace Pivovar
             // osa válce podél x: z Unity osy y otočíme o 90° kolem z
             v.shellFull = AddRaw(pv, full, inox, pos, new Vector3(0, 0, 90f), "plášť");
             v.shellCut = AddRaw(pv, cutm, inox, pos, new Vector3(0, 0, 90f), "plášť řez");
-            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.35f);
-            HdrpUtil.SetEmissive(lm, new Color(LiquidColor(it.Bind).r, LiquidColor(it.Bind).g, LiquidColor(it.Bind).b), 260f);
+            Material lm = LiquidLook.NewLiquidMaterial();
             v.liqMat = lm;
+            v.tileU = Mathf.PI * rr / 0.45f; v.tileV = 1f / 0.45f;
             v.liqCyl = AddRaw(pv, MeshKit.Cylinder(rr * 0.98f, w * 0.98f, 40), lm, pos, new Vector3(0, 0, 90f), "kapalina");
+            v.SetColor(LiquidColor(it.Bind));
             v.hy = yb; v.hrr = rr; v.hpos = pos;
             v.ApplyCut(cutaway);
             for (int s = -1; s <= 1; s += 2)
@@ -243,9 +299,9 @@ namespace Pivovar
             v.ApplyCut(cutaway);
 
             // kapalina
-            Material lm = HdrpUtil.Transparent(LiquidColor(it.Bind), 0f, 0.35f);
-            HdrpUtil.SetEmissive(lm, new Color(LiquidColor(it.Bind).r, LiquidColor(it.Bind).g, LiquidColor(it.Bind).b), 260f);
+            Material lm = LiquidLook.NewLiquidMaterial();
             v.liqMat = lm;
+            v.tileU = Mathf.PI * r / 0.45f; v.tileV = 1f / 0.45f;
             if (cone)
                 v.liqCone = AddRaw(pv, MeshKit.Cylinder(r * 0.985f, hb, 48, 0.09f), lm, new Vector3(cx, yb + hb * 0.5f, -zc), Vector3.zero, "kapalina kužel");
             else
@@ -260,11 +316,32 @@ namespace Pivovar
                 v.liqDish = AddRaw(pv, MeshKit.Lathe(dp, 48, 0f, Mathf.PI * 2f, new Vector2(4f, 1f)), lm, pos, Vector3.zero, "kapalina dno");
             }
             v.liqCyl = AddRaw(pv, MeshKit.Cylinder(r * 0.985f, hcyl, 56), lm, new Vector3(cx, by + hcyl * 0.5f, -zc), Vector3.zero, "kapalina válec");
+            // hladina s vlnkami (rovinná UV v metrech, aby zrno a vlnky neměly pólové zkreslení)
+            v.topMat = LiquidLook.NewLiquidMaterial();
+            v.liqTop = AddRaw(pv, LiquidLook.Disc(r * 0.984f, 56), v.topMat, new Vector3(cx, by + hcyl * 0.5f, -zc), Vector3.zero, "hladina");
+            v.liqTop.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // lože mláta nad sítem scezováku
+            if (shape == "lauter")
+            {
+                v.bedMat = HdrpUtil.Lit(new Color(0.78f, 0.66f, 0.47f), 0f, 0.38f);
+                HdrpUtil.SetBaseMap(v.bedMat, LiquidLook.BedAlbedo, new Vector2(Mathf.PI * r / 0.45f, 1f / 0.45f));
+                HdrpUtil.SetNormalMap(v.bedMat, LiquidLook.BedNormal, 1.2f, new Vector2(Mathf.PI * r / 0.45f, 1f / 0.45f));
+                HdrpUtil.SetCull(v.bedMat, 2);
+                v.bed = AddRaw(pv, MeshKit.Cylinder(r * 0.965f, 1f, 56), v.bedMat, new Vector3(cx, by + 0.3f, -zc), Vector3.zero, "mláto");
+                Material topBed = HdrpUtil.Lit(new Color(0.84f, 0.72f, 0.52f), 0f, 0.3f);
+                HdrpUtil.SetBaseMap(topBed, LiquidLook.BedAlbedo, new Vector2(1f / 0.45f, 1f / 0.45f));
+                HdrpUtil.SetNormalMap(topBed, LiquidLook.BedNormal, 1.6f, new Vector2(1f / 0.45f, 1f / 0.45f));
+                HdrpUtil.SetCull(topBed, 0);
+                v.bedTop = AddRaw(pv, LiquidLook.Disc(r * 0.965f, 56), topBed, new Vector3(cx, by + 0.3f, -zc), Vector3.zero, "povrch mláta");
+                v.SetBedRange(by + 0.22f, hcyl - 0.1f);
+                v.SetBed(0f, true);
+            }
             // pěna na hladině a bubliny od dna
             v.foam = AddRaw(pv, MeshKit.Cylinder(r * 0.975f, 0.03f, 48), foamMat, pos, Vector3.zero, "pěna");
             v.bubbles = MakeBubbles(pv, r * 0.9f);
             float f0; if (!DemoFill.TryGetValue(it.Bind, out f0)) f0 = 0.5f;
             v.SetFill(f0);
+            v.SetColor(LiquidColor(it.Bind));
             v.SetBoil(it.Bind == "rvp" || it.Bind == "wp" ? 0.55f : 0f);
 
             // svary a obruče

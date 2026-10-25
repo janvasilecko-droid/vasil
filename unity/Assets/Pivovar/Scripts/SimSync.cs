@@ -23,6 +23,8 @@ namespace Pivovar
         readonly Dictionary<string, string> itemSig = new Dictionary<string, string>();
         readonly Dictionary<string, string> valveSig = new Dictionary<string, string>();
         readonly Dictionary<string, Color> lastColor = new Dictionary<string, Color>();
+        readonly Dictionary<string, LiquidState> lastLook = new Dictionary<string, LiquidState>();
+        float vesselDt = 0.05f;
         readonly Dictionary<string, float> lastFill = new Dictionary<string, float>();
         readonly Dictionary<string, Vector2[]> pipeEnds = new Dictionary<string, Vector2[]>();
         float tStruct, tVessel, tPipe;
@@ -51,7 +53,7 @@ namespace Pivovar
                 Plan plan = Plan.Parse(json);
                 b.BeginHybrid(plan);
                 IndexItems();
-                valveSig.Clear(); lastColor.Clear(); lastFill.Clear();
+                valveSig.Clear(); lastColor.Clear(); lastFill.Clear(); lastLook.Clear();
                 ready = true;
                 Debug.Log("Pivovar: 3D varna postavena z plánu Godotu (" + m.items.Arr.Count + " položek)");
             }
@@ -150,7 +152,7 @@ namespace Pivovar
                 SyncPumps();
                 SyncSpinners();
                 tVessel += Time.unscaledDeltaTime; tPipe += Time.unscaledDeltaTime; tStruct += Time.unscaledDeltaTime;
-                if (tVessel > 0.05f) { tVessel = 0; SyncVessels(); }
+                if (tVessel > 0.05f) { vesselDt = tVessel; tVessel = 0; SyncVessels(); }
                 if (tPipe > 0.12f) { tPipe = 0; SyncPipes(); }
                 if (tStruct > 0.5f) { tStruct = 0; CheckStructure(); }
             }
@@ -239,8 +241,16 @@ namespace Pivovar
                 bool horiz = v.hrr > 0.01f;
                 float fillAll = Mathf.Clamp01((lvl - bottom) / Mathf.Max(0.1f, (float)v.item.H * BreweryBuilder.K));
                 Color col = ToColor(m.vessel_color(gi), 0.85f);
-                Color lc; if (!lastColor.TryGetValue(v.item.Id, out lc) || Mathf.Abs(lc.r - col.r) + Mathf.Abs(lc.g - col.g) + Mathf.Abs(lc.b - col.b) > 0.01f)
-                { lastColor[v.item.Id] = col; v.SetColor(col); }
+                LiquidState ls = StateOf(bind, S, col);
+                LiquidState lo;
+                if (!lastLook.TryGetValue(v.item.Id, out lo) || LookChanged(lo, ls)) { lastLook[v.item.Id] = ls; v.SetLook(ls); }
+                if (ls.swirlDps != 0f) v.Swirl(ls.swirlDps * vesselDt);
+                if (bind == "sk")
+                {
+                    float vesselH = (float)v.item.H * BreweryBuilder.K;
+                    float bedH = (float)m.sim.C("skBedH").d / 0.943f * vesselH;      // stejné měřítko jako v Godotu
+                    v.SetBed(bedH, lvl >= v.BedY0 + bedH);
+                }
 
                 if (horiz)
                 {
@@ -274,7 +284,88 @@ namespace Pivovar
             }
         }
 
-        sealed class PipeAcc { public float full, flow, dn = 50f; public Color col; public int dir; }
+        static bool LookChanged(LiquidState a, LiquidState c)
+        {
+            return a.kind != c.kind || Mathf.Abs(a.solids - c.solids) > 0.004f || Mathf.Abs(a.turb - c.turb) > 0.03f || Mathf.Abs(a.T - c.T) > 2f
+                || Mathf.Abs(a.stir - c.stir) > 0.05f || Mathf.Abs(a.boil - c.boil) > 0.05f || Mathf.Abs(a.foam - c.foam) > 0.03f
+                || Mathf.Abs(a.col.r - c.col.r) + Mathf.Abs(a.col.g - c.col.g) + Mathf.Abs(a.col.b - c.col.b) > 0.012f;
+        }
+
+        static LiqKind KindOf(string k)
+        {
+            switch (k) { case "mash": return LiqKind.Mash; case "wort": return LiqKind.Wort; case "empty": return LiqKind.Empty; default: return LiqKind.Water; }
+        }
+
+        /// <summary>Dávka (pánev, vířivka, rmut ve scezováku): druh obsahu, podíl sušiny, zákal, míchání, var, pěna.</summary>
+        LiquidState FromBatch(Gv v, Color col)
+        {
+            Gv sim = m.sim;
+            var ls = new LiquidState { col = col };
+            ls.kind = KindOf(sim.C("contentKind", v).Str);
+            double vol = Math.Max(1.0, sim.C("vol", v).d), liq = Math.Max(1.0, sim.C("liqVol", v).d);
+            ls.solids = (float)(sim.C("sol", v).d * 0.65 / vol);
+            ls.turb = Mathf.Clamp01((float)(v.G("trubSus").d / liq * 1500.0));
+            ls.T = (float)v.G("T").d;
+            bool stir = v.G("stir").T();
+            double hz = v.G("hz").d;
+            ls.stir = stir ? Mathf.Clamp01((float)(hz / 35.0)) : 0f;
+            bool whirl = v.G("whirlNow").T();
+            ls.boil = v.G("boiling").T() ? 1f : (whirl ? 0.15f : 0f);
+            ls.foam = Mathf.Clamp01((float)(v.G("foam").d / Math.Max(60.0, vol * 0.25)));
+            ls.swirlDps = stir ? (float)(hz * 14.4 * 0.35) : (whirl ? 18f : 0f);
+            return ls;
+        }
+
+        LiquidState StateOf(string bind, Gv S, Color col)
+        {
+            Gv sim = m.sim;
+            var ls = new LiquidState { kind = LiqKind.Water, col = col, T = 20f };
+            switch (bind)
+            {
+                case "rvp": case "mp": case "wp":
+                    return FromBatch(S.G(bind), col);
+                case "sk":
+                    {
+                        Gv sk = S.G("sk"); Gv mash = sk.G("mash");
+                        if (sim.C("vol", mash).d > 50.0) { ls = FromBatch(mash, col); ls.stir = Mathf.Max(ls.stir, sk.G("rake").T() ? 0.5f : 0f); }
+                        else
+                        {
+                            Gv cells = sk.G("cells");
+                            var ca = cells.Arr;
+                            double w = 1.0, ex = 0.0;
+                            if (ca != null && ca.Count > 0) { Gv c0 = ca.l[0]; w = Math.Max(1.0, c0.G("w").d); ex = c0.G("f").d + c0.G("n").d; }
+                            ls.kind = ex > 0.005 * w ? LiqKind.Wort : LiqKind.Water;
+                            ls.T = (float)sk.G("T").d;
+                            ls.turb = Mathf.Clamp01((float)(sk.G("turb").d / 150.0));
+                            ls.stir = sk.G("rake").T() ? 0.5f : 0f;
+                        }
+                        if (sk.G("rake").T()) ls.swirlDps = (float)(sim.C("rkRpm").d * 36.0);
+                        return ls;
+                    }
+                case "hlt": ls.T = (float)S.G("hlt").G("T").d; return ls;
+                case "lv": ls.T = (float)S.G("lv").G("T").d; return ls;
+                case "spilka":
+                    {
+                        Gv sp = S.G("sp"); Gv fer = S.G("fer");
+                        double L = Math.Max(1.0, sp.G("L").d);
+                        ls.kind = sp.G("f").d + sp.G("n").d > 1.0 ? LiqKind.Wort : LiqKind.Water;
+                        ls.T = (float)(sp.G("H").d / L);
+                        ls.turb = Mathf.Clamp01((float)(sp.G("trub").d / L * 1500.0));
+                        if (fer.G("on").T())
+                        {
+                            double sf = fer.G("Sf").d, s0 = Math.Max(1.0, fer.G("S0").d);
+                            double act = Math.Min(1.0, fer.G("X").d / 2.5) * (sf > 0.3 * s0 ? 1.0 : 0.35);
+                            ls.foam = Mathf.Clamp01((float)act * 0.8f);      // krausen při hlavním kvašení
+                            ls.boil = Mathf.Clamp01((float)act * 0.25f);       // CO2 bublinky
+                            ls.turb = Mathf.Max(ls.turb, Mathf.Clamp01((float)(fer.G("X").d / 6.0)));
+                        }
+                        return ls;
+                    }
+            }
+            return ls;
+        }
+
+        sealed class PipeAcc { public float full, flow, dn = 50f; public Color col; public int dir; public bool mash; }
         readonly Dictionary<string, PipeAcc> acc = new Dictionary<string, PipeAcc>();
 
         void SyncPipes()
@@ -297,6 +388,7 @@ namespace Pivovar
                     Gv kind = sim.C("contentKind", c);
                     double liq = Math.Max(0.01, sim.C("liqVol", c).d);
                     a.col = ToColor(m.kind_color(kind, c.G("T"), Gv.F(c.G("col").d / liq)), 1f);
+                    a.mash = kind.Str == "mash";
                 }
                 if (flow > 0.01f)
                 {
@@ -317,9 +409,10 @@ namespace Pivovar
                 bool has = a.full >= 0.06f;
                 pf.fill = has ? Mathf.Clamp01(a.full * 1.15f) : 0f;
                 if (has) pf.liquid = a.col;
+                pf.thick = a.mash ? 1f : 0f;
                 float area = 0.00196f * Mathf.Pow(Mathf.Max(10f, a.dn) / 50f, 2f);
                 float v = a.flow / 60000f / area;                          // m/s
-                pf.speed = (has && a.flow > 0.01f) ? a.dir * Mathf.Clamp(v * 1.3f, 0.35f, 5f) : 0f;
+                pf.speed = (has && a.flow > 0.01f) ? a.dir * Mathf.Clamp(v, 0.15f, 6f) : 0f;      // m/s; textura proudu se posouvá po metrech trubky
             }
             // trubky, které simulace nezná (nebo úplně prázdné)
             foreach (PipeFlow pf in b.AllFlows()) if (pf != null && !HasAny(pf)) { pf.fill = 0f; pf.speed = 0f; }

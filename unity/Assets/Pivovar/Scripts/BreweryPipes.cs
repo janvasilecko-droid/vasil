@@ -118,12 +118,13 @@ namespace Pivovar
                 float rad = w2d * K * 0.5f * 1.3f;
                 List<Vector3> path = MeshKit.RoundPath(raw, Mathf.Max(0.09f, rad * 3f));
 
-                Material mat = HdrpUtil.Lit(new Color(0.78f, 0.80f, 0.84f), 1f, 0.78f);
-                HdrpUtil.SetEmissiveMap(mat, DashTexture(), new Vector2(3.3f, 1f));
-                HdrpUtil.SetEmissive(mat, Color.black, 0f);
+                // stěna trubky je lehce průhledná (jako nerez s okénkem), uvnitř je viditelný sloupec vody (PipeFlow)
+                Material mat = HdrpUtil.Transparent(new Color(0.80f, 0.83f, 0.88f, LiquidLook.PipeEmptyAlpha), 0f, 0.88f);
                 var go = AddRaw(pp, MeshKit.Tube(path, rad, 14), mat, Vector3.zero, Vector3.zero, "trubka " + it.Id);
+                go.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 var flow = go.AddComponent<PipeFlow>();
                 flow.mat = go.GetComponent<MeshRenderer>().material;   // vlastní instance materiálu pro každou trubku
+                flow.path = path; flow.rad = rad;
                 flow.liquid = MediumColor(it.Str("medium", ""));
                 flows.Add(flow);
 

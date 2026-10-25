@@ -155,7 +155,7 @@ namespace Pivovar
             return outp;
         }
 
-        static Mesh Finish(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> idx)
+        public static Mesh Finish(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> idx)
         {
             var m = new Mesh();
             if (v.Count > 65000) m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;

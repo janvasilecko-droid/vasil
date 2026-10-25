@@ -115,6 +115,39 @@ namespace Pivovar
             Validate(m);
         }
 
+
+        /// <summary>mode: 0 = obě strany, 1 = vynechat přední, 2 = vynechat zadní (běžné jednostranné).</summary>
+        public static void SetCull(Material m, int mode)
+        {
+            SetF(m, "_CullMode", mode);
+            SetF(m, "_CullModeForward", mode);
+            SetF(m, "_DoubleSidedEnable", mode == 0 ? 1f : 0f);
+            if (mode == 0) m.EnableKeyword("_DOUBLESIDED_ON"); else m.DisableKeyword("_DOUBLESIDED_ON");
+            Validate(m);
+        }
+
+        public static void SetZWrite(Material m, bool on)
+        {
+            SetF(m, "_ZWrite", on ? 1f : 0f);
+            SetF(m, "_TransparentZWrite", on ? 1f : 0f);
+            Validate(m);
+        }
+
+        public static void SetBaseMap(Material m, Texture2D tex, Vector2 tiling)
+        {
+            if (!m.HasProperty("_BaseColorMap")) return;
+            m.SetTexture("_BaseColorMap", tex);
+            m.SetTextureScale("_BaseColorMap", tiling);
+            Validate(m);
+        }
+
+        public static void SetNormalScale(Material m, float scale) { SetF(m, "_NormalScale", scale); }
+
+        public static void SetMapOffset(Material m, string map, Vector2 off)
+        {
+            if (m.HasProperty(map)) m.SetTextureOffset(map, off);
+        }
+
         public static void SetEmissive(Material m, Color c, float intensity)
         {
             if (!m.HasProperty("_EmissiveColor")) return;
