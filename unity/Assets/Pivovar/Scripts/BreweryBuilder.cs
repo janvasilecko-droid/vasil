@@ -302,7 +302,7 @@ namespace Pivovar
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
-                    int cx = x / (n / 3), cy = y / (n / 3);
+                    int cx = Mathf.Min(2, x / (n / 3)), cy = Mathf.Min(2, y / (n / 3));   // 512 / 170 = 3,01 → poslední 2 sloupce/řádky by mířily mimo pole tint[9]
                     int lx = x % (n / 3), ly = y % (n / 3);
                     bool edge = lx < 4 || ly < 4;
                     float k = tint[cy * 3 + cx];
