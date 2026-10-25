@@ -83,7 +83,7 @@ namespace Pivovar
                 }
                 var raw = new List<Vector3>();
                 foreach (double[] p in pts) raw.Add(Pp(p[0], p[1], ZP));
-                float rad = Mathf.Clamp((float)it.Num("dn", 50) * 0.00056f, 0.016f, 0.06f);
+                float rad = Mathf.Clamp((float)it.Num("dn", 50) * 0.0009f, 0.025f, 0.09f);   // trochu silnější než skutečnost, ať je potrubí čitelné
                 List<Vector3> path = MeshKit.RoundPath(raw, Mathf.Max(0.09f, rad * 3f));
 
                 Material mat = HdrpUtil.Lit(new Color(0.78f, 0.80f, 0.84f), 1f, 0.78f);

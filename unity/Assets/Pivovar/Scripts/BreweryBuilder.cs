@@ -209,19 +209,19 @@ namespace Pivovar
                 if (l.type == LightType.Directional && l.transform.root != root) l.enabled = false;
 
             // slunce přes světlík (strop a stěny nevrhají stíny, ať světlo prochází)
-            HdrpUtil.MakeLight(root, "Slunce", LightType.Directional, new Vector3(0, 10, 0), new Vector3(55f, 155f, 0f), new Color(1f, 0.95f, 0.88f), 6000f, "Lux", 0f, true);
+            HdrpUtil.MakeLight(root, "Slunce", LightType.Directional, new Vector3(0, 10, 0), new Vector3(55f, 155f, 0f), new Color(1f, 0.95f, 0.88f), 2500f, "Lux", 0f, true);
         }
 
         void BuildHall()
         {
             float x0 = -12f, x1 = 46f, depth = 30f, hgt = 8f;
             Texture2D tiles = TileTexture();
-            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.72f, false);
+            Material fm = HdrpUtil.Lit(Color.white, 0f, 0.82f, false);
             if (fm.HasProperty("_BaseColorMap")) { fm.SetTexture("_BaseColorMap", tiles); fm.SetTextureScale("_BaseColorMap", new Vector2((x1 - x0) / 2.5f, depth / 2.5f)); }
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 0.2f, depth)), fm, new Vector3((x0 + x1) * 0.5f, -0.1f, 0f), Vector3.zero, "podlaha");
 
-            Material wall = HdrpUtil.Lit(new Color(0.78f, 0.76f, 0.70f), 0f, 0.15f, false);
-            Material tileWall = HdrpUtil.Lit(new Color(0.85f, 0.85f, 0.82f), 0f, 0.6f, false);
+            Material wall = HdrpUtil.Lit(new Color(0.34f, 0.35f, 0.38f), 0f, 0.20f, false);
+            Material tileWall = HdrpUtil.Lit(new Color(0.20f, 0.22f, 0.25f), 0f, 0.75f, false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, 3.2f, 0.3f)), tileWall, new Vector3((x0 + x1) * 0.5f, 1.6f, -depth * 0.5f), Vector3.zero, "obklad", false);
             Add(root, MeshKit.Box(new Vector3(x1 - x0, hgt - 3.2f, 0.3f)), wall, new Vector3((x0 + x1) * 0.5f, 3.2f + (hgt - 3.2f) * 0.5f, -depth * 0.5f), Vector3.zero, "stena", false);
             Add(root, MeshKit.Box(new Vector3(0.3f, hgt, depth)), wall, new Vector3(x0, hgt * 0.5f, 0f), Vector3.zero, "stena L", false);
@@ -230,7 +230,7 @@ namespace Pivovar
 
             // okna (svítící plochy) s příčkami
             Material win = HdrpUtil.Lit(new Color(0.7f, 0.82f, 1f), 0f, 0.1f, false);
-            HdrpUtil.SetEmissive(win, new Color(0.7f, 0.82f, 1f), 1500f);
+            HdrpUtil.SetEmissive(win, new Color(0.7f, 0.82f, 1f), 450f);
             Material frame = HdrpUtil.Lit(new Color(0.2f, 0.2f, 0.22f), 0.2f, 0.5f, false);
             for (int i = 0; i < 6; i++)
             {
@@ -243,14 +243,14 @@ namespace Pivovar
             // vazníky a svítidla
             Material beam = HdrpUtil.Lit(new Color(0.25f, 0.27f, 0.30f), 0.6f, 0.4f, false);
             Material lampMat = HdrpUtil.Lit(new Color(1f, 0.96f, 0.85f), 0f, 0.3f, false);
-            HdrpUtil.SetEmissive(lampMat, new Color(1f, 0.96f, 0.85f), 4000f);
+            HdrpUtil.SetEmissive(lampMat, new Color(1f, 0.96f, 0.85f), 2500f);
             for (int i = 0; i < 8; i++)
             {
                 float bx = -4f + i * 7f;
                 Add(root, MeshKit.Box(new Vector3(0.3f, 0.45f, depth)), beam, new Vector3(bx, hgt - 0.4f, 0f), Vector3.zero, "vaznik", false);
                 Add(root, MeshKit.Box(new Vector3(1.4f, 0.12f, 0.35f)), lampMat, new Vector3(bx, hgt - 1.0f, 1.0f), Vector3.zero, "lampa", false);
                 if (i % 2 == 0)
-                    HdrpUtil.MakeLight(root, "Světlo " + i, LightType.Point, Pz(bx, hgt - 1.4f, 1.5f), Vector3.zero, new Color(1f, 0.95f, 0.85f), 9000f, "Lumen", 14f, false);
+                    HdrpUtil.MakeLight(root, "Světlo " + i, LightType.Point, Pz(bx, hgt - 1.4f, 1.5f), Vector3.zero, new Color(1f, 0.95f, 0.85f), 20000f, "Lumen", 16f, false);
             }
             // odtokový žlab
             Add(root, MeshKit.Box(new Vector3(x1 - x0 - 2f, 0.02f, 0.22f)), HdrpUtil.Lit(new Color(0.12f, 0.12f, 0.13f), 0.8f, 0.5f, false), new Vector3((x0 + x1) * 0.5f, 0.01f, 2.6f), Vector3.zero, "zlab", false);
@@ -265,7 +265,7 @@ namespace Pivovar
                 {
                     bool edge = (x % 128 < 3) || (y % 128 < 3);
                     float v = 0.85f + 0.06f * Mathf.Sin(x * 0.37f) * Mathf.Cos(y * 0.29f) + 0.04f * Mathf.Sin(x * 1.3f + y * 0.7f);
-                    Color c = edge ? new Color(0.22f, 0.22f, 0.24f) : new Color(0.47f, 0.47f, 0.50f) * v;
+                    Color c = edge ? new Color(0.05f, 0.05f, 0.06f) : new Color(0.16f, 0.17f, 0.19f) * v;
                     c.a = 1f;
                     t.SetPixel(x, y, c);
                 }

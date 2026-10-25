@@ -5,10 +5,10 @@ namespace Pivovar
 {
     public class OrbitCamera : MonoBehaviour
     {
-        public Vector3 target = new Vector3(5f, 2.5f, 0f);
+        public Vector3 target = new Vector3(2.5f, 2.2f, 0f);
         public float yaw = -0.25f;
-        public float pitch = 0.2f;
-        public float dist = 18f;
+        public float pitch = 0.12f;
+        public float dist = 9f;
 
         void LateUpdate()
         {
