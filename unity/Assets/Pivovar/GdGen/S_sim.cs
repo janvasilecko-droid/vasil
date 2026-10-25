@@ -2605,7 +2605,7 @@ public partial class S_sim : GdObject {
       }
       Gv e1 = n_5.G("edges").I(Gv.I(0L));
       Gv e2 = n_5.G("edges").I(Gv.I(1L));
-      if ((Gv.Eq(e1, e2) || Gv.Ne(e1.G("medium"), e2.G("medium")))) {
+      if (((Gv.Eq(e1, e2) || Gv.Ne(e1.G("medium"), e2.G("medium"))) || Gv.Gt(Gd.absf((Gd.Dyn("float", e1.G("dn")) - Gd.Dyn("float", e2.G("dn")))), Gv.F(0.5)))) {
         continue;
       }
       Gv p1 = e1.G("pts").C("duplicate");

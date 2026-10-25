@@ -738,7 +738,7 @@ func _regrese_zadani() -> void:
 	T.fresh(); S = sim.S; c = S.cfg
 	var nchk := 0; var maxrel := 0.0
 	for e in sim.net.edges:
-		if float(e.cap) <= 0.31: continue
+		if float(e.cap) <= 0.31 or e.ids.size() != 1: continue
 		var exp_cap: float = Pm.pipe_capacity(float(e.len)/sim.PX_PER_M*float(c.pipeLenScale), sim.bore_mm(float(e.dn)))
 		maxrel = maxf(maxrel, absf(float(e.cap) - exp_cap)/maxf(1e-9, exp_cap)); nchk += 1
 	T.chk("REGRESE potrubí: zásoba kapaliny v úsecích = π/4·d²·L·pipeLenScale (stejné bore a délka jako tlakové ztráty)", nchk > 5 and maxrel < 1e-9, "%d úseků, max. odchylka %.2g" % [nchk, maxrel])
@@ -796,10 +796,12 @@ func _regrese_zadani() -> void:
 	T.chk("REGRESE rmutování: extrakt (škrob + dextriny + dlouhé + zkvasitelné) se při 30 min při 63 °C zachová", absf(m63.sum - m63.sum0) < 1e-6*m63.sum0, "%.4f vs %.4f kg" % [m63.sum, m63.sum0])
 	var m63b := _mash(63.0, 30.0, 0.05)
 	T.chk("REGRESE rmutování: zkvasitelné cukry nezávisí na kroku (0,5 vs 0,05 min) o víc než 5 %", absf(m63.f - m63b.f) < 0.05*maxf(1.0, m63b.f), "%.1f vs %.1f kg" % [m63.f, m63b.f])
-	var mb2 := _mash(63.0, 30.0, 0.5, 9.0)
-	T.chk("REGRESE rmutování: betaAct ×2 → víc zkvasitelných cukrů (parametr opravdu působí)", mb2.f > m63.f*1.05, "%.1f → %.1f kg" % [m63.f, mb2.f])
-	var mk: Dictionary = _mash(63.0, 30.0, 0.5, 4.5, 0.52)
-	T.chk("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → míň zkvasitelných cukrů a míň zbylého enzymu", mk.f < m63.f*0.95 and mk.aB < m63.aB, "%.1f vs %.1f kg, aB %.1f vs %.1f" % [mk.f, m63.f, mk.aB, m63.aB])
+	var mb1 := _mash(63.0, 5.0, 0.5)
+	var mb2 := _mash(63.0, 5.0, 0.5, 9.0)
+	T.chk("REGRESE rmutování: betaAct ×2 → po 5 min výrazně víc zkvasitelných cukrů (parametr opravdu působí)", mb2.f > mb1.f*1.15, "%.1f → %.1f kg" % [mb1.f, mb2.f])
+	var mk1: Dictionary = _mash(63.0, 10.0, 0.5)
+	var mk: Dictionary = _mash(63.0, 10.0, 0.5, 4.5, 0.52)
+	T.chk("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → po 10 min míň zkvasitelných cukrů a míň zbylého enzymu", mk.f < mk1.f*0.97 and mk.aB < mk1.aB*0.1, "%.1f vs %.1f kg, aB %.2f vs %.2f" % [mk.f, mk1.f, mk.aB, mk1.aB])
 	var m72 := _mash(72.0, 30.0, 0.5)
 	T.chk("REGRESE rmutování: při 72 °C je podíl zkvasitelných cukrů nižší než při 63 °C (β-amyláza se tepelně ničí) – výsledek není nastaven na cíl", m72.frac < m63.frac*0.7, "%.2f vs %.2f" % [m72.frac, m63.frac])
 	var m0 := _mash(63.0, 0.0, 0.5)

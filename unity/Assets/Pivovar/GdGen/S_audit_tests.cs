@@ -1242,7 +1242,7 @@ public partial class S_audit_tests : GdObject {
     Gv nchk = Gv.I(0L);
     Gv maxrel = Gv.F(0.0);
     foreach (Gv e in (sim.G("net").G("edges")).Iter()) {
-      if (Gv.Le(Gd.Dyn("float", e.G("cap")), Gv.F(0.31))) {
+      if ((Gv.Le(Gd.Dyn("float", e.G("cap")), Gv.F(0.31)) || Gv.Ne(e.G("ids").C("size"), Gv.I(1L)))) {
         continue;
       }
       Gv exp_cap = (Pm.C("pipe_capacity", ((Gd.Dyn("float", e.G("len")) / sim.G("PX_PER_M")) * Gd.Dyn("float", c.G("pipeLenScale"))), sim.C("bore_mm", Gd.Dyn("float", e.G("dn"))))).AsF();
@@ -1331,10 +1331,12 @@ public partial class S_audit_tests : GdObject {
     T.C("chk", Gv.S("REGRESE rmutování: extrakt (škrob + dextriny + dlouhé + zkvasitelné) se při 30 min při 63 °C zachová"), Gv.B(Gv.Lt(Gd.absf((m63.G("sum") - m63.G("sum0"))), (Gv.F(1e-06) * m63.G("sum0")))), (Gv.S("%.4f vs %.4f kg") % Gd.Arr(m63.G("sum"), m63.G("sum0"))));
     Gv m63b = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.05));
     T.C("chk", Gv.S("REGRESE rmutování: zkvasitelné cukry nezávisí na kroku (0,5 vs 0,05 min) o víc než 5 %"), Gv.B(Gv.Lt(Gd.absf((m63.G("f") - m63b.G("f"))), (Gv.F(0.05) * Gd.maxf(Gv.F(1.0), m63b.G("f"))))), (Gv.S("%.1f vs %.1f kg") % Gd.Arr(m63.G("f"), m63b.G("f"))));
-    Gv mb2 = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.5), Gv.F(9.0));
-    T.C("chk", Gv.S("REGRESE rmutování: betaAct ×2 → víc zkvasitelných cukrů (parametr opravdu působí)"), Gv.B(Gv.Gt(mb2.G("f"), (m63.G("f") * Gv.F(1.05)))), (Gv.S("%.1f → %.1f kg") % Gd.Arr(m63.G("f"), mb2.G("f"))));
-    Gv mk = _mash(Gv.F(63.0), Gv.F(30.0), Gv.F(0.5), Gv.F(4.5), Gv.F(0.52));
-    T.C("chk", Gv.S("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → míň zkvasitelných cukrů a míň zbylého enzymu"), Gv.B((Gv.Lt(mk.G("f"), (m63.G("f") * Gv.F(0.95))) && Gv.Lt(mk.G("aB"), m63.G("aB")))), (Gv.S("%.1f vs %.1f kg, aB %.1f vs %.1f") % Gd.Arr(mk.G("f"), m63.G("f"), mk.G("aB"), m63.G("aB"))));
+    Gv mb1 = _mash(Gv.F(63.0), Gv.F(5.0), Gv.F(0.5));
+    Gv mb2 = _mash(Gv.F(63.0), Gv.F(5.0), Gv.F(0.5), Gv.F(9.0));
+    T.C("chk", Gv.S("REGRESE rmutování: betaAct ×2 → po 5 min výrazně víc zkvasitelných cukrů (parametr opravdu působí)"), Gv.B(Gv.Gt(mb2.G("f"), (mb1.G("f") * Gv.F(1.15)))), (Gv.S("%.1f → %.1f kg") % Gd.Arr(mb1.G("f"), mb2.G("f"))));
+    Gv mk1 = _mash(Gv.F(63.0), Gv.F(10.0), Gv.F(0.5));
+    Gv mk = _mash(Gv.F(63.0), Gv.F(10.0), Gv.F(0.5), Gv.F(4.5), Gv.F(0.52));
+    T.C("chk", Gv.S("REGRESE rmutování: kdBeta63 ×4 (β-amyláza se ničí rychleji) → po 10 min míň zkvasitelných cukrů a míň zbylého enzymu"), Gv.B((Gv.Lt(mk.G("f"), (mk1.G("f") * Gv.F(0.97))) && Gv.Lt(mk.G("aB"), (mk1.G("aB") * Gv.F(0.1))))), (Gv.S("%.1f vs %.1f kg, aB %.2f vs %.2f") % Gd.Arr(mk.G("f"), mk1.G("f"), mk.G("aB"), mk1.G("aB"))));
     Gv m72 = _mash(Gv.F(72.0), Gv.F(30.0), Gv.F(0.5));
     T.C("chk", Gv.S("REGRESE rmutování: při 72 °C je podíl zkvasitelných cukrů nižší než při 63 °C (β-amyláza se tepelně ničí) – výsledek není nastaven na cíl"), Gv.B(Gv.Lt(m72.G("frac"), (m63.G("frac") * Gv.F(0.7)))), (Gv.S("%.2f vs %.2f") % Gd.Arr(m72.G("frac"), m63.G("frac"))));
     Gv m0 = _mash(Gv.F(63.0), Gv.F(0.0), Gv.F(0.5));

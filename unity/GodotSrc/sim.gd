@@ -1551,7 +1551,7 @@ func build_net(items: Array, joints: Array) -> void :
     for n in nodes.values():
         if n.edges.size() != 2 or n.att.size() or n.valve != null or n.end or n._tap or n._chil != "" or n.openEnd: continue
         var e1 = n.edges[0]; var e2 = n.edges[1]
-        if e1 == e2 or e1.medium != e2.medium: continue
+        if e1 == e2 or e1.medium != e2.medium or absf(float(e1.dn) - float(e2.dn)) > 0.5: continue    # spojená trubka musí mít jeden průměr (jinak by tlakové ztráty a zásoba vycházely z DN prvního úseku)
 
         var p1: Array = e1.pts.duplicate(); var u = e1.a
         if e1.a == n.k:
