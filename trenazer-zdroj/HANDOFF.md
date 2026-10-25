@@ -1,4 +1,5 @@
 # Trenažér varny Zajíc – předávací dokument pro dalšího Clauda
+> **POZOR (2026-10-25)**: Tento dokument a záloha zdrojů `zdroj-2d-*.tar.gz` / `zdroj-3d-*.tar.gz` jsou z 2D **v50** / 3D **v133**. Jiná relace mezitím vydala 2D **v68** (a Unity verzi) přímo do repa. **Nepublikovat z této zálohy** (přepsalo by se v68 a novější). Nejdřív `git pull` repa a zjistit aktuální `trenazer2d/version.json` a zdroje; z této zálohy jen přenést změny z v50 (whirlpool usazení 20 min v sim.gd; spargeEndP 1,0 v sim.gd a params.gd), pokud v novějším zdroji ještě nejsou.
 Stav: 2026-10-24, 2D verze 50 (Godot 4.3), 3D verze 133 (Godot 4.7.2). Uživatel: Vasil (Pivovar Zajíc, varna 40 hl), komunikuje česky, neformálně, stručně.
 
 ## Pravidla od Vasila
