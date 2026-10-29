@@ -560,6 +560,7 @@ func _reference_tests() -> void:
 	T.chk("REF SMM: krok 60 min a 1 s dávají totéž", _rel(vs1.smm, vs2.smm) < 1e-6 and _rel(vs1.dms, vs2.dms) < 1e-6, "DMS %.5f / %.5f" % [vs1.dms, vs2.dms])
 	T.chk("REF SMM → DMS: hmota se zachovává (SMM + DMS ≤ počáteční, zbytek se odpaří)", vs1.smm + vs1.dms <= 10.0 + 1e-9)
 	# --- D) izomerizace α-kyselin (Malowicki & Shellhammer 2005): α(t) = α0·e^(−k1·t), iso = k1·α0·(e^(−k1 t) − e^(−k2 t))/(k2 − k1) ---
+	sim.S.pH = 5.5  # referenční pH, při kterém je korekce izomerace neutrální
 	var vh1 = _mkv(100.0); vh1.alpha = 100.0
 	var vh2 = _mkv(100.0); vh2.alpha = 100.0
 	sim.react(vh1, 60.0)

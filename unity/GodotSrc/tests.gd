@@ -581,6 +581,14 @@ func run() -> int:
     S.gel = 0.0;var res_g0: float = sim.skRes(0.001);S.gel = 1.0
     chk("smyk: gel zvýší odpor lože", sim.skRes(0.001) > res_g0 * 1.2, "%.3g → %.3g" % [res_g0, sim.skRes(0.001)])
     S.gel = 0.0
+    # --- pH a izomerace chmele (Kosa s. 163) ---
+    var isoR: Array = []
+    for phv in [5.2, 5.8]:
+        fresh();S = sim.S
+        S.pH = phv;S.rvp.w = 3000.0;S.rvp.g = 0.0;S.rvp.T = 100.0;S.rvp.alpha = 100.0;S.rvp.iso = 0.0
+        for i in 30: sim.sim_step(10.0)
+        isoR.append(S.rvp.iso)
+    chk("izomerace: vyšší pH (5,8) dá za stejný čas víc izo-α než pH 5,2", isoR[1] > isoR[0] * 1.1, "%.2f vs %.2f" % [isoR[0], isoR[1]])
     # --- víčko spilky: zavřené = tlakuje se ---
     fresh();S = sim.S
     S.sp["lidOpen"] = false;S.sp.L = 100.0;sim.sim_step(1.0)
