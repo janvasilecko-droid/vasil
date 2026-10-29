@@ -1,0 +1,83 @@
+{
+ "ver": 202610290926,
+ "commit": "ecfd562ed1141525c588f67bf1b4c14e3f1e9807",
+ "notes": "Zdroj: izomerace chmele závisí na pH (sim, params, tests)",
+ "requires": 1,
+ "files": [
+  {
+   "path": "Managed/PivovarCore.dll",
+   "sha256": "e5e06a871ceb1f799d884eefd36b5a7610e4d839ff01ffa69204585f1b764622",
+   "size": 215552
+  },
+  {
+   "path": "Managed/PivovarGdGen.dll",
+   "sha256": "20b5fad1708c68da312b26f3997dae468c5c95c0ccc17ef635ee6bcc68a1bd5e",
+   "size": 1450496
+  },
+  {
+   "path": "StreamingAssets/godot/art/pump.png",
+   "sha256": "f84a1117cf8e019225fea7dfdcafadbbbdbe11fb0a7c79c24ec9d8ea5d92c0fe",
+   "size": 358375
+  },
+  {
+   "path": "StreamingAssets/godot/art/pump_inline.png",
+   "sha256": "e578f0bfa78b7c98acf65e8aebd149aebc1ff1ee1fc84d9425adea62e0e0b5db",
+   "size": 290339
+  },
+  {
+   "path": "StreamingAssets/godot/art/valve_closed.png",
+   "sha256": "336118dd55d67b1d2a3af09f6ab45f6c84fa8c2073eef9c3664e724c7852b849",
+   "size": 32273
+  },
+  {
+   "path": "StreamingAssets/godot/art/valve_open.png",
+   "sha256": "2bd9b11adde40b89b2d3ed19a4249202cc2760bb5f72410b49dc149cc8d2a8dd",
+   "size": 31620
+  },
+  {
+   "path": "StreamingAssets/godot/art/valveh_closed.png",
+   "sha256": "5be6dbcf93995dd59012c8d0c1cc50e8e8db4a7b0674c9a639a2866584b9b3ef",
+   "size": 32279
+  },
+  {
+   "path": "StreamingAssets/godot/art/valveh_open.png",
+   "sha256": "62dda6d84e985c4f469451d0d3fda53d19e38ad5ffb78217acee8052e47a0300",
+   "size": 31677
+  },
+  {
+   "path": "StreamingAssets/godot/art/vs_body.png",
+   "sha256": "c8027143821b6f14ed9025461953e6d58f3fbf81edaf81e97076d5843ba29ba9",
+   "size": 962029
+  },
+  {
+   "path": "StreamingAssets/godot/art/vs_cone.png",
+   "sha256": "20c728501c6525652e4163b2fc58ad56db61dcd959af0e355cbc521ffb781314",
+   "size": 296411
+  },
+  {
+   "path": "StreamingAssets/godot/art/vs_dish.png",
+   "sha256": "568c9092060f6c96f772c7da61457c1fe339a2c48695a8aaa9433653ca190dcd",
+   "size": 124503
+  },
+  {
+   "path": "StreamingAssets/godot/art/vs_dome.png",
+   "sha256": "8e5074e9ebcce29e6fb3694a0303db15b187f5c596476457cef2953199dee2a7",
+   "size": 153770
+  },
+  {
+   "path": "StreamingAssets/godot/art/vs_horiz.png",
+   "sha256": "da84cbd58bee886547caeb932ae3be877fbf3dbcdbd52f5c807ccc82d3365ced",
+   "size": 1426649
+  },
+  {
+   "path": "StreamingAssets/godot/plan.json",
+   "sha256": "4a5e660472904988d7ecf01c2c35e0d02f10fe188697d7c2896beeec432cd9a3",
+   "size": 48615
+  },
+  {
+   "path": "StreamingAssets/godot/version.json",
+   "sha256": "6cdded540585dcc31c2abe5c771fd4ff6b030e494ea75996e8773a1701f1c784",
+   "size": 188
+  }
+ ]
+}
