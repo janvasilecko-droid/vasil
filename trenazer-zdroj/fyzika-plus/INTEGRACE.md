@@ -12,20 +12,21 @@ Potřebuješ Python 3.8 nebo novější, žádné další knihovny.
 python aplikuj_fyzika_plus.py "D:\stazene\Trenazer-varny-aplikace" --zkouska   ← jen vypíše, co by udělal
 python aplikuj_fyzika_plus.py "D:\stazene\Trenazer-varny-aplikace"             ← vloží
 ```
-Přepínače: `--bez-ui` vynechá úpravy panelu (U1–U3), `--bez-vzhledu` vynechá kreslení kapalin (V1, V2).
+Přepínače: `--bez-ui` vynechá úpravy panelu (U1–U3), `--bez-vzhledu` vynechá kreslení kapalin (V1–V3).
 
 Balíček je i v repozitáři `janvasilecko-droid/vasil`, složka `trenazer-zdroj/fyzika-plus/` (`git pull`), takže ho
 nemusíš přenášet ručně.
 
-**Už máš vloženou verzi 1.0?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je vložené, a doplní jen
-nové háčky a parametry verze 1.1.
+**Už máš vloženou verzi 1.0 nebo 1.1?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je vložené,
+a doplní jen nové háčky a parametry verze 1.2.
 
 Cesta je složka projektu, kde leží `project.godot` a `sim.gd`. Když zadáš nadřazenou složku, skript `sim.gd` najde sám.
 Pro 3D verzi spusť skript ještě jednou se složkou 3D projektu, protože obě verze mají vlastní kopii skriptů.
 
 Co skript dělá:
 - zkopíruje `fyzika_plus.gd`, `fyzika_plus_tests.gd` a `fyzika_plus_vzhled.gd` do projektu;
-- vloží háčky H0–H15, U1–U3, V1–V2 a R1 (tabulka níže). **Háček, jehož místo nenajde přesně jednou, přeskočí a napíše proč.**
+- vloží háčky H0–H17, U1–U3, V1–V3 a R1 (tabulka níže). Od verze 1.2 sahá i do `auto.gd` a `lauter_auto.gd`
+  (po jednom řádku: automat po kroku zavře klapky). **Háček, jehož místo nenajde přesně jednou, přeskočí a napíše proč.**
   Skupina úprav, která spolu souvisí, se vloží buď celá, nebo vůbec. Nic se tedy nerozbije napůl;
 - před první změnou si každý soubor zazálohuje jako `<soubor>.pred-fyzika-plus`;
 - zapíše `fyzika_plus_hooks.gd` se seznamem vložených háčků. Testy podle něj přeskočí, co chybí;
@@ -34,7 +35,7 @@ Co skript dělá:
 
 Ověření po vložení (Godot 4.3 pro 2D, Godot 4.7 pro 3D):
 ```
-Godot --headless --path "<projekt>" -- --tests       ← všechny testy včetně 56 nových „FP …“
+Godot --headless --path "<projekt>" -- --tests       ← všechny testy včetně 64 nových „FP …“
 Godot --headless --path "<projekt>" -- --autotest    ← celá automatická várka
 ```
 Testy nespouštěj souběžně ve dvou kopiích projektu: mají stejný název, sdílejí `user://` (uložení várky)
@@ -66,6 +67,9 @@ Hlavní nové parametry a výchozí hodnoty (celý seznam se zdroji je ve `fyzik
 | `rvpDiaM`, `mpDiaM`, `wpDiaM` | 0 | vnitřní průměr nádoby v metrech; 0 = odhad z objemu (pánev výška = průměr, vířivka 3 : 1) |
 | `evapOpen` | 0,1 (ODHAD) | odpar z hladiny mimo var: 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem, 0 = vypnuto |
 | `mashVmax` | 1,5 m/s | nejvyšší rychlost rmutu v potrubí (Kunze s. 903) |
+| `pumpPass` | 1 | stojící čerpadlo je průchozí (samospád a zpětný tok); **0 = jako dřív – nastav, jestli máš za čerpadly zpětné klapky** |
+| `pumpPassK` | 5 | ztráta ve stojícím čerpadle v násobcích rychlostní výšky (GIW/KSB: 5 volně se protáčí, 10 stojí) |
+| `dryWallK` | 0,5 (ODHAD) | ztráty suché stěny nádoby proti smáčené; 1 = ztráty nezávisí na hladině (jako dřív, dobře izolovaná nádoba) |
 
 ## 2. Háčky – co, kam a proč (pro ruční vložení nebo pro Clauda doma)
 
@@ -105,9 +109,18 @@ Při ručním vkládání drž odsazení okolních řádků.
 | U3 | ctl.gd | `lines.append("[b]Spilka:[/b] %s" % m.vessel_text("spilka"))` | Pod něj přidej `for fp_l in preload("res://fyzika_plus.gd").panel_lines(m.sim): lines.append(fp_l)`. Řádky o chladiči a bodu varu u dna |
 | V1 | main.gd | hlavičku `func _stream_segs() -> Array:` | Jako první řádek těla dej `return preload("res://fyzika_plus_vzhled.gd").stream_segs(m)`. Proudy do nádob padají obloukem |
 | V2 | main.gd | v `_liquid()`: řádek `fxs["lv"] = lv;fxs["slosh"] = slosh` a dvakrát výraz `amp * 0.5 * sin(px * 0.11 - tt * 4.7)` (podruhé s `px2`) | Pod první přidej `fxs["fpimp"] = preload("res://fyzika_plus_vzhled.gd").impacts(m, it, fxs, lv)`; za oba výrazy připiš `+ preload("res://fyzika_plus_vzhled.gd").ripple(fxs, px, tt, is_mash)` (podruhé s `px2`). **Jen s V1** |
+| **H16** | sim.gd | v `bfs()`: `if pass2.has(pb.get("bind", "")) and a.side == "in":` a pod ním `for k2 in net.pumpNodes.get(a.id, {}).get("out", []):`; v `_vessel_gravity()`: `var gr = bfs(sts)` | První změň na `… and (a.side == "in" or pass2.has("~rev")):`, druhý na `….get("out" if a.side == "in" else "in", []):`, třetí na `var gr = bfs(sts, "liq", FP.idle_pumps(self))`. Stojícím čerpadlem pak teče kapalina samospádem oběma směry |
+| H16 (2. část) | auto.gd | v `_end_step()` řádek `i += 1` | Nad něj přidej `if preload("res://fyzika_plus.gd").cf(sim, "pumpPass") >= 0.5: _close_all()`. Automat po každém kroku zavře klapky, jinak by to stojícím čerpadlem teklo dál nebo zpátky. **Obě části H16 jen spolu** |
+| H16b | lauter_auto.gd | ve `stop()` řádek `sim.S.p2.on = false;sim.S.skWater.on = false` | Pod něj přidej `preload("res://fyzika_plus.gd").lauter_stop(sim)`. Automat scezování po skončení zavře klapky, které si otevřel. **Jen s H16** |
+| **H17** | sim.gd | v `heat()`: `var UA: float = c.rvpUA if name == "rvp" else c.mpUA`; v `sim_step()` u vířivky `wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw` | Pod první přidej `UA *= FP.loss_k(self, name, v)`; ve druhém vlož za `c.wpUA` násobek `* FP.loss_k(self, "wp", wv)`. Ztráty tepla podle zaplnění nádoby. **Obě části jen spolu** |
+| V3 | main.gd | v `_liquid()` dvojici řádků `if b != "lv":` a pod ním `LiquidFx.draw_caustics(…)` | Nad ni přidej `preload("res://fyzika_plus_vzhled.gd").settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)`. Kreslí usazené dílo |
 
-Závislosti: H1–H7, H10–H13, H15, U1, U3 a R1 potřebují H0. U2 a H14 potřebují H1, H9f a H9g potřebují H2,
-H9h potřebuje H3b, V2 potřebuje V1. Na ostatních háčcích nic nezávisí.
+Závislosti: H1–H7, H10–H13, H15–H17, U1, U3 a R1 potřebují H0. U2 a H14 potřebují H1, H9f a H9g potřebují H2,
+H9h potřebuje H3b, V2 potřebuje V1, H16b potřebuje H16. Na ostatních háčcích nic nezávisí.
+
+**Co se s H16 změní v ovládání:** když čerpadlo stojí a trasa přes něj je otevřená, kapalina teče podle rozdílu hladin
+(i zpátky). Po čerpání proto zavři klapku – máš na to 3 s skutečného času (při 10× rychlosti 30 s simulace), pak se
+proud rozběhne a deník napíše „kapalina přetéká samospádem“. Oba automaty si klapky zavírají samy.
 
 ## 3. Pro Clauda doma (zadání)
 
@@ -117,8 +130,8 @@ H9h potřebuje H3b, V2 potřebuje V1. Na ostatních háčcích nic nezávisí.
 >    Když hlásí přeskočený hlavní háček (✗), otevři INTEGRACE.md, najdi v sim.gd místo s tou funkcí podle smyslu
 >    (verze se mohla změnit) a háček vlož ručně. Pak skript spusť znovu, aby zapsal `fyzika_plus_hooks.gd`.
 > 3. Spusť testy (`-- --tests`) a automatickou várku (`-- --autotest`). Porovnej protokol s tabulkou
->    „Ověření“ ve FYZIKA_PLUS.md (kapitoly 6 a 7.4): objem, °P, IBU, EBC, DMS mají vyjít podobně (EBC ve spilce o ~1,5 výš,
->    pára ~20 kWh/hl, odpar mimo var ~20 L).
+>    „Ověření“ ve FYZIKA_PLUS.md (kapitoly 6, 7.4 a 8.3): objem, °P, IBU, EBC, DMS mají vyjít podobně (EBC ve spilce
+>    o ~1,5 výš, pára ~20 kWh/hl, odpar mimo var ~20 L). V deníku automatické várky nesmí být „přetéká samospádem“.
 > 4. Nic jiného neměň. Pravidla projektu: žádná vymyšlená čísla (odhad označit ODHAD), nesahat na trasy,
 >    klapky a polohy čerpadel ani na plán editoru. Text z knih Kosař a Kunze se do repozitáře nedává, jen čísla
 >    s odkazem na stranu.

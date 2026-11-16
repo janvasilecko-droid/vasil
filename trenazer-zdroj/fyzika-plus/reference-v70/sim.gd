@@ -14,7 +14,7 @@ const SOL: = ["g", "su", "sc", "ni"]
 const CELLK: = ["w", "f", "n", "smm", "dms", "col"]
 
 const CFG_DEFAULT: = {
-    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,   # FYZIKA+ H8
+    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5, "pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,   # FYZIKA+ H8
     "rvpCap": 5000.0, "rvpUA": 0.25, "rvpSteel": 450.0, "rvpDead": 20.0, 
     "mpCap": 6000.0, "mpUA": 0.3, "mpSteel": 600.0, "mpDead": 60.0, 
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
@@ -98,7 +98,7 @@ const CALIB_PATH: = "user://kalibrace.json"
 var calib_applied: = []
 ## povolené rozsahy (fyzikálně smysluplné) – hodnota mimo rozsah se odmítne a zapíše do calib_rejected
 const CALIB_RANGE: = {
-    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],   # FYZIKA+ H8
+    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0], "pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],   # FYZIKA+ H8
     "rvpCap": [1000.0, 10000.0], "mpCap": [1000.0, 10000.0], "wpCap": [1000.0, 10000.0], "skCap": [1000.0, 10000.0], "spCap": [1000.0, 20000.0],
     "rvpUA": [0.0, 3.0], "mpUA": [0.0, 3.0], "wpUA": [0.0, 3.0], "skUA": [0.0, 3.0], "hltUA": [0.0, 3.0],
     "rvpSteel": [0.0, 3000.0], "mpSteel": [0.0, 3000.0], "wpSteel": [0.0, 3000.0], "skSteel": [0.0, 3000.0], "hltSteel": [0.0, 5000.0], "cpSteel": [0.4, 0.6],
@@ -624,6 +624,7 @@ func density(v) -> float:
 func heat(v, m: float, dt: float, name: String) -> void :
     var c = S.cfg; var pdv = S._pd.get(name, {"P": 0.0, "wet": 1.0})
     var UA: float = c.rvpUA if name == "rvp" else c.mpUA
+    UA *= FP.loss_k(self, name, v)   # FYZIKA+ H17 – ztráty podle smáčené plochy (UA platí pro plnou nádobu)
     var steel: float = c.rvpSteel if name == "rvp" else c.mpSteel
     var Pin: float = pdv.P * S.boiler.scale * (1.0 if S.steamOK[name] else 0.0)
 
@@ -1018,7 +1019,7 @@ func sim_step(dt: float) -> void :
 
     var wv = S.wp
     if wv.w > 1:
-        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw;react(wv, m);FP.surface_evap(self, wv, "wp", dt)   # FYZIKA+ H12
+        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * FP.loss_k(self, "wp", wv) * (wv.T - c.ambientT) * dt / Cw;react(wv, m);FP.surface_evap(self, wv, "wp", dt)   # FYZIKA+ H12
     var hm = sk.mash
     if hm.w > 1:
         react(hm, m)
@@ -1645,8 +1646,8 @@ func bfs(starts: Array, mode: = "liq", pass2: = []) -> Dictionary:
                 elif a.kind == "pump":
                     if prev[k].get("pump", "") == a.id: continue
                     var pb = net.byId[a.id]
-                    if pass2.has(pb.get("bind", "")) and a.side == "in":
-                        for k2 in net.pumpNodes.get(a.id, {}).get("out", []):
+                    if pass2.has(pb.get("bind", "")) and (a.side == "in" or pass2.has("~rev")):   # FYZIKA+ H16 – stojícím čerpadlem to teče oběma směry
+                        for k2 in net.pumpNodes.get(a.id, {}).get("out" if a.side == "in" else "in", []):   # FYZIKA+ H16
                             if not prev.has(k2):
                                 prev[k2] = {"k": k, "pump": a.id};q.append(k2)
                     stop = true
@@ -2528,7 +2529,7 @@ func _vessel_gravity(m: float) -> void :
         for sk_ in sts: oy = maxf(oy, net.nodes[sk_].y)
         var sy: float = main.level_y(gv)
         if sy >= oy: continue
-        var gr = bfs(sts)
+        var gr = bfs(sts, "liq", FP.idle_pumps(self))   # FYZIKA+ H16 – trasa samospádu smí vést přes stojící čerpadlo
         var bh = null; var bhd: = 0.03
         for h in gr.hits:
             var db: String = h.att.bind

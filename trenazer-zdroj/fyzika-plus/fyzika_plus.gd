@@ -16,8 +16,11 @@ extends RefCounted
 ##  9) připalování: úbytek výkonu vidí kotel i nádoba stejně (bilance energie sedí)
 ## 10) průtok ledové vody podle přiškrcení klapek (dřív pevně 120 L/min)
 ## 11) hladina a kapalina: odpar z horké hladiny před varem a ve vířivce, bod varu u dna podle hloubky
+## Doplněno 16. 11. 2026 odpoledne (verze 1.2):
+## 12) stojící odstředivé čerpadlo je průchozí (samospád a zpětný tok přes vypnuté čerpadlo)
+## 13) ztráty tepla nádoby podle smáčené plochy (poloprázdná nádoba ztrácí míň než plná)
 
-const VERZE := "FYZIKA+ 1.1 (2026-11-16)"
+const VERZE := "FYZIKA+ 1.2 (2026-11-16)"
 
 ## výchozí hodnoty nových parametrů (stejné řádky jsou v CFG_DEFAULT; tady jako pojistka, kdyby v něm chyběly)
 const DEF := {
@@ -27,6 +30,7 @@ const DEF := {
 	"phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "isoPh": 0.5,
 	"wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0,
 	"hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,
+	"pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,
 }
 ## povolené rozsahy (pro CALIB_RANGE)
 const RANGE := {
@@ -36,6 +40,7 @@ const RANGE := {
 	"phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "isoPh": [0.0, 2.0],
 	"wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0],
 	"hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],
+	"pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],
 }
 
 static func cf(sim, k: String) -> float:
@@ -508,9 +513,25 @@ static func gravity_q(sim, path: Array, head_m: float, src_key) -> float:
 		if st is Dictionary and st.has("e"): d_out = float(sim.bore_mm(float(st.e.dn))) / 1000.0
 	if d_out <= 0.0: d_out = float(sim.bore_mm(50.0)) / 1000.0
 	var a_out: float = PI * d_out * d_out / 4.0
+	# stojící čerpadla na trase: každé přidá ztrátu K·v²/2g (trasa v místě čerpadla „přeskakuje“ mezi sáním a výtlakem)
+	var pump_a: Array = []
+	var prev_to = null
+	for st2 in path:
+		if not (st2 is Dictionary): continue
+		if st2.has("plate") or not st2.has("e"):
+			prev_to = null; continue
+		if prev_to != null and st2.e.get("a") != prev_to and st2.e.get("b") != prev_to:
+			var dp: float = float(sim.bore_mm(float(st2.e.dn))) / 1000.0
+			pump_a.append(PI * dp * dp / 4.0)
+		prev_to = st2.get("to")
+	var kp: float = cf(sim, "pumpPassK")
 	var need: Callable = func(Q: float) -> float:
 		var vo: float = Q / 60000.0 / a_out
-		return float(sim.path_head(path, Q, rho, mu)) + vo * vo / (2.0 * 9.81)
+		var h: float = float(sim.path_head(path, Q, rho, mu)) + vo * vo / (2.0 * 9.81)
+		for ap in pump_a:
+			var vp: float = Q / 60000.0 / float(ap)
+			h += kp * vp * vp / (2.0 * 9.81)
+		return h
 	var hi: float = 6000.0
 	if float(need.call(hi)) <= head_m: return hi
 	var lo: float = 0.0
@@ -519,6 +540,116 @@ static func gravity_q(sim, path: Array, head_m: float, src_key) -> float:
 		if float(need.call(mid)) > head_m: hi = mid
 		else: lo = mid
 	return 0.5 * (lo + hi)
+
+
+# ======================================================================
+# 8c) Stojící odstředivé čerpadlo je průchozí (H16)
+# ======================================================================
+
+## Čerpadla, která právě stojí – hledání trasy pro samospád jimi smí projít, a to oběma směry (značka "~rev").
+## Odstředivé čerpadlo nemá nic, co by po vypnutí zavřelo průtok: kapalina jím teče podle rozdílu hladin dopředu i zpátky.
+## Proto se po vypnutí čerpadla zavírá klapka za ním a před ním. Ztráta v čerpadle: K ≈ 5 (oběžné kolo se volně protáčí),
+## K ≈ 10 (zablokované) násobků rychlostní výšky (GIW/KSB) – parametr pumpPassK. pumpPass = 0 vrací dřívější chování.
+## Doběh: první 3 s po vypnutí se čerpadlo ještě bere jako neprůchozí (kolo dobíhá a drží tlak; ODHAD) – obsluha i automat
+## tak stihnou zavřít klapku dřív, než se proud otočí. Stejně dlouho trvá, než se proud rozběhne po přestavení klapek
+## (setrvačnost kapaliny v potrubí). Při zrychleném čase se ta doba násobí rychlostí – obsluha má vždycky 3 s skutečného
+## času na zavření klapky (při 10× by jinak měla 0,3 s).
+const PUMP_RUNDOWN_S := 3.0
+
+## doba [s simulace], po kterou je čerpadlo po vypnutí (a trasa po přestavení klapek) ještě neprůchozí
+static func pump_grace(sim) -> float:
+	var g: float = PUMP_RUNDOWN_S
+	var mn = sim.get("main")
+	if mn != null and mn.get("running") == true and mn.get("speed") != null: g *= maxf(1.0, float(mn.speed))
+	return g
+
+static func idle_pumps(sim) -> Array:
+	if cf(sim, "pumpPass") < 0.5: return []
+	var S = sim.S; var out: Array = []
+	# čerpadlo, které automat právě spouští (čeká na zavodnění), se nebere jako stojící – při ručním ovládání je v té chvíli už zapnuté
+	var pend: Dictionary = {}
+	var mn = sim.get("main")
+	if mn != null and mn.get("auto") != null and bool(mn.auto.get("on")) and mn.auto.get("pend") is Dictionary: pend = mn.auto.pend
+	var run: Dictionary = {}
+	for k in ["p1", "p2", "p3"]:
+		if S.has(k) and S[k] is Dictionary: run[k] = bool(S[k].get("on", false)) or pend.has(k)
+	var hot: bool = false
+	for k2 in ["rvpWater", "skWater", "flush"]:
+		if S.has(k2) and S[k2] is Dictionary and bool(S[k2].get("on", false)): hot = true
+	run["phw"] = hot
+	if S.has("lv") and S.lv is Dictionary: run["plv"] = bool(S.lv.get("pump", false))
+	var st: Dictionary = sim.get_meta("fpPumpOff", {})
+	var now: float = float(S.get("t", 0.0))
+	var grace: float = pump_grace(sim)
+	var vv = sim.get("valve_ver")
+	if vv != null:
+		if not st.has("~vv") or st["~vv"] != vv or now < float(st.get("~vt", 0.0)):
+			st["~vv"] = vv; st["~vt"] = now          # klapky se právě přestavily (nebo nový stav simulace)
+		if now - float(st["~vt"]) < grace:
+			for k0 in run:
+				if run[k0]: st.erase(k0)
+				elif not st.has(k0) or now < float(st[k0]): st[k0] = now
+			sim.set_meta("fpPumpOff", st)
+			return []
+	for k in run:
+		if run[k]:
+			st.erase(k); continue
+		if not st.has(k) or now < float(st[k]): st[k] = now          # poprvé viděno stát (nebo nový stav simulace)
+		if now - float(st[k]) >= grace: out.append(k)
+	sim.set_meta("fpPumpOff", st)
+	if out.size() > 0: out.append("~rev")
+	return out
+
+## Automat scezování po skončení zavře kapalinové klapky, které si sám otevřel (H16b). Dřív je nechával otevřené, protože
+## stojící čerpadlo nic nepustilo; teď by plná pánev tekla stojícím C2 zpátky pod síta. Když klapkami mezitím hýbala
+## obsluha (jiná verze klapek, než si automat pamatuje), nesahá na nic.
+static func lauter_stop(sim) -> void:
+	if cf(sim, "pumpPass") < 0.5: return
+	var a = sim.S.get("lauterAuto", null)
+	if a == null or not (a is Dictionary) or int(a.get("routeVersion", -1)) != int(sim.valve_ver): return
+	var steam := {}
+	for node in sim.net.nodes.values():
+		if node.valve == null: continue
+		for edge in node.edges:
+			if edge.medium == "steam": steam[node.valve] = true
+	var n := 0
+	for it in sim.net.byId.values():
+		if it.type == "valve" and not steam.has(it.id) and it.get("kind", "") != "zasl" and bool(it.get("open", false)):
+			it["open"] = false; n += 1
+	var mn = sim.get("main")
+	if mn != null and mn.get("outlet_open") is Dictionary:
+		for key in mn.outlet_open:
+			if mn.outlet_open[key]:
+				mn.outlet_open[key] = false; n += 1
+	if n > 0:
+		sim.valve_ver += 1
+		a["routeVersion"] = sim.valve_ver
+		sim.logm("Automat scezování zavřel klapky na svých trasách (stojícím čerpadlem by kapalina tekla samospádem dál).")
+
+
+# ======================================================================
+# 8d) Ztráty tepla podle smáčené plochy (H17)
+# ======================================================================
+
+## Násobek ztrát nádoby do okolí podle zaplnění. Kalibrované UA (rvpUA, wpUA…) platí pro plnou nádobu.
+## Smáčená stěna (dno a plášť pod hladinou) předává teplo naplno. Suchá stěna (plášť nad hladinou a víko) ho dostává jen
+## od páry a vzduchu nad hladinou, takže ztrácí míň – dryWallK násobek smáčené stěny:
+##   k = [A_dna + z·A_pláště + dryWallK·((1 − z)·A_pláště + A_víka)] / [A_dna + A_pláště + dryWallK·A_víka],  z = zaplnění
+## dryWallK = 1: dobře izolovaná nádoba (odpor izolace je mnohem větší než odpor na vnitřní straně) – ztráty na hladině
+## nezávisí, tj. dřívější chování. dryWallK ≈ 0,5: holá stěna (vnější odpor ~0,1 m²K/W, uvnitř nad hladinou zhruba stejný).
+## Výchozí 0,5 je ODHAD: rvpUA 0,25 kW/K na ~16 m² povrchu pánve dává ~15 W/(m²·K), což odpovídá holé nádobě.
+## Geometrie z průměru nádoby (vessel_dia), válec s rovným dnem.
+static func loss_k(sim, key: String, v) -> float:
+	var dk: float = clampf(cf(sim, "dryWallK"), 0.0, 1.0)
+	if dk >= 0.999: return 1.0
+	var cap: float = float(sim.S.cfg.get(key + "Cap", 0.0))
+	if cap <= 0.0: return 1.0
+	var d: float = vessel_dia(sim, key)
+	var A: float = PI * d * d / 4.0
+	var Hfull: float = cap / 1000.0 / maxf(0.01, A)
+	var side: float = PI * d * Hfull
+	var z: float = clampf(float(sim.vol(v)) / cap, 0.0, 1.0)
+	return (A + z * side + dk * ((1.0 - z) * side + A)) / (A + side + dk * A)
 
 
 # ======================================================================

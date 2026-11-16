@@ -3819,6 +3819,7 @@ class ItemLayer extends Node2D:
                 var hpx: float = clampf(vv.trubSet * 6.0 * pxL * 5.0, 4.0, it.h * 0.17)
                 LiquidFx.draw_trub_cone(self, x + w * 0.5, y0 - 2.0, clampf(hpx * 1.7, 12.0, w * 0.32), hpx, tt)
         # průhlednost a lom světla: odlesky v kapalině (čirá sladina/voda), u hustého rmutu jen slabé
+        preload("res://fyzika_plus_vzhled.gd").settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)   # FYZIKA+ V3 – usazené dílo
         if b != "lv":
             LiquidFx.draw_caustics(self, area, outline, tt, 0.35 if is_mash else 1.0, col)
 

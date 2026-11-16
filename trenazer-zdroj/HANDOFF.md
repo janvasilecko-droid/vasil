@@ -29,16 +29,16 @@ main.gd (~4400 řádků, UI/vykreslení/editor/rozvaděč), sim.gd (fyzika: rmut
 ## Co je hotovo (dřívější relace)
 Lupa v rozvaděči; hydraulika i při pauze; otáčky míchadel; rotametr (ideál 20 l/min); pletená nerezová hadice; DN10/DN15; libovolné přiškrcování klapek (slider, Ctrl+kolečko, tažení); ráz po zastavení míchadla + RESET; trhání mláta klapkou (3–4 trhnutí smyje nános, pak trhá lože); realistické trubky s koleny/příchytkami; připnuté průhledítko se sladem; spilková hadice s průhledítkem/T/vývodem; víčko spilky (tlak při zavření); vířivka usazení 20 min (Kosař/Kunze); konec vyslazování 1,0 °P (Kosař s. 147/156).
 
-## FYZIKA+ (verze 1.1 z 2026-11-16, NEVYDÁNO – Vasil si to vloží sám doma)
+## FYZIKA+ (verze 1.2 z 2026-11-16, NEVYDÁNO – Vasil si to vloží sám doma)
 Vasil chtěl projít fyziku, chemii a mechaniku (kapaliny, přenos tepla), najít reálná data z jiných varen a připravit úpravu,
 kterou si vloží do své **novější verze doma**. 16. 11. k tomu přidal: „ať je voda kapalina a chová se realisticky, i dílo“.
-Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplněk 1.1).
+Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplněk 1.1, kapitola 8 = doplněk 1.2).
 - **Kde to je:** repo `janvasilecko-droid/vasil`, složka `trenazer-zdroj/fyzika-plus/` + `trenazer-zdroj/fyzika-plus.zip`.
 - **Co to je:** moduly `fyzika_plus.gd` (výpočet) a `fyzika_plus_vzhled.gd` (kreslení) + krátké háčky do sim.gd, ctl.gd, main.gd,
-  tests.gd, audit_tests.gd a params.gd. Vkládá je `aplikuj_fyzika_plus.py "<projekt>" [--zkouska] [--bez-ui] [--bez-vzhledu]`
+  auto.gd, lauter_auto.gd, tests.gd, audit_tests.gd a params.gd. Vkládá je `aplikuj_fyzika_plus.py "<projekt>" [--zkouska] [--bez-ui] [--bez-vzhledu]`
   podle textu, ne čísel řádků. Háček vloží, jen když místo najde přesně jednou (některé jen uvnitř dané funkce); skupiny všechno,
   nebo nic; zálohy `*.pred-fyzika-plus`; seznam vložených háčků zapíše do `fyzika_plus_hooks.gd`. Jde spustit opakovaně,
-  i přes verzi 1.0 a přes ručně vloženou část háčku.
+  i přes verzi 1.0 nebo 1.1 a přes ručně vloženou část háčku.
 - **Obsah 1.0 (29. 10.):** pára do pláště přes ventil (Spirax; ekviprocentní R 30 ODHAD; Kvs dopočítané), tlak v plášti z rovnováhy
   ventil = kondenzace, vzduch (Dalton), zavzdušňovací ventil a podtlak (Kunze s. 290–291), stall kondenzátu (TLV);
   přestup na straně náplně (CDJ, viskozita, přirozená konvekce `hNatC` 0,28); pH mladiny (pokles za varu 0,08/h,
@@ -49,16 +49,24 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   `evapOpen` 0,1 ODHAD); H13 rychlost rmutu v potrubí nad 1,5 m/s (Kunze s. 903) zhoršuje scezování; H14 připalování bez
   ztráty energie v bilanci (značka přes `set_meta`); H15 samospád podle hydrauliky trasy (`path_head` + výtoková ztráta);
   U3 řádky v panelu (chladič, bod varu u dna); V1/V2 kreslení proudů obloukem a vlnky na hladině.
-- **Ověřeno:** viz kapitola 7.4 dokumentu (v70 2D i v152 3D bez selhání, starší archivní verze, přechod z 1.0, CRLF, tabulátory).
-  První i druhá verze prošly nezávislou kontrolou (druhý agent bez znalosti postupu); nálezy jsou opravené.
+- **Obsah 1.2 (16. 11. odpoledne, na pokyn „udělej to“):** H16 stojící odstředivé čerpadlo je průchozí oběma směry
+  (`FP.idle_pumps` → `bfs(…, pass2)` se značkou `"~rev"`; ztráta K = 5, GIW/KSB; doběh 3 s skutečného času – `pump_grace`
+  násobí rychlostí hry; čerpadlo v `auto.pend` se bere jako běžící); kvůli tomu automat v `_end_step()` volá `_close_all()`
+  a H16b zavírá klapky po skončení automatu scezování (`FP.lauter_stop`). Vypnutí: `pumpPass` = 0. H17 ztráty tepla pánve
+  a vířivky podle zaplnění (`FP.loss_k`, `dryWallK` 0,5 ODHAD; 1 = jako dřív). V3 kreslení usazeného díla (`S.clog`).
+  Nevím, jestli má Vasil za čerpadly zpětné klapky a jak jsou nádoby izolované – zeptat se, až na to přijde řeč.
+- **Ověřeno:** viz kapitoly 7.4 a 8.3 dokumentu (v70 2D i v152 3D 333 kontrol bez selhání, starší archivní verze 266,
+  přechod z 1.0 i 1.1, CRLF, tabulátory, ručně vložená půlka háčku; automatická várka 2D = 3D).
+  Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2 jen vlastní kontrolou a testy.
   **Na Vasilově novější verzi vyzkoušené není** (je jen na jeho PC; až ji nahraje do repa, ověřit tam).
-- **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Návrhy N3–N22 a seznam měření jsou ve FYZIKA_PLUS.md.
+- **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Zbylé návrhy (N3–N24) a seznam měření jsou ve FYZIKA_PLUS.md.
 - **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
   Kosař–Procházka: PDF strana = tištěná. Autor je Kosař (v názvu souboru „Kosa“).
 - **Obnova prostředí po restartu kontejneru:** Godot 4.3 z `github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip`,
   4.7.2 z `github.com/godotengine/godot-builds/releases/download/4.7.2-stable/…`. Základ v70 2D = kostra z `zdroj-2d-godot43.tar.gz`
   + všechny `.gd` z `unity/GodotSrc/` kromě `updater.gd`; základ v152 3D = kostra z `zdroj-3d-godot47.tar.gz` + tytéž `.gd` kromě
   `updater.gd`, `boot.gd` a `view3d.gd` (ty jsou ve 3D jiné). Kontrola: v70 dává 269 kontrol, 0 selhání.
+  Starší verze balíčku pro zkoušku přechodu: `git archive 43c8ced` (1.0) a `git archive a4db14a` (1.1), složka `trenazer-zdroj/fyzika-plus`.
 
 ## Zdroje čísel
 - `KOSA_KUNZE_PARAMETRY.md` (i v projektu Zajic na claude.ai): čísla z Kosař–Procházka (Technologie výroby sladu a piva) a Kunze (Technology Brewing and Malting, s. 255–356) se stránkami.

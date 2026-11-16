@@ -34,6 +34,9 @@ const META: = {
 	"wpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"],   # FYZIKA+ H8
 	"evapOpen": ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"],   # FYZIKA+ H8
 	"mashVmax": ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"],   # FYZIKA+ H8
+	"pumpPass": ["0/1", "ESTIMATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky; 0 = stojící čerpadlo nic nepustí (dřívější chování – nastav 0, jestli máš za čerpadly zpětné klapky)"],   # FYZIKA+ H8
+	"pumpPassK": ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"],   # FYZIKA+ H8
+	"dryWallK": ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"],   # FYZIKA+ H8
 	"rvpCap": ["L", "MANUFACTURER", "±5 %", "nominální objem pánve 50 hl (údaj provozovatele)"],
 	"rvpSteel": ["kg oceli", "ESTIMATED", "±30 %", "hmotnost nádoby; kapacita = kg × cpSteel – z výkresu nebo štítku"],
 	"cpSteel": ["kJ/(kg·K)", "LITERATURE", "0,46–0,51", "měrná tepelná kapacita austenitické nerezi (AISI 304); jediné místo převodu sim.steelC()"],

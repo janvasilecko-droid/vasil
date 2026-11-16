@@ -3,6 +3,7 @@ extends RefCounted
 ##  V1: proudy do nádob padají po balistické dráze (sprcha stříká do oblouků, dopadá na stěnu a stéká po ní,
 ##      boční nátok vytéká obloukem) místo rovných čar
 ##  V2: hladina se v místě dopadu proudu vlní – kruhy se šíří od dopadu a slábnou; rmut je vazký, vlní se málo a krátce
+##  V3: dílo, které se nemíchá, se usazuje – nahoře se oddělí čirá kapalina, u dna zůstane vrstva zrna (verze 1.2)
 ## Nic z toho nemění výpočet (sim.gd), jen kreslení. Měřítko: plánek je schéma, 1 m ≈ 100 px (PX_PER_M).
 
 const G_PX := 981.0          # tíhové zrychlení [px/s²] při 100 px/m
@@ -116,3 +117,60 @@ static func ripple(fxs: Dictionary, px: float, tt: float, mash: bool) -> float:
 		var d: float = absf(px - float(q[0]))
 		h += A * float(q[1]) * exp(-d / L) * sin(kx * d - om * tt)
 	return clampf(h, -5.0, 5.0)
+
+# ---------------------------------------------------------------- V3: usazené dílo
+static func _area(p: PackedVector2Array) -> float:
+	var a := 0.0
+	for i in p.size():
+		var q: Vector2 = p[(i + 1) % p.size()]
+		a += p[i].x * q.y - q.x * p[i].y
+	return absf(a) * 0.5
+
+## Dílo bez míchání: zrno klesá ke dnu a nahoře zůstává čirá kapalina. Stav usazení bere z výpočtu (S.clog – stejná
+## veličina, podle které se bez míchání ucpává výpust): 0 = rozmíchané, 1 = usazené (asi za 5 min klidu), mícháním
+## se do minuty zase zvedne. Výška usazené vrstvy = objem lože (skBedLkg × slad) proti objemu díla – při běžné hustotě
+## vystírky zabere zrno asi dvě třetiny výšky. Kreslí se přes hotovou kapalinu: nahoře průhledná sladina, pod rozhraním
+## ztmavená hustá vrstva. Výpočet se nemění.
+static func settled_layer(ci: CanvasItem, m, it, b: String, fxs: Dictionary, outline: PackedVector2Array, lv: float, y0: float, _tt: float, is_mash: bool) -> void:
+	if not is_mash or not (b in ["rvp", "sk"]): return
+	var sim = m.sim; var S = sim.S
+	var cl = S.get("clog", null)
+	if cl == null or not (cl is Dictionary): return
+	var sed: float = clampf(float(cl.get(b, 0.0)), 0.0, 1.0)
+	if sed <= 0.001: return
+	if sed < 0.999: fxs["slosh"] = maxf(float(fxs.get("slosh", 0.0)), 0.12)   # drží překreslování, dokud se vrstva hýbe
+	var v = S.sk.mash if b == "sk" else S[b]
+	var V: float = maxf(1.0, float(sim.vol(v)))
+	var bed: float = float(S.cfg.get("skBedLkg", 2.7)) * float(v.g) / 0.191
+	var bf: float = clampf(bed / V, 0.05, 0.92)
+	var depth: float = y0 - lv
+	if depth < 8.0: return
+	var yi: float = lv + depth * sed * (1.0 - bf)          # rozhraní čirá kapalina / usazené zrno
+	if yi - lv < 1.5: return
+	var x0: float = it.x - 20.0; var x1: float = it.x + it.w + 20.0
+	var N := 28
+	var line := PackedVector2Array()
+	for i in N + 1:
+		var px: float = x0 + (x1 - x0) * i / float(N)
+		line.append(Vector2(px, yi + 1.6 * sin(px * 0.09) + 1.0 * sin(px * 0.23 + 1.3)))
+	# čirá kapalina nad rozhraním: barva sladiny (u čerstvé vystírky skoro voda), průhledná
+	var ex: float = float(sim.ext(v)); var P: float = 100.0 * ex / maxf(1.0, ex + float(v.w))
+	var ebc: float = float(v.col) / maxf(1.0, float(sim.liqVol(v)))
+	var cc: Color = m.kind_color("water", float(v.T), 0.0).lerp(m.kind_color("wort", float(v.T), ebc), clampf(P / 6.0, 0.15, 1.0))
+	cc.a = 0.70
+	var top := PackedVector2Array([Vector2(x0, lv + 2.0), Vector2(x1, lv + 2.0)])
+	for i in range(N, -1, -1): top.append(line[i])
+	for p in Geometry2D.intersect_polygons(outline, top):
+		if p.size() >= 3 and _area(p) > 4.0: ci.draw_colored_polygon(p, cc)
+	# usazená vrstva: hustší a tmavší
+	var bot := PackedVector2Array()
+	for i in N + 1: bot.append(line[i])
+	bot.append(Vector2(x1, y0 + 50.0)); bot.append(Vector2(x0, y0 + 50.0))
+	for p in Geometry2D.intersect_polygons(outline, bot):
+		if p.size() >= 3 and _area(p) > 4.0: ci.draw_colored_polygon(p, Color(0.20, 0.13, 0.05, 0.22 * sed))
+	# rozhraní
+	var band := PackedVector2Array()
+	for i in N + 1: band.append(line[i] + Vector2(0.0, -1.0))
+	for i in range(N, -1, -1): band.append(line[i] + Vector2(0.0, 1.2))
+	for p in Geometry2D.intersect_polygons(outline, band):
+		if p.size() >= 3 and _area(p) > 2.0: ci.draw_colored_polygon(p, Color(0.36, 0.25, 0.11, 0.55))

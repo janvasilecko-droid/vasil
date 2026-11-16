@@ -25,6 +25,8 @@ func run(t) -> void:
 	_geom()
 	_evap()
 	_mashv()
+	if _has("H16"): _pumppass()
+	if _has("H17"): _losses()
 	T.fresh()
 
 ## čistý stav + otevřené klapky na parním potrubí (plánek s parními trubkami by jinak po fresh() neměl páru)
@@ -147,7 +149,7 @@ func _steam_sim() -> void:
 	var Ein := 0.0; var Eloss := 0.0
 	for i in 900:
 		sim.sim_step(1.0)
-		Ein += v.Pin; Eloss += c.rvpUA * (v.T - c.ambientT)
+		Ein += v.Pin; Eloss += c.rvpUA * (FP.loss_k(sim, "rvp", v) if "H17" in HOOKS.APPLIED else 1.0) * (v.T - c.ambientT)
 	var H1: float = (sim.cC(v) + sim.steelC(c.rvpSteel)) * v.T
 	T.chk("FP pára: energie páry = ohřev náplně a oceli + ztráty (1. zákon, chyba < 2 %)", absf((Ein - Eloss) - (H1 - H0)) < 0.02 * maxf(1.0, Ein), "dodáno %.0f MJ" % (Ein / 1000.0))
 	# G) zavřená parní trasa v plánku → pára nejde, kotel nic nevyrábí, plášť nic neukazuje
@@ -423,3 +425,142 @@ func _mashv() -> void:
 	var vp: float = float(S.p1.get("vpipe", 0.0)); var qq: float = float(S.p1.get("q", 0.0))
 	var d_ref: float = sim.bore_mm(50.0) / 1000.0
 	T.chk("FP rmut v potrubí: v simulaci se u běžícího C1 počítá rychlost rmutu v potrubí (průtok / průřez nejužší trubky)", qq > 20.0 and vp > 0.0 and vp >= qq / 60000.0 / (PI * d_ref * d_ref / 4.0) * 0.5, "%.0f L/min → %.2f m/s" % [qq, vp])
+
+# ---------- stojící čerpadlo je průchozí (H16) ----------
+func _binds(r: Dictionary) -> Array:
+	var o := []
+	for h in r.hits: o.append(str(h.att.get("bind", "")))
+	return o
+
+## stojící čerpadla po doběhu (první 3 s po vypnutí se ještě berou jako neprůchozí)
+func _idle() -> Array:
+	FP.idle_pumps(sim); sim.S.t += FP.pump_grace(sim) + 1.0
+	return FP.idle_pumps(sim)
+
+func _pumppass() -> void:
+	T.fresh(); var S = sim.S
+	var idle: Array = _idle()
+	S.p1.on = true
+	var idle1: Array = _idle()
+	S.p1.on = false
+	var idle_now: Array = FP.idle_pumps(sim)       # právě vypnuto: kolo dobíhá
+	S.t += FP.pump_grace(sim) + 1.0
+	var idle_later: Array = FP.idle_pumps(sim)
+	var run0: bool = T.m.running; var sp0: float = T.m.speed
+	T.m.running = false; var g1: float = FP.pump_grace(sim)
+	T.m.running = true; T.m.speed = 10.0; var g10: float = FP.pump_grace(sim)
+	T.m.running = run0; T.m.speed = sp0
+	S.cfg["pumpPass"] = 0.0
+	var idle0: Array = _idle()
+	S.cfg["pumpPass"] = 1.0
+	T.chk("FP stojící čerpadlo: stojící čerpadla jsou průchozí oběma směry, běžící ne; první 3 s po vypnutí ještě ne (doběh, při zrychleném čase 3 s skutečného času); pumpPass = 0 vrací dřívější chování", idle.has("p1") and idle.has("p2") and idle.has("p3") and idle.has("~rev") and not idle1.has("p1") and idle1.has("p2") and not idle_now.has("p1") and idle_later.has("p1") and idle0.is_empty() and absf(g1 - 3.0) < 1e-6 and absf(g10 - 30.0) < 1e-6, "%s; doběh %.0f s, při 10× %.0f s simulace (3 s skutečného času)" % [str(idle), g1, g10])
+	# trasa pánev → SK přes C1: s čerpadlem v klidu ji hledání trasy najde jen s průchozím čerpadlem
+	T.fresh(); S = sim.S
+	if not _open_route("rvp", "sk", ["p1"]):
+		T.chk("FP stojící čerpadlo: trasa pánev → SK přes C1 v plánku není – test přeskočen", true); return
+	var rv = sim.items_by_bind("rvp")[0]
+	var sts: Array = sim.starts_of(rv.id, true)
+	var b0: Array = _binds(sim.bfs(sts)); var b1: Array = _binds(sim.bfs(sts, "liq", _idle()))
+	if b0.has("sk"):
+		T.chk("FP stojící čerpadlo: plánek má z pánve do SK i trasu mimo čerpadlo – test průchodnosti přeskočen", true)
+	else:
+		T.chk("FP stojící čerpadlo: otevřená trasa pánev → C1 → SK je pro samospád průchozí, i když C1 stojí (dřív čerpadlo trasu zavíralo)", b1.has("sk"), "bez průchodu: %s, s průchodem: %s" % [str(b0), str(b1)])
+	# zpětný směr: od hrdla SK zpátky přes výtlak a sání C1 do pánve
+	var goal = sim.get("last_goal")
+	if goal != null and sim.net.nodes.has(goal):
+		var r0: Array = _binds(sim.bfs([goal], "liq", ["p1"])); var r1: Array = _binds(sim.bfs([goal], "liq", ["p1", "~rev"]))
+		if r0.has("rvp"): T.chk("FP stojící čerpadlo: z hrdla SK vede do pánve i trasa mimo čerpadlo – test zpětného směru přeskočen", true)
+		else: T.chk("FP stojící čerpadlo: stojícím čerpadlem to teče i zpátky (z výtlaku do sání) – proto se po čerpání zavírá klapka", r1.has("rvp"), "jen dopředu: %s, oběma směry: %s" % [str(r0), str(r1)])
+	# ztráta ve stojícím čerpadle: trasa přes čerpadlo propustí míň než stejné trubky bez něj
+	var pid := ""
+	for id in sim.net.pumpNodes:
+		if sim.net.byId[id].get("bind", "") == "p1": pid = id
+	var ein = null; var eout = null; var kin = null; var kout = null
+	if pid != "":
+		for k in sim.net.pumpNodes[pid].get("in", []):
+			for e in sim.net.nodes[k].edges:
+				if e.medium != "steam" and ein == null:
+					ein = e; kin = k
+		for k in sim.net.pumpNodes[pid].get("out", []):
+			for e in sim.net.nodes[k].edges:
+				if e.medium != "steam" and eout == null:
+					eout = e; kout = k
+	if ein != null and eout != null:
+		var path = [{"e": ein, "to": kin}, {"e": eout, "to": (eout.b if eout.a == kout else eout.a)}]
+		S.cfg["pumpPassK"] = 0.0
+		var q0: float = FP.gravity_q(sim, path, 1.0, "hlt")
+		S.cfg["pumpPassK"] = 5.0
+		var q5: float = FP.gravity_q(sim, path, 1.0, "hlt")
+		var dp: float = sim.bore_mm(float(eout.dn)) / 1000.0; var ap: float = PI * dp * dp / 4.0
+		var vp: float = q5 / 60000.0 / ap
+		var hsum: float = sim.path_head(path, q5, 1.0, sim.skViscosity(S.hlt.T, 0.0)) + vp * vp / 19.62 + 5.0 * vp * vp / 19.62
+		T.chk("FP stojící čerpadlo: přidává ztrátu K·v²/2g (K = 5, GIW/KSB) – trasou přes něj teče míň; ztráty trasy, čerpadla a výtoku dají dohromady rozdíl hladin", q5 < q0 * 0.9 and absf(hsum - 1.0) < 0.02, "bez ztráty čerpadla %.0f L/min, se ztrátou %.0f L/min" % [q0, q5])
+	else:
+		T.chk("FP stojící čerpadlo: u C1 jsem nenašel sací a výtlačnou trubku – test ztráty přeskočen", true)
+	# v simulaci: plná pánev, C1 stojí, trasa do SK otevřená → hladiny se vyrovnávají; s pumpPass = 0 neteče nic
+	var moved := []
+	var run1: bool = T.m.running
+	for pp in [1.0, 0.0]:
+		T.fresh(); S = sim.S; S.cfg["pumpPass"] = pp
+		_open_route("rvp", "sk", ["p1"])
+		S.rvp.w = float(S.cfg.rvpCap) * 0.95; S.rvp.T = 20.0
+		var v0: float = sim.vol(S.rvp)
+		T.m.running = false
+		for i in 120: sim.sim_step(1.0)
+		moved.append(v0 - sim.vol(S.rvp))
+	T.m.running = run1
+	if b0.has("sk"): T.chk("FP stojící čerpadlo: test v simulaci přeskočen (trasa mimo čerpadlo)", true)
+	else: T.chk("FP stojící čerpadlo: v simulaci teče z plné pánve otevřenou trasou přes stojící C1 do SK; s pumpPass = 0 neteče nic", moved[0] > 20.0 and moved[1] < 0.5, "%.0f L za 2 min; pumpPass 0: %.1f L" % [moved[0], moved[1]])
+	# automat po kroku zavře klapky (jinak by to stojícím čerpadlem teklo dál)
+	var left := []
+	for pp2 in [1.0, 0.0]:
+		T.fresh(); S = sim.S; S.cfg["pumpPass"] = pp2
+		T.m.auto.start()
+		var n := 0
+		while T.m.auto.on and T.m.auto._id() != "malt" and n < 3600:
+			T.m.auto.tick(1.0); sim.sim_step(1.0); n += 1
+		var ids = sim.route_valves("hlt", "rvp", ["phw"])
+		var open_n := 0
+		if ids != null:
+			for id in ids:
+				if T.m.auto.keep.has(id): continue
+				if T.m.outlet_open.has(id):
+					if T.m.outlet_open[id]: open_n += 1
+				elif sim.net.byId.has(id) and bool(sim.net.byId[id].get("open", false)): open_n += 1
+		left.append([T.m.auto._id(), open_n])
+		T.m.auto.stop()
+	T.fresh()
+	T.chk("FP stojící čerpadlo: automat po napuštění pánve zavře klapky na trase vody (dřív zůstávaly otevřené až do dalšího čerpání)", left[0][0] == "malt" and left[0][1] == 0 and left[1][0] == "malt" and left[1][1] > 0, "po kroku otevřených klapek na trase: %d (pumpPass 1), %d (pumpPass 0)" % [left[0][1], left[1][1]])
+
+# ---------- ztráty tepla podle zaplnění (H17) ----------
+func _losses() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	c["dryWallK"] = 0.5
+	var v = S.rvp
+	v.w = float(c.rvpCap); var k_full: float = FP.loss_k(sim, "rvp", v)
+	v.w = float(c.rvpCap) * 0.5; var k_half: float = FP.loss_k(sim, "rvp", v)
+	v.w = 0.0; var k_empty: float = FP.loss_k(sim, "rvp", v)
+	var w = S.wp; w.w = float(c.wpCap) * 0.5; var k_wp: float = FP.loss_k(sim, "wp", w)
+	c["dryWallK"] = 1.0; var k_off: float = FP.loss_k(sim, "rvp", v)
+	c["dryWallK"] = 0.0; var k_zero: float = FP.loss_k(sim, "rvp", v)
+	c["dryWallK"] = 0.5
+	var geo: bool = float(c.get("rvpDiaM", 0.0)) < 0.05 and float(c.get("wpDiaM", 0.0)) < 0.05      # výchozí odhad tvaru (pánev výška = průměr, vířivka 3 : 1)
+	T.chk("FP ztráty podle hladiny: plná nádoba 1, poloprázdná míň, prázdná nejmíň; suchá stěna = smáčená (dryWallK 1) vrací 1; při výchozím tvaru pánev z poloviny 0,82, prázdná 0,64, vířivka z poloviny 0,88", absf(k_full - 1.0) < 1e-6 and k_half < k_full and k_empty < k_half and k_zero < k_empty and k_off == 1.0 and (not geo or (absf(k_half - 4.5 / 5.5) < 0.01 and absf(k_empty - 3.5 / 5.5) < 0.01 and absf(k_wp - 0.882) < 0.01)), "%.3f / %.3f / %.3f / vířivka %.3f" % [k_full, k_half, k_empty, k_wp])
+	# v simulaci: stejná náplň chladne s úpravou pomaleji přesně v poměru loss_k (tepelná kapacita se vykrátí)
+	var res := {}
+	for key in ["rvp", "wp"]:
+		var dT := []
+		var kk := 1.0
+		for on_ in [1.0, 0.0]:
+			T.fresh(); S = sim.S; c = S.cfg; c["dryWallK"] = 0.5 if on_ > 0.5 else 1.0; c["evapOpen"] = 0.0
+			var x = S[key]; x.w = float(c[key + "Cap"]) * 0.3; x.T = 90.0
+			if key == "rvp": x.Tsens = 90.0; x.heat = 0.0
+			if on_ > 0.5: kk = FP.loss_k(sim, key, x)
+			for i in 600: sim.sim_step(1.0)
+			dT.append(90.0 - float(x.T))
+		res[key] = [dT[0], dT[1], kk]
+	var ok := true
+	for key in res:
+		var r = res[key]
+		if not (r[1] > 0.01 and absf(r[0] / r[1] - r[2]) < 0.03 * r[2] and r[2] < 0.97): ok = false
+	T.chk("FP ztráty podle hladiny: nádoba plná ze 30 % chladne v simulaci pomaleji přesně v poměru smáčené plochy (pánev i vířivka)", ok, "pánev −%.2f K místo −%.2f K za 10 min (×%.2f), vířivka −%.2f K místo −%.2f K (×%.2f)" % [res.rvp[0], res.rvp[1], res.rvp[2], res.wp[0], res.wp[1], res.wp[2]])

@@ -9,8 +9,8 @@ Použití (Windows i Linux, stačí Python 3.8+ bez dalších knihoven):
     python aplikuj_fyzika_plus.py "D:\\...\\projekt" --bez-ui                        # bez tlačítka kyseliny a tlaku pláště v panelu
 
 Co dělá:
-  * zkopíruje fyzika_plus.gd a fyzika_plus_tests.gd do složky projektu (kde je sim.gd),
-  * do sim.gd / params.gd / tests.gd / audit_tests.gd / ctl.gd vloží krátké háčky – každý je hledaný podle
+  * zkopíruje fyzika_plus.gd, fyzika_plus_tests.gd a fyzika_plus_vzhled.gd do složky projektu (kde je sim.gd),
+  * do sim.gd / params.gd / tests.gd / audit_tests.gd / ctl.gd / main.gd / auto.gd / lauter_auto.gd vloží krátké háčky – každý je hledaný podle
     textu (ne podle čísla řádku), takže snese i jinak upravenou verzi. Háček, jehož místo nenajde přesně jednou,
     PŘESKOČÍ a napíše proč – nic nerozbije napůl (skupina úprav se vloží celá, nebo vůbec),
   * před první změnou uloží zálohu každého souboru jako <soubor>.pred-fyzika-plus,
@@ -60,6 +60,10 @@ NEW_PARAMS = [
     ("wpDiaM", 0.0, (0.0, 6.0), ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"]),
     ("evapOpen", 0.1, (0.0, 3.0), ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"]),
     ("mashVmax", 1.5, (0.5, 4.0), ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"]),
+    # --- verze 1.2 (16. 11. 2026) ---
+    ("pumpPass", 1.0, (0.0, 1.0), ["0/1", "ESTIMATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky; 0 = stojící čerpadlo nic nepustí (dřívější chování – nastav 0, jestli máš za čerpadly zpětné klapky)"]),
+    ("pumpPassK", 5.0, (0.0, 50.0), ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"]),
+    ("dryWallK", 0.5, (0.0, 1.0), ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"]),
 ]
 
 
@@ -336,6 +340,26 @@ def build_hooks():
         ("sim.gd", within("_vessel_gravity", done_if("FP.gravity_q(self, pa, bhd, gb)", sub_once(r'var q: float = 120\.0 \* f \* minf\(1\.3, sqrt\(bhd / 1\.05\)\)', 'var q: float = FP.gravity_q(self, pa, bhd, gb)', comment="# FYZIKA+ H15 (dřív: 120.0 * f * minf(1.3, sqrt(bhd / 1.05)))")))),
         ("sim.gd", within("net_step", done_if("FP.gravity_q(self, o.path", sub_once(r'var Lmin: float = tot \* o\.f / outs\.size\(\); var part = null', 'var Lmin: float = FP.gravity_q(self, o.path, maxf(0.0, head_m + (net.nodes[o.lk.k].y - (v.y + v.h)) / PX_PER_M), b); var part = null', comment="# FYZIKA+ H15 (dřív: tot * o.f / outs.size())")))),
     ], optional=True, needs=["H0"]))
+    # H16 – stojící odstředivé čerpadlo je průchozí (samospád a zpětný tok), automat po kroku zavírá klapky
+    FPM = 'preload("res://fyzika_plus.gd")'
+    H.append(Hook("H16", "sim.gd + auto.gd: stojícím čerpadlem teče kapalina samospádem (oběma směry); automat po každém kroku zavře klapky", probes=[("sim.gd", 'pass2.has("~rev")', 1), ("sim.gd", '"out" if a.side == "in" else "in"', 1), ("sim.gd", "FP.idle_pumps(self)", 1), ("auto.gd", '"pumpPass"', 1)], edits=[
+        ("sim.gd", need(r'^func _vessel_gravity\(', "verze nemá samospád mezi nádobami (_vessel_gravity)")),
+        ("auto.gd", need(r'^func _close_all\(', "automat nemá _close_all()")),
+        ("auto.gd", need(r'^var pend\b', "automat nemá seznam spouštěných čerpadel (pend)")),
+        ("sim.gd", within("bfs", done_if('pass2.has("~rev")', sub_once(r'if pass2\.has\(pb\.get\("bind", ""\)\) and a\.side == "in":', 'if pass2.has(pb.get("bind", "")) and (a.side == "in" or pass2.has("~rev")):', comment="# FYZIKA+ H16 – stojícím čerpadlem to teče oběma směry")))),
+        ("sim.gd", within("bfs", done_if('"out" if a.side == "in" else "in"', sub_once(r'for k2 in net\.pumpNodes\.get\(a\.id, \{\}\)\.get\("out", \[\]\):', 'for k2 in net.pumpNodes.get(a.id, {}).get("out" if a.side == "in" else "in", []):', comment="# FYZIKA+ H16")))),
+        ("sim.gd", within("_vessel_gravity", done_if("FP.idle_pumps(self)", sub_once(r'var gr = bfs\(sts\)', 'var gr = bfs(sts, "liq", FP.idle_pumps(self))', comment="# FYZIKA+ H16 – trasa samospádu smí vést přes stojící čerpadlo")))),
+        ("auto.gd", within("_end_step", done_if('"pumpPass"', sub_once(r'^([ \t]*)i \+= 1[ \t]*$', r'\1if ' + FPM + '.cf(sim, "pumpPass") >= 0.5: _close_all()   # FYZIKA+ H16 – po kroku zavřít klapky: stojícím čerpadlem by to teklo samospádem dál nebo zpátky' + '\n' + r'\1i += 1')))),
+    ], optional=True, needs=["H0"]))
+    H.append(Hook("H16b", "lauter_auto.gd: automat scezování po skončení zavře klapky, které si otevřel", probes=[("lauter_auto.gd", ".lauter_stop(sim)", 1)], edits=[
+        ("lauter_auto.gd", within("stop", sub_once(r'^([ \t]*)(sim\.S\.p2\.on = false;\s*sim\.S\.skWater\.on = false)[ \t]*$', r'\1\2' + '\n' + r'\1' + FPM + '.lauter_stop(sim)   # FYZIKA+ H16b – zavřít své klapky (stojícím C2 by pánev tekla zpátky pod síta)'))),
+    ], optional=True, needs=["H16"]))
+    # H17 – ztráty tepla podle smáčené plochy
+    H.append(Hook("H17", "sim.gd: ztráty tepla pánve a vířivky podle zaplnění (poloprázdná nádoba ztrácí míň než plná)", probes=[("sim.gd", "FP.loss_k(self", 2)], edits=[
+        ("sim.gd", need(r'^func heat\(v, m(: float)?, dt(: float)?, name\b', "funkce heat() má jiné parametry")),
+        ("sim.gd", within("heat", done_if("FP.loss_k(self, name, v)", sub_once(r'^([ \t]*)(var UA: float = c\.rvpUA if name == "rvp" else c\.mpUA)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'UA *= FP.loss_k(self, name, v)   # FYZIKA+ H17 – ztráty podle smáčené plochy (UA platí pro plnou nádobu)')))),
+        ("sim.gd", within("sim_step", done_if('FP.loss_k(self, "wp", wv)', sub_once(r'wv\.T -= c\.wpUA \* \(wv\.T - c\.ambientT\) \* dt / Cw', 'wv.T -= c.wpUA * FP.loss_k(self, "wp", wv) * (wv.T - c.ambientT) * dt / Cw', comment="# FYZIKA+ H17")))),
+    ], optional=True, needs=["H0"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[
         ("ctl.gd", need(r'r = _row\(box\)', "ctl.gd nemá řádky r = _row(box)")),
@@ -366,6 +390,11 @@ def build_hooks():
         ("main.gd", done_if(".ripple(fxs, px, tt, is_mash)", sub_once(r'amp \* 0\.5 \* sin\(px \* 0\.11 - tt \* 4\.7\)(?! \+ preload)', 'amp * 0.5 * sin(px * 0.11 - tt * 4.7) + ' + VZ + '.ripple(fxs, px, tt, is_mash)'))),
         ("main.gd", done_if(".ripple(fxs, px2, tt, is_mash)", sub_once(r'amp \* 0\.5 \* sin\(px2 \* 0\.11 - tt \* 4\.7\)(?! \+ preload)', 'amp * 0.5 * sin(px2 * 0.11 - tt * 4.7) + ' + VZ + '.ripple(fxs, px2, tt, is_mash)'))),
     ], optional=True, needs=["V1"]))
+    H.append(Hook("V3", "main.gd: dílo bez míchání se usazuje – nahoře čirá kapalina, u dna vrstva zrna", probes=[("main.gd", ".settled_layer(", 1)], edits=[
+        ("main.gd", need(r'var is_mash\s*:?\s*=\s*false', "kreslení kapaliny nemá proměnnou is_mash")),
+        ("main.gd", need(r'var outline: PackedVector2Array = m\.vessel_inside\(it\)', "kreslení kapaliny nemá obrys nádoby (outline)")),
+        ("main.gd", within("_liquid", sub_once(r'^([ \t]+)(if b != "lv":[ \t]*\n[ \t]+LiquidFx\.draw_caustics\()', r'\1' + VZ + '.settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)   # FYZIKA+ V3 – usazené dílo' + '\n' + r'\1\2'))),
+    ], optional=True))
     # R – protokol (volitelné)
     H.append(Hook("R1", "sim.gd: spotřeba páry na hl, pH mladiny a odhad barvy piva v protokolu", probes=[("sim.gd", "FP.energy_step(", 1), ("sim.gd", "FP.report_extra(", 1)], edits=[
         ("sim.gd", need(r'^func sim_step\(dt\b', "funkce sim_step() nemá parametr dt")),

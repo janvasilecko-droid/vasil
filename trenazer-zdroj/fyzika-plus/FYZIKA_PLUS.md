@@ -1,7 +1,8 @@
 # FYZIKA+: realističtější fyzika a chemie trenažéru varny
 
 Vypracováno 29. 10. 2026 na zdrojích 2D v70 / 3D v152 (`vasil/unity/GodotSrc`), **doplněno 16. 11. 2026 (verze 1.1:
-kapaliny a dílo, kapitola 7)**. Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
+kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8)**.
+Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
 **Nic z toho není vydané** v ⟳ Aktualizovat. Balíček leží v repozitáři `vasil` ve složce `trenazer-zdroj/fyzika-plus/`.
 Vzorce, jednotky a vkládací skript první verze prošla ještě nezávislá kontrola, její připomínky jsou zapracované.
 
@@ -143,7 +144,8 @@ dřívější model. Lineární ventil dává většinu výkonu už v první pol
 ## 4. Návrhy, které v balíčku nejsou (potřebují tvoje údaje nebo rozhodnutí)
 
 Z původního seznamu jsou od verze 1.1 v balíčku: N1 (průtok ledové vody), N2 (odpar z hladiny), N7 (bod varu u dna),
-N10 (pára pro bojler) a N14 (bilance při připalování). Popis je v kapitole 7. Zbývá:
+N10 (pára pro bojler) a N14 (bilance při připalování), popis je v kapitole 7. Od verze 1.2 i N19 (stojící čerpadlo),
+N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole 8. Zbývá:
 
 | # | Návrh | Proč | Co potřebuju |
 |---|---|---|---|
@@ -160,10 +162,10 @@ N10 (pára pro bojler) a N14 (bilance při připalování). Popis je v kapitole 
 | N16 | Kavitace podle NPSH čerpadla: malá sanitární čerpadla potřebují 0,8–1,4 m (Alfa Laval), model ubírá průtok už pod 3 m | u horké mladiny by čerpadlo chrastilo až ke konci stahování, ne dřív | typ čerpadel C1–C3 (štítek) |
 | N17 | Konec stahování: u výpusti se tvoří vír a čerpadlo přisává vzduch. Potřebná hloubka nad výpustí S = D·(1 + 2,3·Fr) (ANSI/HI 9.8); 2 % vzduchu ubere 10 % průtoku, 4 % přes 40 % | „ke konci ubrat otáčky“ – teď čerpadlo táhne naplno až do dna | tvar dna a výpusti (rovné/klenuté, lamač víru?) |
 | N18 | Vrstvení v nemíchaných nádobách: studená voda přitečená do bojleru zůstane dole, horká nahoře | bojler teď při dopouštění hned zchladne celý; ve skutečnosti dává shora dál horkou vodu | kde má bojler nátok, odběr a topný had |
-| N19 | Samospád přes stojící čerpadlo a zpětný tok | odstředivé čerpadlo je po vypnutí průchozí; trenažér to učí (zavřít klapku za čerpadlem), ale nepočítá | – |
-| N20 | Ztráty tepla podle smáčené plochy | poloprázdná vířivka teď chladne rychleji než plná (ztráta je stejná, náplně míň); za 80 min stání spadne z 98,5 na 89 °C | teplota ve vířivce na začátku a na konci chlazení |
 | N21 | Zanášení deskového chladiče | Kosař s. 185: po třech várkách může být ohřátá voda o víc než 10 °C chladnější | jak často chladič čistíte |
-| N22 | Vzhled, další kroky: houpání hladiny se skutečnou periodou (nádoba Ø 2,2 m: 1,6 s), vír u výpusti, vrstva usazeného díla na dně, pára nad hladinou podle odparu, hromádka šrotu při vystírání | navazuje na V1 a V2 z kapitoly 7 | napiš, co ti na plánku vadí nejvíc |
+| N22 | Vzhled, další kroky: houpání hladiny se skutečnou periodou (nádoba Ø 2,2 m: 1,6 s), vír u výpusti, pára nad hladinou podle odparu, hromádka šrotu při vystírání | navazuje na V1–V3 | napiš, co ti na plánku vadí nejvíc |
+| N23 | Výpust do kanálu přes stojící čerpadlo a zpětný tok horním nátokem (násoska) | H16 počítá jen přetékání mezi nádobami spodními hrdly | – |
+| N24 | Stěna nad hladinou jako samostatná hmota (po vypuštění chladne sama, při napouštění bere teplo náplni) | teď má ocel vždy teplotu náplně | hmotnost a izolace nádob |
 
 ---
 
@@ -182,6 +184,9 @@ N10 (pára pro bojler) a N14 (bilance při připalování). Popis je v kapitole 
 8. **Chladič:** průtok ledové vody a čím ho ubíráte (klapka, měnič), teplota ohřáté vody do bojleru, teplota mladiny
    na vstupu do chladiče na začátku a na konci chlazení.
 9. **Vystírka:** výška hladiny (měrka) před sypáním a po něm – objem, který přidá slad.
+10. **Čerpadla:** jsou za C1–C5 zpětné klapky? Když ano, nastav `pumpPass` na 0 (stojící čerpadlo pak nic nepustí).
+11. **Izolace nádob:** je plášť pánve a vířivky izolovaný i nad hladinou a na víku? Podle toho se nastaví `dryWallK`
+    (izolovaná 0,9–1, holá kolem 0,5). Nejlíp změřit chladnutí plné a poloprázdné nádoby za hodinu.
 
 Hodnoty vlož do `kalibrace.json`, nebo mi je pošli a nastavím je.
 
@@ -253,12 +258,12 @@ usazování, odpar i to, jak se kapaliny na plánku kreslí. Porovnal jsem to s 
 | 8 | **Kreslení proudů** | rovné čáry ze sprchy, hladina na dopad nereaguje | Voda padá obloukem, dopadá na stěnu a stéká po ní; od dopadu se šíří vlnky | **vzhled (V1, V2)** |
 | 9 | Objem díla | slad přidá 0,66 L/kg | 0,7–0,8 L/kg (Kunze s. 235, Kosař s. 143) | návrh N15 |
 | 10 | Ohřev rmutu | celý rmut na plnou páru 1,46 K/min | 0,8–1 K/min celý rmut, 1,5–2 K/min dekokční díl (Kosař s. 140) | jen upozornění: v praxi se pára na rmut přivírá |
-| 11 | Teplota ve vířivce | za 20 min klidu z 98,5 na 96,0 °C, za 80 min na 89 °C | na chladič přichází 95–98 °C (Kunze s. 352, Kosař s. 184) | `wpUA` je nejspíš vysoké – změřit; návrh N20 |
+| 11 | Teplota ve vířivce | za 20 min klidu z 98,5 na 96,0 °C, za 80 min na 89 °C | na chladič přichází 95–98 °C (Kunze s. 352, Kosař s. 184) | `wpUA` je nejspíš vysoké – změřit; ztráty podle hladiny jsou ve verzi 1.2 (H17) |
 | 12 | Chladič | ledové vody 1,3× víc než mladiny, do bojleru ~70 °C | 1,05–1,1× a 80–88 °C (Kosař s. 186, Kunze s. 352). To odpovídá `UA1` kolem 50 kW/K při 80 L/min, v modelu je 25 | jen upozornění: `UA1` je odhad – změřit |
 | 13 | Kavitace | průtok klesá už pod NPSH 3 m | malá čerpadla potřebují 0,8–1,4 m (Alfa Laval) | návrh N16 |
 | 14 | Konec stahování | čerpadlo táhne naplno až do dna | vír u výpusti, čerpadlo přisává vzduch | návrh N17 |
 | 15 | Vrstvení v bojleru | celý obsah má jednu teplotu | studená voda zůstává dole | návrh N18 |
-| 16 | Stojící čerpadlo | neprůchozí | odstředivé čerpadlo je po vypnutí průchozí | návrh N19 |
+| 16 | Stojící čerpadlo | neprůchozí | odstředivé čerpadlo je po vypnutí průchozí | **opraveno ve verzi 1.2 (H16)** |
 
 ### 7.3 Co verze 1.1 přidává
 
@@ -337,6 +342,93 @@ u dna. 40 hl v pánvi Ø 2 m: hloubka 1,33 m, u dna vře až při 102,7 °C (u h
 Verze 1.1 várku skoro nemění: odpar mimo var ubere 19 L vody (o to je mladina nepatrně silnější) a bojler bere
 o něco míň páry.
 
+## 8. Doplněk 16. 11. 2026 odpoledne (verze 1.2): stojící čerpadlo, ztráty podle hladiny, usazené dílo
+
+Tři věci z návrhů, které šly udělat bez tvých údajů. Každá jde vypnout parametrem.
+
+### 8.1 Co verze 1.2 přidává
+
+**P16. Stojící čerpadlo je průchozí (H16, H16b, `FP.idle_pumps`).** Odstředivé čerpadlo nemá nic, co by po vypnutí
+zavřelo průtok. Když je trasa přes něj otevřená, kapalina teče podle rozdílu hladin dopředu i zpátky (spojené nádoby).
+Dřív stojící čerpadlo trasu zavíralo jako klapka.
+- Platí pro C1–C3, čerpadlo horké vody (C4) i ledové vody (C5). Průtok se počítá stejně jako ostatní samospád (P8)
+  a čerpadlo přidá ztrátu K = 5 rychlostních výšek (`pumpPassK`; GIW/KSB uvádí 5 pro volně se protáčející kolo
+  a 10 pro stojící, údaj je pro kalová čerpadla). Rychlost beru v trubce za čerpadlem (ODHAD, zdroj to neuvádí).
+- Příklady z modelu: sací a výtlačná trubka C1 při rozdílu hladin 1 m propustí 449 L/min (bez ztráty v čerpadle by to
+  bylo 865). Z plné pánve přeteče otevřenou trasou přes stojící C1 do scezovací kádě 993 L za 2 min. Když po scezování
+  zůstanou klapky otevřené, steče za 10 min 1 212 L sladiny z pánve zpátky pod síta.
+- **Doběh:** první 3 s po vypnutí čerpadlo ještě nic nepustí (kolo dobíhá; ODHAD) a stejně dlouho trvá, než se proud
+  rozběhne po přestavení klapek. Při zrychleném čase se ta doba násobí rychlostí, takže máš vždycky 3 s skutečného času
+  na zavření klapky. Pak deník napíše „kapalina přetéká samospádem otevřenými klapkami“.
+- **Automat** po každém kroku zavře klapky (dřív je nechával otevřené do dalšího čerpání). **Automat scezování** po
+  skončení zavře klapky, které si otevřel; když jsi mezitím klapkami hýbal ty, nesahá na nic.
+- Vypnutí: `pumpPass` = 0 vrátí dřívější chování. **Nastav to, jestli máš za čerpadly zpětné klapky** – to nevím.
+- Co to nepočítá: výpust do kanálu přes stojící čerpadlo a zpětný tok horním nátokem (návrh N23).
+
+**P17. Ztráty tepla podle hladiny (H17, `FP.loss_k`).** Ztráty pánve a vířivky do okolí byly stejné, ať byla nádoba
+plná nebo skoro prázdná. Teď se smáčená stěna (dno a plášť pod hladinou) počítá naplno a suchá stěna (plášť nad
+hladinou a víko) násobkem `dryWallK`:
+
+k = [dno + z·plášť + dryWallK·((1 − z)·plášť + víko)] / [dno + plášť + dryWallK·víko], z = zaplnění
+
+- `rvpUA`, `mpUA` a `wpUA` dál platí pro plnou nádobu. Výchozí `dryWallK` 0,5 je ODHAD pro holou stěnu: `rvpUA`
+  0,25 kW/K na ~16 m² povrchu pánve dává ~15 W/(m²·K), což odpovídá neizolované nádobě (inzonex). U dobře izolované
+  nádoby rozhoduje odpor izolace a suchá stěna ztrácí skoro stejně jako smáčená: nastav 0,9–1. S hodnotou 1 je
+  všechno jako dřív.
+- Při výchozím tvaru (pánev výška = průměr, vířivka 3 : 1) vychází: pánev z poloviny plná 0,82, prázdná 0,64;
+  vířivka z poloviny 0,88, s 38 hl 0,94.
+- Vířivka 38 hl: za 20 min klidu z 98,5 na 96,2 °C (dřív 96,0), za 80 min na 89,6 °C (dřív 89,2). Zbytek 10 hl:
+  za 20 min na 91,3 °C (dřív 90,0), za 80 min na 74,1 °C (dřív 70,3).
+- Zjednodušení: ocel má pořád teplotu náplně (návrh N24). Bojler a scezovací káď jsem nechal být.
+
+**P18. Usazené dílo na plánku (V3, jen kreslení).** Když se dílo nemíchá, zrno klesá: nahoře se oddělí čirá kapalina
+a u dna zůstane tmavší vrstva. Kreslení bere stav z výpočtu – stejnou veličinu, podle které se bez míchání ucpává
+výpust (usazeno asi za 5 min, mícháním se do minuty zvedne). Výška vrstvy je objem lože (`skBedLkg` × slad) proti
+objemu díla; u vystírky 21 hl to jsou zhruba tři čtvrtiny výšky. Platí pro pánev i pro rmut ve scezovací kádi.
+Obrázek `usazene_dilo.png` v balíčku ukazuje pánev s míchadlem, po 90 s a po 5 min klidu.
+
+### 8.2 Co se změní při ovládání
+
+- Po čerpání zavři klapku za čerpadlem (nebo před ním). Jinak se hladiny začnou vyrovnávat a deník to napíše.
+- Na plánku je vidět, že automat po každém kroku zavírá klapky.
+- V automatické várce přes stojící čerpadla neteče nic, protože automat klapky zavírá. Rozdíl ve výsledcích proti
+  verzi 1.1 dělají jen ztráty podle hladiny (rychlejší ohřev dílčích rmutů, o 2 % míň páry).
+
+### 8.3 Ověření verze 1.2
+
+- **Testy:** 2D v70 (Godot 4.3) 333 kontrol, 0 selhání; 3D v152 (Godot 4.7.2) 333 kontrol, 0 selhání.
+  Z toho 64 kontrol FYZIKA+ (8 nových: průchodnost stojícího čerpadla oběma směry, doběh, ztráta v čerpadle, tok
+  v simulaci, zavírání klapek automatem, ztráty podle hladiny ve vzorci i v simulaci).
+- **Starší verze** (archiv zdroje 2D a 3D): 266 kontrol, 0 selhání; vložily se i všechny nové háčky.
+- **Přechod z verze 1.0 i 1.1:** skript doplnil jen nové háčky a parametry (333 kontrol, 0 selhání), druhé spuštění
+  nic nezměnilo.
+- **Vkládací skript:** znovu vyzkoušený na souborech s CRLF, s tabulátory a na projektu s ručně vloženou půlkou H16 a H17.
+- **Automat scezování:** proběhl celý, žádný tok samospádem, po skončení zavřel klapky.
+- **Automatická várka** s krokem 0,5 s, 2 s a 5 s: v deníku žádné „přetéká samospádem“.
+- **Kreslení (V3):** ověřeno na snímcích z programu ve 2D i ve 3D verzi, bez chyb skriptu.
+- Tuhle verzi už druhý agent nekontroloval. Prošel jsem ji sám a testy.
+- **Na tvé novější verzi z domu to vyzkoušené není.**
+- **Automatická várka 12,5° (700 kg)**, 2D i 3D dávají stejný protokol:
+
+| Veličina | + FYZIKA+ 1.1 | + FYZIKA+ 1.2 |
+|---|---|---|
+| Objem ve spilce | 37,2 hl | 37,2 hl |
+| Stupňovitost | 12,80 °P | 12,81 °P |
+| IBU | 32,9 | 33,1 |
+| Barva ve spilce | 12,8 EBC | 12,8 EBC |
+| DMS | 15,8 ppb | 16,3 ppb |
+| Pára na varnu | 20,3 kWh/hl | 19,8 kWh/hl |
+| Odpar mimo var | 19 L | 19 L |
+| Výtěžnost varny | 73,8 % | 73,8 % |
+| Délka várky | 644 min | 637 min |
+
+### 8.4 Co jsem cestou našel (neměnil jsem)
+
+- Ráz při rozjezdu vorlaufu závisí na délce kroku simulace: s krokem 0,5 s automat „trhne“ ložem (+51 mbar), s krokem
+  2 s ne. Je to v původním programu i bez balíčku.
+- Automat u kroku „Proplach pod síty“ nejdřív otevře trasu z bojleru pod síta a teprve pak zjistí, že plánek nemá
+  výpust do kanálu, a krok přeskočí. Voda při tom neteče (klapky se hned zavřou), jen to na plánku problikne.
+
 ## Zdroje
 
 - Spirax Sarco – Control valve sizing for steam systems; Heating with coils and jackets; Air venting theory. https://spiraxsarco.com/learn-about-steam
@@ -361,3 +453,6 @@ Doplněno ve verzi 1.1:
 - W. Kunze: Technology Brewing and Malting, 3. angl. vyd. (s. 222–223, 229, 232, 235, 243–244, 286–287, 290–291, 299, 323,
   340–341, 350–352, 807, 857, 903) a Kosař, Procházka: Technologie výroby sladu a piva (s. 136–137, 139–140, 143, 158, 163,
   184–186). Jen čísla s odkazem na stranu, bez textu knih.
+
+Doplněno ve verzi 1.2:
+- GIW Industries (KSB): Understanding the practice of pumping through (ztráta ve stojícím čerpadle, K ≈ 5 a 10). https://giw.ksb.com/blog/understanding-the-practice-of-pumping-through

@@ -1,5 +1,5 @@
---- v70/sim.gd	2026-11-16 11:51:52.335152111 +0100
-+++ v70+fyzika-plus/sim.gd	2026-11-16 11:51:52.337031517 +0100
+--- v70/sim.gd	2026-11-16 13:55:01.908324187 +0100
++++ v70+fyzika-plus/sim.gd	2026-11-16 13:55:01.909778039 +0100
 @@ -1,5 +1,6 @@
  extends RefCounted
  const Physics = preload("res://physics.gd")
@@ -11,7 +11,7 @@
  const CELLK: = ["w", "f", "n", "smm", "dms", "col"]
  
  const CFG_DEFAULT: = {
-+    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,   # FYZIKA+ H8
++    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5, "pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,   # FYZIKA+ H8
      "rvpCap": 5000.0, "rvpUA": 0.25, "rvpSteel": 450.0, "rvpDead": 20.0, 
      "mpCap": 6000.0, "mpUA": 0.3, "mpSteel": 600.0, "mpDead": 60.0, 
      "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
@@ -19,7 +19,7 @@
  var calib_applied: = []
  ## povolené rozsahy (fyzikálně smysluplné) – hodnota mimo rozsah se odmítne a zapíše do calib_rejected
  const CALIB_RANGE: = {
-+    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],   # FYZIKA+ H8
++    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0], "pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],   # FYZIKA+ H8
      "rvpCap": [1000.0, 10000.0], "mpCap": [1000.0, 10000.0], "wpCap": [1000.0, 10000.0], "skCap": [1000.0, 10000.0], "spCap": [1000.0, 20000.0],
      "rvpUA": [0.0, 3.0], "mpUA": [0.0, 3.0], "wpUA": [0.0, 3.0], "skUA": [0.0, 3.0], "hltUA": [0.0, 3.0],
      "rvpSteel": [0.0, 3000.0], "mpSteel": [0.0, 3000.0], "wpSteel": [0.0, 3000.0], "skSteel": [0.0, 3000.0], "hltSteel": [0.0, 5000.0], "cpSteel": [0.4, 0.6],
@@ -66,7 +66,7 @@
      var hz: float = v.hz if v.stir else 4.0
      # hustý rmut předává teplo mnohem hůř než voda/mladina (viskózní film u stěny); kalibrace: plná pánev rmutu ~1 K/min (Weihenstephan)
      var visc: float = 1.0 / (1.0 + S.cfg.get("mashFilmK", 4.6) * thick_factor(v))
-@@ -612,7 +617,7 @@
+@@ -612,13 +617,14 @@
      var liq_mass: float = v.w + ext(v)
      var P: float = 100.0 * ext(v) / maxf(1e-09, liq_mass)
      var sg: float = 1.0 + P / (258.6 - 0.88 * P)
@@ -75,7 +75,14 @@
      var sol_mass: float = v.g + v.su + v.sc + v.ni
      var volume: float = liq_mass / (sg * 0.9982) * exp_f + sol_mass * 0.65 + v.sg * 0.0
      return (liq_mass + sol_mass) / maxf(1e-09, volume)
-@@ -632,7 +637,7 @@
+ func heat(v, m: float, dt: float, name: String) -> void :
+     var c = S.cfg; var pdv = S._pd.get(name, {"P": 0.0, "wet": 1.0})
+     var UA: float = c.rvpUA if name == "rvp" else c.mpUA
++    UA *= FP.loss_k(self, name, v)   # FYZIKA+ H17 – ztráty podle smáčené plochy (UA platí pro plnou nádobu)
+     var steel: float = c.rvpSteel if name == "rvp" else c.mpSteel
+     var Pin: float = pdv.P * S.boiler.scale * (1.0 if S.steamOK[name] else 0.0)
+ 
+@@ -632,7 +638,7 @@
      if Pin > 0 and sol(v) + v.sg > 40 and v.Twall > 100.0:
          v.burn += m * clampf((v.Twall - 100.0) / 8.0, 0.0, 2.0)
          if v.burn > 1.5: once("burn" + name, "%s: rmut se připaluje u stěny (%s °C u pláště)! Zapni míchadlo nebo přidej otáčky, ubírej páru." % [VN(name), fmt0(v.Twall)], "bad")
@@ -84,7 +91,7 @@
      if v.heat > 0 and not S.boiler.on: once("noboil%d" % tb(900), "Kotel je vypnutý – pára nejde.", "warn")
      var Tb: float = c.tbWater + 0.03 * plato(v)
      var C: float = cC(v) + steelC(steel)
-@@ -649,6 +654,7 @@
+@@ -649,6 +655,7 @@
      else: v.boiling = T >= Tb - 0.3 and Pin > 0
      if not wasBoil and v.boiling: v.boilStartT = S.t
      v.T = T
@@ -92,7 +99,7 @@
  
      if vol(v) < 5.0: v.Tsens = T
      else: v.Tsens += (T + (S.get("sensOff", 0.0) if name == "rvp" else 0.0) - v.Tsens) * (1.0 - exp( - dt / (20.0 + 70.0 * (1.0 - stirQ(v)))))
-@@ -746,7 +752,7 @@
+@@ -746,7 +753,7 @@
          if S.flags.knock == null and ext(p) > 0.002 and ext(S.rvp) > 50:
              var r = S.rvp; var e = ext(r) + ext(p); var w: float = r.w + p.w
              S.flags.knock = {"V": hotV(r) + hotV(p), "P": 100.0 * e / maxf(1.0, e + w), "e": e, "t": S.t}
@@ -101,7 +108,7 @@
          return
      if key == "sk":
          if sk.mode == "lauter" and ctx.get("src", "") == "sk": sk.vorlaufL += Lp
-@@ -834,9 +840,9 @@
+@@ -834,9 +841,9 @@
      var Tst = tsat(pb + 1.013) if (S.boiler.on or pb > 0.05) else 20.0
      S.Tsteam = Tst
      S._pd = {"rvp": _pd(rvp, c.rvpUAst, c.rvpJacketL, Tst), "mp": _pd(mp, c.mpUAst, c.mpJacketL, Tst), 
@@ -113,7 +120,7 @@
      if not S.boiler.on and pb <= 0.05:
          for k_ in ["rvp", "mp", "hlt"]: S._pd[k_].P = 0.0
      var dem: float = S._pd.rvp.P + S._pd.mp.P + S._pd.hlt.P
-@@ -847,6 +853,7 @@
+@@ -847,6 +854,7 @@
      S.boiler.p = pb
      S.boiler.scale = 1.0;S.boiler.hltScale = 1.0
      S.boiler.load = Qb / c.boilerKW
@@ -121,7 +128,7 @@
      if dem > c.boilerKW * 1.02 and S.boiler.on: once("boilmax%d" % tb(1800), "Kotel nestačí: odběr %d kW, kotel dá max %d kW – tlak páry klesá (%s bar), ohřev všude zpomalí. Neohřívej pánev a bojler naráz naplno." % [roundi(dem), roundi(c.boilerKW), fmt1(pb)], "warn")
      if S.boiler.on and pb < c.steamBar - 1.0: once("lowp%d" % tb(900), "Tlak páry spadl na %s bar (nastaveno %s) – pára má jen %s °C, var bude slabý (DMS!). Uber jiné odběry a počkej, až kotel natlakuje." % [fmt1(pb), fmt1(c.steamBar), fmt0(Tst)], "bad")
      var Pin: float = S._pd.hlt.P * S.boiler.hltScale * (1.0 if S.steamOK.hlt else 0.0)
-@@ -980,7 +987,7 @@
+@@ -980,7 +988,7 @@
          var v = pair[0]
          if v.boiling and ext(v) > 100 and v.g < 5:
              var pct: float = v.evapKgMin * 60.0 / maxf(1.0, v.w) * 100.0
@@ -130,16 +137,16 @@
              v.coag += (pct / 7.0) * m / 60.0
              var form: float = 0.0006 * v.w * minf(1.0, v.coag)
              if form > v.trubHB:
-@@ -1011,7 +1018,7 @@
+@@ -1011,7 +1019,7 @@
  
      var wv = S.wp
      if wv.w > 1:
 -        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw;react(wv, m)
-+        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw;react(wv, m);FP.surface_evap(self, wv, "wp", dt)   # FYZIKA+ H12
++        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * FP.loss_k(self, "wp", wv) * (wv.T - c.ambientT) * dt / Cw;react(wv, m);FP.surface_evap(self, wv, "wp", dt)   # FYZIKA+ H12
      var hm = sk.mash
      if hm.w > 1:
          react(hm, m)
-@@ -1023,7 +1030,7 @@
+@@ -1023,7 +1031,7 @@
              # intenzita roste plynule s dobou víření, ne skokem po 3 min:  k = k_klid + (k_vír − k_klid)·(1 − e^(−t_vír/τ))
              var wi: float = 1.0 - exp(-v.whirlMin / maxf(0.1, float(c.get("whirlTau", 1.5))))
              var k: float = float(c.get("trubKstill", 0.0111)) + (float(c.get("trubKwhirl", 0.2)) - float(c.get("trubKstill", 0.0111))) * wi
@@ -148,7 +155,7 @@
              v.trubSus -= dd;v.trubSet += dd
      if prof_on: prof["heat"] = prof.get("heat", 0) + Time.get_ticks_usec() - _t0;_t0 = Time.get_ticks_usec()
  
-@@ -1065,6 +1072,7 @@
+@@ -1065,6 +1073,7 @@
      S.t += dt
  
  func _pd(v, UA: float, jL: float, Tst: float) -> Dictionary:
@@ -156,7 +163,7 @@
      var V = liqVol(v) + sol(v) * 0.65
      var wet = clampf((V - 100.0) / (jL - 100.0), 0.0, 1.0)
      return {"P": UA * v.heat * wet * maxf(0.0, Tst - v.T), "wet": wet}
-@@ -1247,6 +1255,7 @@
+@@ -1247,6 +1256,7 @@
      var rep: = {"V": V20 / 100.0, "P": P, "IBU": sp.iso * 1000.0 / V20 * float(S.cfg.get("iboKeep", 0.44)), "T": sp.H / sp.L, "EBC": sp.col / maxf(1.0, sp.L), 
          "att": (sp.f / e) / 0.81 * 100.0 if e > 0 else 0.0, "dms": sp.dms * 1000000.0 / V20, "yield": e / maxf(1.0, S.malt.added) * 100.0}
      rep.merge(yields())
@@ -164,7 +171,18 @@
      return rep
  
  ## Výtěžnosti – přesné definice (všechno z extraktu, který model skutečně přenesl):
-@@ -1955,8 +1964,8 @@
+@@ -1636,8 +1646,8 @@
+                 elif a.kind == "pump":
+                     if prev[k].get("pump", "") == a.id: continue
+                     var pb = net.byId[a.id]
+-                    if pass2.has(pb.get("bind", "")) and a.side == "in":
+-                        for k2 in net.pumpNodes.get(a.id, {}).get("out", []):
++                    if pass2.has(pb.get("bind", "")) and (a.side == "in" or pass2.has("~rev")):   # FYZIKA+ H16 – stojícím čerpadlem to teče oběma směry
++                        for k2 in net.pumpNodes.get(a.id, {}).get("out" if a.side == "in" else "in", []):   # FYZIKA+ H16
+                             if not prev.has(k2):
+                                 prev[k2] = {"k": k, "pump": a.id};q.append(k2)
+                     stop = true
+@@ -1955,8 +1965,8 @@
      var kcool = (1.0 - exp(-dt / 1800.0))
      for e in net.edges:
          if not e.flow and e.c.w > 0.01 and not e.steam:
@@ -175,7 +193,7 @@
          e.flow = 0;e.steam = false
      S._skTop = 0;S._skLow = 0;S._rvpIn = 0;S.leaks = [];S.streams = {}
      _flush_step(dt)
-@@ -2019,6 +2028,7 @@
+@@ -2019,6 +2029,7 @@
                          var p = lp();p.w = 120.0 * m;p.T = S.lv.T;push_path([s], p, 120.0, m)
                  for d in dests:
                      var path = path_to(r, d.k)
@@ -183,7 +201,7 @@
                      for s in path:
                          if s.has("plate") and s.side == "B":
                              S.plates[s.plate] = {"kind": "ice", "T": S.lv.T, "once": d.att.bind == "hlt", "flow": minf(Lm, S.lv.w / maxf(1e-06, m))};S.lv.varna = true
-@@ -2382,6 +2392,7 @@
+@@ -2382,6 +2393,7 @@
          if mv_src != null and S.clog.get(sb, 0.0) > 0.0:
              S.clog[sb] = maxf(0.0, S.clog[sb] - dt / 120.0)
          var part0 = srcTake(sb, Qf, m, key)
@@ -191,7 +209,7 @@
          if part0 == null:
              q.on = false;logm("%s zastaveno – %s je prázdná." % [pname, net.byId[src.att.id].get("label", sb)]);continue
          var turb: float = S.sk.turb
-@@ -2462,7 +2473,7 @@
+@@ -2462,7 +2474,7 @@
          var head_m = maxf(0.02, fr) * v.h / PX_PER_M
          var tot = minf(240.0, 120.0 + 30.0 * outs.size()) * minf(1.3, sqrt(head_m / 1.05))
          for o in outs:
@@ -200,7 +218,16 @@
              if b == "lv":
                  var L = minf(Lmin * m, maxf(0.0, S.lv.w))
                  if L > 0.01:
-@@ -2533,7 +2544,7 @@
+@@ -2517,7 +2529,7 @@
+         for sk_ in sts: oy = maxf(oy, net.nodes[sk_].y)
+         var sy: float = main.level_y(gv)
+         if sy >= oy: continue
+-        var gr = bfs(sts)
++        var gr = bfs(sts, "liq", FP.idle_pumps(self))   # FYZIKA+ H16 – trasa samospádu smí vést přes stojící čerpadlo
+         var bh = null; var bhd: = 0.03
+         for h in gr.hits:
+             var db: String = h.att.bind
+@@ -2533,7 +2545,7 @@
          var pa = path_to(gr, bh.k)
          var f: float = path_pct(pa) / sqrt(1.0 + path_len(pa) / 6000.0)
          if f <= 0.0: continue
@@ -209,8 +236,8 @@
          var th: = 0.0
          if gb == "rvp": th = thick_factor(S.rvp) * (1.0 - 0.85 * S.clog.get("rvp", 0.0))
          elif gb == "sk" and vol(S.sk.mash) > 5: th = thick_factor(S.sk.mash) * (1.0 - 0.85 * S.clog.get("sk", 0.0))
---- v70/ctl.gd	2026-11-16 11:51:52.350255253 +0100
-+++ v70+fyzika-plus/ctl.gd	2026-11-16 11:51:52.352135970 +0100
+--- v70/ctl.gd	2026-11-16 13:55:01.919405661 +0100
++++ v70+fyzika-plus/ctl.gd	2026-11-16 13:55:01.920699607 +0100
 @@ -128,6 +128,8 @@
  
      r = _row(box)
@@ -245,8 +272,8 @@
  
      var tr = sim.training
      var cs: String = tr.text() + "\n[color=#7b858e]" + tr.list_text() + "[/color]"
---- v70/main.gd	2026-11-16 11:51:52.365048111 +0100
-+++ v70+fyzika-plus/main.gd	2026-11-16 11:51:52.366943132 +0100
+--- v70/main.gd	2026-11-16 13:55:01.929978170 +0100
++++ v70+fyzika-plus/main.gd	2026-11-16 13:55:01.931288715 +0100
 @@ -2885,6 +2885,7 @@
                      Art.pill(self, m.font_b, "VYTÉKÁ!", p + Vector2(0, -28), 13, Color("ff6b5b"))
  
@@ -272,7 +299,15 @@
          below.append(Vector2(x + w + 20, y0 + 50));below.append(Vector2(x - 20, y0 + 50))
          var polys: = Geometry2D.intersect_polygons(outline, below)
          var mtex = null
-@@ -3827,7 +3829,7 @@
+@@ -3817,6 +3819,7 @@
+                 var hpx: float = clampf(vv.trubSet * 6.0 * pxL * 5.0, 4.0, it.h * 0.17)
+                 LiquidFx.draw_trub_cone(self, x + w * 0.5, y0 - 2.0, clampf(hpx * 1.7, 12.0, w * 0.32), hpx, tt)
+         # průhlednost a lom světla: odlesky v kapalině (čirá sladina/voda), u hustého rmutu jen slabé
++        preload("res://fyzika_plus_vzhled.gd").settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)   # FYZIKA+ V3 – usazené dílo
+         if b != "lv":
+             LiquidFx.draw_caustics(self, area, outline, tt, 0.35 if is_mash else 1.0, col)
+ 
+@@ -3827,7 +3830,7 @@
                  var px2: = x + 6 + (w - 12) * i / float(N)
                  var r2: = (px2 - (x + w * 0.5)) / (w * 0.5)
                  var sl2: float = slosh * sin(tt * 2.3 + r2 * 2.6) * r2
@@ -281,8 +316,28 @@
                  surf.append(Vector2(px2, yy))
                  # zadní okraj hladiny (pohled mírně shora): elipsa
                  back.append(Vector2(px2, yy - 9.0 * sqrt(maxf(0.0, 1.0 - r2 * r2))))
---- v70/tests.gd	2026-11-16 11:51:52.380897355 +0100
-+++ v70+fyzika-plus/tests.gd	2026-11-16 11:51:52.382941829 +0100
+--- v70/auto.gd	2026-11-16 13:55:01.941108022 +0100
++++ v70+fyzika-plus/auto.gd	2026-11-16 13:55:01.942735540 +0100
+@@ -323,6 +323,7 @@
+         "boil", "d1_boil", "d2_boil": S.rvp.heat = 0.0;T_set = 0.0
+         "malt": S.malt.gate = false
+     if S.sk.mode == "mash": S.sk.rake = false
++    if preload("res://fyzika_plus.gd").cf(sim, "pumpPass") >= 0.5: _close_all()   # FYZIKA+ H16 – po kroku zavřít klapky: stojícím čerpadlem by to teklo samospádem dál nebo zpátky
+     i += 1
+     if i >= STEPS.size():
+         on = false;done = true;status = "AUTO-VÁRKA HOTOVA"
+--- v70/lauter_auto.gd	2026-11-16 13:55:01.951819863 +0100
++++ v70+fyzika-plus/lauter_auto.gd	2026-11-16 13:55:01.953032705 +0100
+@@ -54,6 +54,7 @@
+ func stop(reason: String) -> void :
+     var a = state();a.on = false;a.stage = "zastaven";a.reason = reason
+     sim.S.p2.on = false;sim.S.skWater.on = false
++    preload("res://fyzika_plus.gd").lauter_stop(sim)   # FYZIKA+ H16b – zavřít své klapky (stojícím C2 by pánev tekla zpátky pod síta)
+     sim.logm("Automat scezování zastaven: " + reason)
+ 
+ func update(seconds: float) -> void :
+--- v70/tests.gd	2026-11-16 13:55:01.963445513 +0100
++++ v70+fyzika-plus/tests.gd	2026-11-16 13:55:01.964837991 +0100
 @@ -420,7 +420,7 @@
      var hv = S.rvp;hv.w = 2000.0;hv.T = 50.0;hv.Tsens = 50.0;hv.stir = true;hv.hz = 35.0;hv.heat = 1.0
      for i in 20: sim.sim_step(1.0)
@@ -300,8 +355,8 @@
      var bad: = 0
      for r in results:
          if not r[1]: bad += 1
---- v70/audit_tests.gd	2026-11-16 11:51:52.396865289 +0100
-+++ v70+fyzika-plus/audit_tests.gd	2026-11-16 11:51:52.398776626 +0100
+--- v70/audit_tests.gd	2026-11-16 13:55:01.974362657 +0100
++++ v70+fyzika-plus/audit_tests.gd	2026-11-16 13:55:01.975747417 +0100
 @@ -707,7 +707,7 @@
  
  	# --- film u husté náplně: voda = beze změny, hustý rmut zhorší přestup; celkové UA zůstane referenční ---
@@ -311,9 +366,9 @@
  	var thick = sim.vessel(); thick.w = 1900.0; thick.g = 400.0; thick.sg = 300.0; thick.stir = true; thick.hz = 35.0
  	var ff_w: float = sim.film_factor(w); var ff_t: float = sim.film_factor(thick)
  	c.rvpUAst = 30.0
---- v70/params.gd	2026-11-16 11:51:52.411630275 +0100
-+++ v70+fyzika-plus/params.gd	2026-11-16 11:51:52.413497427 +0100
-@@ -5,6 +5,35 @@
+--- v70/params.gd	2026-11-16 13:55:01.985368277 +0100
++++ v70+fyzika-plus/params.gd	2026-11-16 13:55:01.986733129 +0100
+@@ -5,6 +5,38 @@
  ## Hodnoty jsou v sim.gd → CFG_DEFAULT; přepsat je jde souborem user://kalibrace.json (viz sim.apply_calibration).
  
  const META: = {
@@ -346,6 +401,9 @@
 +	"wpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"],   # FYZIKA+ H8
 +	"evapOpen": ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"],   # FYZIKA+ H8
 +	"mashVmax": ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"],   # FYZIKA+ H8
++	"pumpPass": ["0/1", "ESTIMATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky; 0 = stojící čerpadlo nic nepustí (dřívější chování – nastav 0, jestli máš za čerpadly zpětné klapky)"],   # FYZIKA+ H8
++	"pumpPassK": ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"],   # FYZIKA+ H8
++	"dryWallK": ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"],   # FYZIKA+ H8
  	"rvpCap": ["L", "MANUFACTURER", "±5 %", "nominální objem pánve 50 hl (údaj provozovatele)"],
  	"rvpSteel": ["kg oceli", "ESTIMATED", "±30 %", "hmotnost nádoby; kapacita = kg × cpSteel – z výkresu nebo štítku"],
  	"cpSteel": ["kJ/(kg·K)", "LITERATURE", "0,46–0,51", "měrná tepelná kapacita austenitické nerezi (AISI 304); jediné místo převodu sim.steelC()"],
