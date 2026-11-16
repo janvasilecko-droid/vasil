@@ -27,6 +27,13 @@ const META: = {
 	"wpVmin": ["m/s", "ESTIMATED", "±50 %", "pod touto rychlostí nátoku se vířivka roztáčí slabě (horší kužel); Kunze: často stačí mnohem menší rychlost než 3,5 m/s"],   # FYZIKA+ H8
 	"wpShearK": ["1/(m/s)", "ESTIMATED", "±100 %", "podíl lomu roztříštěného na 1 m/s nad wpVmax"],   # FYZIKA+ H8
 	"pipeU": ["W/(m²·K)", "LITERATURE", "1 (izolovaná) – 15 (holá, průvan)", "prostup tepla trubky do okolí; holá nerez ~8 konvekce + ~2 sálání (inzonex: holé nádoby ~15 při 0,5 m/s)"],   # FYZIKA+ H8
+	"hltKvs": ["m³/h", "ESTIMATED", "0 = dopočítat", "Kvs parního ventilu topného hadu bojleru (štítek ventilu); 0 = dopočítat z hltUAst"],   # FYZIKA+ H8
+	"lvPumpQ": ["L/min", "ESTIMATED", "±30 %", "průtok čerpadla ledové vody při plně otevřených klapkách (dřív pevně 120 L/min v kódu); přiškrcením klapky na trase se ubírá – změřit"],   # FYZIKA+ H8
+	"rvpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr rmutomladinové pánve (plocha hladiny a hloubka náplně); 0 = odhad z objemu (výška = průměr) – změřit"],   # FYZIKA+ H8
+	"mpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr mladinové pánve; 0 = odhad z objemu"],   # FYZIKA+ H8
+	"wpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"],   # FYZIKA+ H8
+	"evapOpen": ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"],   # FYZIKA+ H8
+	"mashVmax": ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"],   # FYZIKA+ H8
 	"rvpCap": ["L", "MANUFACTURER", "±5 %", "nominální objem pánve 50 hl (údaj provozovatele)"],
 	"rvpSteel": ["kg oceli", "ESTIMATED", "±30 %", "hmotnost nádoby; kapacita = kg × cpSteel – z výkresu nebo štítku"],
 	"cpSteel": ["kJ/(kg·K)", "LITERATURE", "0,46–0,51", "měrná tepelná kapacita austenitické nerezi (AISI 304); jediné místo převodu sim.steelC()"],

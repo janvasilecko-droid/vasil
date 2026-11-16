@@ -14,7 +14,7 @@ const SOL: = ["g", "su", "sc", "ni"]
 const CELLK: = ["w", "f", "n", "smm", "dms", "col"]
 
 const CFG_DEFAULT: = {
-    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0,   # FYZIKA+ H8
+    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,   # FYZIKA+ H8
     "rvpCap": 5000.0, "rvpUA": 0.25, "rvpSteel": 450.0, "rvpDead": 20.0, 
     "mpCap": 6000.0, "mpUA": 0.3, "mpSteel": 600.0, "mpDead": 60.0, 
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
@@ -98,7 +98,7 @@ const CALIB_PATH: = "user://kalibrace.json"
 var calib_applied: = []
 ## povolené rozsahy (fyzikálně smysluplné) – hodnota mimo rozsah se odmítne a zapíše do calib_rejected
 const CALIB_RANGE: = {
-    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0],   # FYZIKA+ H8
+    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],   # FYZIKA+ H8
     "rvpCap": [1000.0, 10000.0], "mpCap": [1000.0, 10000.0], "wpCap": [1000.0, 10000.0], "skCap": [1000.0, 10000.0], "spCap": [1000.0, 20000.0],
     "rvpUA": [0.0, 3.0], "mpUA": [0.0, 3.0], "wpUA": [0.0, 3.0], "skUA": [0.0, 3.0], "hltUA": [0.0, 3.0],
     "rvpSteel": [0.0, 3000.0], "mpSteel": [0.0, 3000.0], "wpSteel": [0.0, 3000.0], "skSteel": [0.0, 3000.0], "hltSteel": [0.0, 5000.0], "cpSteel": [0.4, 0.6],
@@ -637,7 +637,7 @@ func heat(v, m: float, dt: float, name: String) -> void :
     if Pin > 0 and sol(v) + v.sg > 40 and v.Twall > 100.0:
         v.burn += m * clampf((v.Twall - 100.0) / 8.0, 0.0, 2.0)
         if v.burn > 1.5: once("burn" + name, "%s: rmut se připaluje u stěny (%s °C u pláště)! Zapni míchadlo nebo přidej otáčky, ubírej páru." % [VN(name), fmt0(v.Twall)], "bad")
-        Pin *= 0.9
+        set_meta("fpH14", true)   # FYZIKA+ H14 – úbytek výkonu při připalování počítá FP.steam_pd, stejný pro kotel i nádobu (dřív: Pin *= 0.9)
     if v.heat > 0 and not S.boiler.on: once("noboil%d" % tb(900), "Kotel je vypnutý – pára nejde.", "warn")
     var Tb: float = c.tbWater + 0.03 * plato(v)
     var C: float = cC(v) + steelC(steel)
@@ -654,6 +654,7 @@ func heat(v, m: float, dt: float, name: String) -> void :
     else: v.boiling = T >= Tb - 0.3 and Pin > 0
     if not wasBoil and v.boiling: v.boilStartT = S.t
     v.T = T
+    FP.surface_evap(self, v, name, dt)   # FYZIKA+ H12 – odpar z hladiny, když nevře
 
     if vol(v) < 5.0: v.Tsens = T
     else: v.Tsens += (T + (S.get("sensOff", 0.0) if name == "rvp" else 0.0) - v.Tsens) * (1.0 - exp( - dt / (20.0 + 70.0 * (1.0 - stirQ(v)))))
@@ -839,7 +840,7 @@ func sim_step(dt: float) -> void :
     var Tst = tsat(pb + 1.013) if (S.boiler.on or pb > 0.05) else 20.0
     S.Tsteam = Tst
     S._pd = {"rvp": _pd(rvp, c.rvpUAst, c.rvpJacketL, Tst), "mp": _pd(mp, c.mpUAst, c.mpJacketL, Tst), 
-        "hlt": {"P": c.hltUAst * h.heat * maxf(0.0, Tst - h.T), "wet": 1.0}}
+        "hlt": FP.steam_coil(self, h, c.hltUAst, Tst)}
     # skutečně předaný výkon = UA × (T_páry − T_náplně) × zhoršení filmu u husté náplně; stejné číslo musí vidět kotel i nádoba
     #S._pd.rvp.P *= film_factor(rvp);S._pd.mp.P *= film_factor(mp)   # FYZIKA+ H1: film je už ve FP.steam_pd
     if not S.boiler.on and pb <= 0.05:
@@ -1017,7 +1018,7 @@ func sim_step(dt: float) -> void :
 
     var wv = S.wp
     if wv.w > 1:
-        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw;react(wv, m)
+        var Cw: float = cC(wv) + steelC(c.wpSteel);wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw;react(wv, m);FP.surface_evap(self, wv, "wp", dt)   # FYZIKA+ H12
     var hm = sk.mash
     if hm.w > 1:
         react(hm, m)
@@ -2027,6 +2028,7 @@ func net_step(dt: float) -> void :
                         var p = lp();p.w = 120.0 * m;p.T = S.lv.T;push_path([s], p, 120.0, m)
                 for d in dests:
                     var path = path_to(r, d.k)
+                    Lm = FP.ice_flow(self, path, dests.size())   # FYZIKA+ H11 – přiškrcení klapek ledové vody
                     for s in path:
                         if s.has("plate") and s.side == "B":
                             S.plates[s.plate] = {"kind": "ice", "T": S.lv.T, "once": d.att.bind == "hlt", "flow": minf(Lm, S.lv.w / maxf(1e-06, m))};S.lv.varna = true
@@ -2390,6 +2392,7 @@ func net_step(dt: float) -> void :
         if mv_src != null and S.clog.get(sb, 0.0) > 0.0:
             S.clog[sb] = maxf(0.0, S.clog[sb] - dt / 120.0)
         var part0 = srcTake(sb, Qf, m, key)
+        FP.transfer_check(self, key, sb, part0, Qf, sp_, m, dpaths)   # FYZIKA+ H13 – rychlost rmutu v potrubí
         if part0 == null:
             q.on = false;logm("%s zastaveno – %s je prázdná." % [pname, net.byId[src.att.id].get("label", sb)]);continue
         var turb: float = S.sk.turb
@@ -2470,7 +2473,7 @@ func net_step(dt: float) -> void :
         var head_m = maxf(0.02, fr) * v.h / PX_PER_M
         var tot = minf(240.0, 120.0 + 30.0 * outs.size()) * minf(1.3, sqrt(head_m / 1.05))
         for o in outs:
-            var Lmin: float = tot * o.f / outs.size(); var part = null
+            var Lmin: float = FP.gravity_q(self, o.path, maxf(0.0, head_m + (net.nodes[o.lk.k].y - (v.y + v.h)) / PX_PER_M), b); var part = null   # FYZIKA+ H15 (dřív: tot * o.f / outs.size())
             if b == "lv":
                 var L = minf(Lmin * m, maxf(0.0, S.lv.w))
                 if L > 0.01:
@@ -2541,7 +2544,7 @@ func _vessel_gravity(m: float) -> void :
         var pa = path_to(gr, bh.k)
         var f: float = path_pct(pa) / sqrt(1.0 + path_len(pa) / 6000.0)
         if f <= 0.0: continue
-        var q: float = 120.0 * f * minf(1.3, sqrt(bhd / 1.05))
+        var q: float = FP.gravity_q(self, pa, bhd, gb)   # FYZIKA+ H15 (dřív: 120.0 * f * minf(1.3, sqrt(bhd / 1.05)))
         var th: = 0.0
         if gb == "rvp": th = thick_factor(S.rvp) * (1.0 - 0.85 * S.clog.get("rvp", 0.0))
         elif gb == "sk" and vol(S.sk.mash) > 5: th = thick_factor(S.sk.mash) * (1.0 - 0.85 * S.clog.get("sk", 0.0))

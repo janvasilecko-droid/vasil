@@ -25,7 +25,7 @@ import shutil
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODULE_FILES = ["fyzika_plus.gd", "fyzika_plus_tests.gd"]
+MODULE_FILES = ["fyzika_plus.gd", "fyzika_plus_tests.gd", "fyzika_plus_vzhled.gd"]
 
 # nové parametry: (klíč, výchozí hodnota, rozsah, META pro params.gd)
 NEW_PARAMS = [
@@ -46,12 +46,20 @@ NEW_PARAMS = [
     ("phBoilDrop", 0.08, (0.0, 0.4), ["pH/h", "LITERATURE", "0,06–0,1", "pokles pH mladiny za varu: VLB 5,62 → 5,50 za 90 min; Kunze s. 286: 5,5–5,6 → 5,4–5,5"]),
     ("phSparge", 0.05, (-0.2, 0.4), ["pH", "ESTIMATED", "0–0,15", "o kolik má sladina vyšší pH než rmut (vyslazování vodou s alkalitou)"]),
     ("wortBuf", 26.6, (5.0, 80.0), ["mEq/(kg sladu·pH)", "LITERATURE", "±30 %", "pufrační kapacita mladiny: Kunze s. 229 – 30 mL 0,8% kyseliny mléčné na kg sladu sníží pH o 0,1"]),
-    ("isoPh", 0.5, (0.0, 2.0), ["-", "ESTIMATED", "0–1", "relativní růst rychlosti izomerace α-kyselin na 1 jednotku pH (Kosa s. 163); velikost ODHAD"]),
+    ("isoPh", 0.5, (0.0, 2.0), ["-", "ESTIMATED", "0–1", "relativní růst rychlosti izomerace α-kyselin na 1 jednotku pH (Kosař s. 163); velikost ODHAD"]),
     ("wpInletMM", 0.0, (0.0, 150.0), ["mm", "ESTIMATED", "-", "vnitřní průměr tangenciálního nátoku do vířivky; 0 = stejný jako trubka DN50 v plánku (bore50) – změřit hrdlo"]),
     ("wpVmax", 3.5, (1.0, 8.0), ["m/s", "LITERATURE", "3,5", "nejvyšší rychlost nátoku do vířivky, kdy se lom netříští (Kunze s. 341)"]),
     ("wpVmin", 1.0, (0.2, 5.0), ["m/s", "ESTIMATED", "±50 %", "pod touto rychlostí nátoku se vířivka roztáčí slabě (horší kužel); Kunze: často stačí mnohem menší rychlost než 3,5 m/s"]),
     ("wpShearK", 0.1, (0.0, 1.0), ["1/(m/s)", "ESTIMATED", "±100 %", "podíl lomu roztříštěného na 1 m/s nad wpVmax"]),
     ("pipeU", 10.0, (0.5, 30.0), ["W/(m²·K)", "LITERATURE", "1 (izolovaná) – 15 (holá, průvan)", "prostup tepla trubky do okolí; holá nerez ~8 konvekce + ~2 sálání (inzonex: holé nádoby ~15 při 0,5 m/s)"]),
+    # --- verze 1.1 (16. 11. 2026) ---
+    ("hltKvs", 0.0, (0.0, 200.0), ["m³/h", "ESTIMATED", "0 = dopočítat", "Kvs parního ventilu topného hadu bojleru (štítek ventilu); 0 = dopočítat z hltUAst"]),
+    ("lvPumpQ", 120.0, (10.0, 600.0), ["L/min", "ESTIMATED", "±30 %", "průtok čerpadla ledové vody při plně otevřených klapkách (dřív pevně 120 L/min v kódu); přiškrcením klapky na trase se ubírá – změřit"]),
+    ("rvpDiaM", 0.0, (0.0, 5.0), ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr rmutomladinové pánve (plocha hladiny a hloubka náplně); 0 = odhad z objemu (výška = průměr) – změřit"]),
+    ("mpDiaM", 0.0, (0.0, 5.0), ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr mladinové pánve; 0 = odhad z objemu"]),
+    ("wpDiaM", 0.0, (0.0, 6.0), ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"]),
+    ("evapOpen", 0.1, (0.0, 3.0), ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"]),
+    ("mashVmax", 1.5, (0.5, 4.0), ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"]),
 ]
 
 
@@ -112,6 +120,35 @@ def need(pattern, why, flags=re.M):
 
     def g(text, style):
         return (text, "") if rx.search(text) else (None, why)
+    return g
+
+
+def done_if(marker, fn):
+    """Dílčí úprava, která už v textu je (pozná se podle marker), se bere jako hotová a nevkládá se podruhé –
+    např. když někdo vložil půlku háčku ručně podle INTEGRACE.md."""
+    def g(text, style):
+        if marker in text:
+            return text, ""
+        return fn(text, style)
+    return g
+
+
+def within(func_name, fn):
+    """Použije úpravu jen na tělo funkce func_name (od „func jméno(“ po další „func“), aby se vzor nechytil jinde."""
+    rx = re.compile(r'^[ \t]*(?:static )?func ' + re.escape(func_name) + r'\(', re.M)
+    nxt = re.compile(r'^[ \t]*(?:static )?func ', re.M)
+
+    def g(text, style):
+        ms = list(rx.finditer(text))
+        if len(ms) != 1:
+            return None, "funkce %s() nalezena %d× (čekám 1×)" % (func_name, len(ms))
+        a = ms[0].start()
+        nx = nxt.search(text, ms[0].end())
+        b = nx.start() if nx else len(text)
+        body, why = fn(text[a:b], style)
+        if body is None:
+            return None, "%s(): %s" % (func_name, why)
+        return text[:a] + body + text[b:], ""
     return g
 
 
@@ -185,12 +222,12 @@ def build_hooks():
         v, ua, jl, ts = m.group(1), m.group(2), m.group(4), m.group(6)
         return m.group(0) + "\n" + adapt("    return FP.steam_pd(self, %s, %s, %s, %s)   # FYZIKA+ H1 – ventil, tlak v plášti, vzduch, kondenzát; původní výpočet níže už neběží" % (v, ua, jl, ts), style)
     H.append(Hook("H1", "sim.gd: pára do pláště přes ventil a tlak v plášti (_pd)", probes=[("sim.gd", "FP.steam_pd(self", 1), ("sim.gd", "FYZIKA+ H1: film", 1)], edits=[
-        ("sim.gd", sub_once(r'^func _pd\((\w+), (\w+)(: float)?, (\w+)(: float)?, (\w+)(: float)?\)(\s*->\s*Dictionary)?\s*:[ \t]*$', pd_head)),
-        ("sim.gd", first_of(
+        ("sim.gd", done_if("FP.steam_pd(self", sub_once(r'^func _pd\((\w+), (\w+)(: float)?, (\w+)(: float)?, (\w+)(: float)?\)(\s*->\s*Dictionary)?\s*:[ \t]*$', pd_head))),
+        ("sim.gd", done_if("FYZIKA+ H1: film", first_of(
             sub_once(r'^([ \t]*)(S\._pd\.rvp\.P \*= film_factor\(rvp\);\s*S\._pd\.mp\.P \*= film_factor\(mp\))[ \t]*$', r'\1#\2   # FYZIKA+ H1: film je už ve FP.steam_pd'),
             sub_once(r'^([ \t]*)(S\._pd\.rvp\.P \*= film_factor\(rvp\))[ \t]*\n([ \t]*)(S\._pd\.mp\.P \*= film_factor\(mp\))[ \t]*$', r'\1#\2   # FYZIKA+ H1: film je už ve FP.steam_pd\n\3#\4   # FYZIKA+ H1'),
             sub_once(r'^([ \t]*)(Pin \*= ff)[ \t]*$', r'\1#\2   # FYZIKA+ H1: film je už ve FP.steam_pd'),     # starší verze násobily filmem v heat()
-        )),
+        ))),
     ], needs=["H0"]))
     # H2 – přestup na straně náplně
     def film_head(m, style):
@@ -216,19 +253,19 @@ def build_hooks():
     H.append(Hook("H3b", "sim.gd: pH mladiny pro izomeraci chmele", probes=[("sim.gd", ["FP.iso_ph_factor(self, v)", "FP.vessel_ph(self, v), 4.8, 6.0"], 1)], edits=[("sim.gd", iso_line)], needs=["H0"]))
     # H4 – barva kinetikou + pokles pH za varu
     H.append(Hook("H4", "sim.gd: barva podle teploty, pH a extraktu + pokles pH za varu", probes=[("sim.gd", "FP.color_step(self", 1), ("sim.gd", "FP.boil_step(self", 1)], edits=[
-        ("sim.gd", sub_once(r'^func react\((\w+), (\w+)(: float)?\)(?:\s*->\s*void)?\s*:[ \t]*\n([ \t]+)if \1\.w < 1: return[ \t]*\n', lambda m, st: m.group(0) + m.group(4) + "FP.color_step(self, %s, %s)   # FYZIKA+ H4 – barva (Maillard) ve všech nádobách\n" % (m.group(1), m.group(2)))),
-        ("sim.gd", sub_once(r'^([ \t]*)v\.col \+= liqVol\(v\) \* 2\.5 / 60\.0 \* m[ \t]*$', r'\1FP.boil_step(self, v, m)   # FYZIKA+ H4 – pH mladiny za varu; barva se počítá ve FP.color_step (dřív: v.col += liqVol(v) * 2.5 / 60.0 * m)')),
+        ("sim.gd", done_if("FP.color_step(self", sub_once(r'^func react\((\w+), (\w+)(: float)?\)(?:\s*->\s*void)?\s*:[ \t]*\n([ \t]+)if \1\.w < 1: return[ \t]*\n', lambda m, st: m.group(0) + m.group(4) + "FP.color_step(self, %s, %s)   # FYZIKA+ H4 – barva (Maillard) ve všech nádobách\n" % (m.group(1), m.group(2))))),
+        ("sim.gd", done_if("FP.boil_step(self", sub_once(r'^([ \t]*)v\.col \+= liqVol\(v\) \* 2\.5 / 60\.0 \* m[ \t]*$', r'\1FP.boil_step(self, v, m)   # FYZIKA+ H4 – pH mladiny za varu; barva se počítá ve FP.color_step (dřív: v.col += liqVol(v) * 2.5 / 60.0 * m)'))),
     ], needs=["H0"]))
     # H5 – vířivka
     H.append(Hook("H5", "sim.gd: rychlost nátoku do vířivky a tříštění lomu", probes=[("sim.gd", "FP.whirl_inlet(self", 1), ("sim.gd", "FP.trub_ns(self, v)", 1)], edits=[
-        ("sim.gd", sub_once(r'S\.wp\.whirlMin \+= ctx\.get\("m", 0\.0\)(?! \* FP)', 'S.wp.whirlMin += ctx.get("m", 0.0) * FP.whirl_inlet(self, S.wp, p, ctx)')),
-        ("sim.gd", sub_once(r'var fl: float = 0\.1 \* v\.trubHB(?![\w.]|\s*\+)', 'var fl: float = minf(v.trubSus, 0.1 * v.trubHB + FP.trub_ns(self, v))')),
+        ("sim.gd", done_if("FP.whirl_inlet(self", sub_once(r'S\.wp\.whirlMin \+= ctx\.get\("m", 0\.0\)(?! \* FP)', 'S.wp.whirlMin += ctx.get("m", 0.0) * FP.whirl_inlet(self, S.wp, p, ctx)'))),
+        ("sim.gd", done_if("FP.trub_ns(self, v)", sub_once(r'var fl: float = 0\.1 \* v\.trubHB(?![\w.]|\s*\+)', 'var fl: float = minf(v.trubSus, 0.1 * v.trubHB + FP.trub_ns(self, v))'))),
     ], needs=["H0"]))
     # H6 – chladnutí trubek
     H.append(Hook("H6", "sim.gd: chladnutí stojícího obsahu trubek podle průměru", probes=[("sim.gd", "FP.pipe_cool_k(self, e, dt)", 1), ("sim.gd", "* kc_fp", 2)], edits=[
         ("sim.gd", need(r'^func net_step\(dt\b', "funkce net_step() nemá parametr dt")),
-        ("sim.gd", sub_once(r'e\.c\.T \+= \(c\.ambientT - e\.c\.T\) \* kcool\b', 'var kc_fp: float = FP.pipe_cool_k(self, e, dt); e.c.T += (c.ambientT - e.c.T) * kc_fp')),
-        ("sim.gd", sub_once(r'for b in e\.q: b\.T \+= \(c\.ambientT - b\.T\) \* kcool\b', 'for b in e.q: b.T += (c.ambientT - b.T) * kc_fp')),
+        ("sim.gd", done_if("FP.pipe_cool_k(self, e, dt)", sub_once(r'e\.c\.T \+= \(c\.ambientT - e\.c\.T\) \* kcool\b', 'var kc_fp: float = FP.pipe_cool_k(self, e, dt); e.c.T += (c.ambientT - e.c.T) * kc_fp'))),
+        ("sim.gd", done_if("b.T += (c.ambientT - b.T) * kc_fp", sub_once(r'for b in e\.q: b\.T \+= \(c\.ambientT - b\.T\) \* kcool\b', 'for b in e.q: b.T += (c.ambientT - b.T) * kc_fp'))),
     ], needs=["H0"]))
     # H7 – tepelná roztažnost
     H.append(Hook("H7", "sim.gd: objem horké kapaliny podle Kella (hotV)", probes=[("sim.gd", "liqVol(v) * FP.expansion(v.T)", 1)], edits=[
@@ -261,23 +298,79 @@ def build_hooks():
     H.append(Hook("H9h", "audit_tests.gd: referenční test izomerace běží při pH 5,5 (kde je korekce pH neutrální)", probes=[("audit_tests.gd", ["FYZIKA+ H9h", "sim.S.pH = 5.5", 'sim.S["pH"] = 5.5'], 1)], edits=[
         ("audit_tests.gd", sub_once(r'^([ \t]*)(var vh1 = _mkv\(100\.0\); vh1\.alpha = 100\.0[^\n]*)$', r'\1sim.S["pH"] = 5.5   # FYZIKA+ H9h: referenční pH, při kterém je korekce izomerace neutrální' + '\n' + r'\1\2')),
     ], optional=True, needs=["H3b"]))
+    # H10 – parní topný had bojleru stejným modelem jako plášť pánve
+    H.append(Hook("H10", "sim.gd: pára do topného hadu bojleru přes ventil (stejný model jako plášť pánve)", probes=[("sim.gd", "FP.steam_coil(self", 1)], edits=[
+        ("sim.gd", within("sim_step", sub_once(r'"hlt": \{"P": c\.hltUAst \* h\.heat \* maxf\(0\.0, Tst - h\.T\), "wet": 1\.0\}', '"hlt": FP.steam_coil(self, h, c.hltUAst, Tst)', comment="# FYZIKA+ H10"))),
+    ], optional=True, needs=["H0"]))
+    # H11 – průtok ledové vody podle přiškrcení klapek
+    H.append(Hook("H11", "sim.gd: průtok ledové vody chladičem podle přiškrcení klapek (dřív pevně 120 L/min)", probes=[("sim.gd", "FP.ice_flow(self", 1)], edits=[
+        ("sim.gd", need(r'var Lm = 120\.0 / maxf\(1\.0, dests\.size\(\)\)', "blok čerpadla ledové vody vypadá jinak (nenašel jsem var Lm = 120.0 / …)")),
+        ("sim.gd", within("net_step", sub_once(r'^([ \t]*)for d in dests:[ \t]*\n([ \t]*)(var path = path_to\(r, d\.k\))[ \t]*$',
+                            r'\1for d in dests:' + '\n' + r'\2\3' + '\n' + r'\2' + 'Lm = FP.ice_flow(self, path, dests.size())   # FYZIKA+ H11 – přiškrcení klapek ledové vody'))),
+    ], optional=True, needs=["H0"]))
+    # H14 – připalování: úbytek výkonu se počítá ve FP.steam_pd (kotel i nádoba vidí stejný výkon)
+    H.append(Hook("H14", "sim.gd: připalování – úbytek výkonu vidí kotel i nádoba stejně (bilance energie)", probes=[("sim.gd", 'set_meta("fpH14", true)', 1)], edits=[
+        ("sim.gd", need(r'^func heat\(v\b', "funkce heat() nemá parametr v")),
+        ("sim.gd", within("heat", sub_once(r'^([ \t]*)Pin \*= 0\.9[ \t]*$', r'\1' + 'set_meta("fpH14", true)   # FYZIKA+ H14 – úbytek výkonu při připalování počítá FP.steam_pd, stejný pro kotel i nádobu (dřív: Pin *= 0.9)'))),
+    ], optional=True, needs=["H1"]))
+    # H12 – odpar z horké hladiny, když nádoba nevře (před varem, ve vířivce)
+    H.append(Hook("H12", "sim.gd: odpar z horké hladiny před varem a ve vířivce (malý u zavřené nádoby, parametr evapOpen)", probes=[("sim.gd", "FP.surface_evap(self", 2)], edits=[
+        ("sim.gd", need(r'^func heat\(v, m(: float)?, dt(: float)?, name\b', "funkce heat() má jiné parametry")),
+        ("sim.gd", need(r'^func sim_step\(dt\b', "funkce sim_step() nemá parametr dt")),
+        ("sim.gd", within("heat", done_if("FP.surface_evap(self, v, name, dt)", sub_once(r'^([ \t]*)(v\.T = T)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.surface_evap(self, v, name, dt)   # FYZIKA+ H12 – odpar z hladiny, když nevře')))),
+        ("sim.gd", within("sim_step", done_if('FP.surface_evap(self, wv, "wp", dt)', sub_once(r'react\(wv, m\)(?!;FP)', 'react(wv, m);FP.surface_evap(self, wv, "wp", dt)', comment="# FYZIKA+ H12")))),
+    ], optional=True, needs=["H0"]))
+    # H13 – rychlost rmutu v potrubí (smyk)
+    H.append(Hook("H13", "sim.gd: rychlost rmutu v potrubí nad 1,5 m/s zhoršuje scezování (Kunze s. 903)", probes=[("sim.gd", "FP.transfer_check(self", 1)], edits=[
+        ("sim.gd", need(r'var sp_ = path_to\(', "smyčka čerpadel nemá sací trasu sp_")),
+        ("sim.gd", need(r'var dpaths\b', "smyčka čerpadel nemá výtlačné trasy dpaths")),
+        ("sim.gd", within("net_step", sub_once(r'^([ \t]*)(var part0 = srcTake\(sb, Qf, m, key\))[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.transfer_check(self, key, sb, part0, Qf, sp_, m, dpaths)   # FYZIKA+ H13 – rychlost rmutu v potrubí'))),
+    ], optional=True, needs=["H0"]))
+    # H15 – samospád podle hydrauliky trasy (stejná tlaková ztráta jako u čerpadel)
+    H.append(Hook("H15", "sim.gd: samospád podle průměru, délky a přiškrcení trasy (dřív pevně 120 L/min na 1 m)", probes=[("sim.gd", "FP.gravity_q(self", 2)], edits=[
+        ("sim.gd", need(r'^func path_head\(', "verze nemá hydrauliku tras (path_head)")),
+        ("sim.gd", need(r'^func _src_fluid\(', "verze nemá _src_fluid()")),
+        ("sim.gd", need(r'var pa = path_to\(', "_vessel_gravity() nemá trasu pa")),
+        ("sim.gd", need(r'"lk": lk\b', "výpusti do kanálu nemají otevřený konec o.lk")),
+        ("sim.gd", need(r'var head_m\b', "výpusti do kanálu nemají výšku hladiny head_m")),
+        ("sim.gd", within("_vessel_gravity", done_if("FP.gravity_q(self, pa, bhd, gb)", sub_once(r'var q: float = 120\.0 \* f \* minf\(1\.3, sqrt\(bhd / 1\.05\)\)', 'var q: float = FP.gravity_q(self, pa, bhd, gb)', comment="# FYZIKA+ H15 (dřív: 120.0 * f * minf(1.3, sqrt(bhd / 1.05)))")))),
+        ("sim.gd", within("net_step", done_if("FP.gravity_q(self, o.path", sub_once(r'var Lmin: float = tot \* o\.f / outs\.size\(\); var part = null', 'var Lmin: float = FP.gravity_q(self, o.path, maxf(0.0, head_m + (net.nodes[o.lk.k].y - (v.y + v.h)) / PX_PER_M), b); var part = null', comment="# FYZIKA+ H15 (dřív: tot * o.f / outs.size())")))),
+    ], optional=True, needs=["H0"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[
         ("ctl.gd", need(r'r = _row\(box\)', "ctl.gd nemá řádky r = _row(box)")),
-        ("ctl.gd", sub_once(r'^([ \t]*)(refs\.hop = _btn\(r, "", func\(\): m\.sim\.hopPlanAdd\(\);\s*refresh\(\)\)[^\n]*)$',
-                            r'\1\2' + '\n' + r'\1' + 'r = _row(box)   # FYZIKA+ U1' + '\n' + r'\1' + 'refs["fpAcid"] = _btn(r, "", func(): preload("res://fyzika_plus.gd").acid_dose(m.sim, 100.0);refresh())')),
-        ("ctl.gd", sub_once(r'^([ \t]*)(else: _t\(refs\.hop, "Chmel podle receptu přidán \(%d dávky\)" % S\.hops\.size\(\)\)[^\n]*)$',
-                            r'\1\2' + '\n' + r'\1' + 'if refs.has("fpAcid"): _t(refs.fpAcid, preload("res://fyzika_plus.gd").acid_label(m.sim))   # FYZIKA+ U1')),
+        ("ctl.gd", done_if('refs["fpAcid"] = _btn', sub_once(r'^([ \t]*)(refs\.hop = _btn\(r, "", func\(\): m\.sim\.hopPlanAdd\(\);\s*refresh\(\)\)[^\n]*)$',
+                            r'\1\2' + '\n' + r'\1' + 'r = _row(box)   # FYZIKA+ U1' + '\n' + r'\1' + 'refs["fpAcid"] = _btn(r, "", func(): preload("res://fyzika_plus.gd").acid_dose(m.sim, 100.0);refresh())'))),
+        ("ctl.gd", done_if('refs.has("fpAcid")', sub_once(r'^([ \t]*)(else: _t\(refs\.hop, "Chmel podle receptu přidán \(%d dávky\)" % S\.hops\.size\(\)\)[^\n]*)$',
+                            r'\1\2' + '\n' + r'\1' + 'if refs.has("fpAcid"): _t(refs.fpAcid, preload("res://fyzika_plus.gd").acid_label(m.sim))   # FYZIKA+ U1'))),
     ], optional=True, needs=["H0"]))
     H.append(Hook("U2", "ctl.gd: tlak v plášti pánve u řádku kotle", probes=[("ctl.gd", "jacket_label(m.sim)", 1)], edits=[
         ("ctl.gd", sub_once(r'_t\(refs\.boiler, "Pára z kotle: %s   \(zatížení %d %%\)" % \[onoff\(S\.boiler\.on\), roundi\(S\.boiler\.load \* 100\.0\)\]\)(?! \+)',
                             '_t(refs.boiler, ("Pára z kotle: %s   (zatížení %d %%)" % [onoff(S.boiler.on), roundi(S.boiler.load * 100.0)]) + preload("res://fyzika_plus.gd").jacket_label(m.sim))', comment="# FYZIKA+ U2")),
     ], optional=True, needs=["H1"]))
+    H.append(Hook("U3", "ctl.gd: doplňkové řádky FYZIKA+ ve stavovém panelu (chladič, hladina)", probes=[("ctl.gd", "panel_lines(m.sim)", 1)], edits=[
+        ("ctl.gd", sub_once(r'^([ \t]*)(lines\.append\("\[b\]Spilka:\[/b\] %s" % m\.vessel_text\("spilka"\)\))[ \t]*$',
+                            r'\1\2' + '\n' + r'\1' + 'for fp_l in preload("res://fyzika_plus.gd").panel_lines(m.sim): lines.append(fp_l)   # FYZIKA+ U3')),
+    ], optional=True, needs=["H0"]))
+    # V – vzhled kapalin na plánku (volitelné, main.gd; nemění výpočet)
+    VZ = 'preload("res://fyzika_plus_vzhled.gd")'
+    def segs_head(m, style):
+        return m.group(0) + "\n" + m.group(1) + (style if style == "\t" else "    ") + "return " + VZ + ".stream_segs(m)   # FYZIKA+ V1 – proudy po balistické dráze; původní výpočet níže už neběží"
+    H.append(Hook("V1", "main.gd: proudy do nádob padají obloukem (sprcha, boční nátok) místo rovných čar", probes=[("main.gd", ".stream_segs(m)", 1)], edits=[
+        ("main.gd", need(r'm\.kind_color\(', "main.gd nemá kind_color()")),
+        ("main.gd", sub_once(r'^([ \t]+)func _stream_segs\(\)(\s*->\s*Array)?\s*:[ \t]*$', segs_head)),
+    ], optional=True))
+    H.append(Hook("V2", "main.gd: hladina se v místě dopadu proudu vlní (rmut míň než voda)", probes=[("main.gd", ".ripple(fxs, px, tt, is_mash)", 1), ("main.gd", ".ripple(fxs, px2, tt, is_mash)", 1), ("main.gd", ".impacts(m, it, fxs, lv)", 1)], edits=[
+        ("main.gd", need(r'var is_mash\s*:?\s*=\s*false', "kreslení kapaliny nemá proměnnou is_mash")),
+        ("main.gd", done_if(".impacts(m, it, fxs, lv)", sub_once(r'^([ \t]+)(fxs\["lv"\] = lv;\s*fxs\["slosh"\] = slosh)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'fxs["fpimp"] = ' + VZ + '.impacts(m, it, fxs, lv)   # FYZIKA+ V2 – místa dopadu proudů na hladinu'))),
+        ("main.gd", done_if(".ripple(fxs, px, tt, is_mash)", sub_once(r'amp \* 0\.5 \* sin\(px \* 0\.11 - tt \* 4\.7\)(?! \+ preload)', 'amp * 0.5 * sin(px * 0.11 - tt * 4.7) + ' + VZ + '.ripple(fxs, px, tt, is_mash)'))),
+        ("main.gd", done_if(".ripple(fxs, px2, tt, is_mash)", sub_once(r'amp \* 0\.5 \* sin\(px2 \* 0\.11 - tt \* 4\.7\)(?! \+ preload)', 'amp * 0.5 * sin(px2 * 0.11 - tt * 4.7) + ' + VZ + '.ripple(fxs, px2, tt, is_mash)'))),
+    ], optional=True, needs=["V1"]))
     # R – protokol (volitelné)
     H.append(Hook("R1", "sim.gd: spotřeba páry na hl, pH mladiny a odhad barvy piva v protokolu", probes=[("sim.gd", "FP.energy_step(", 1), ("sim.gd", "FP.report_extra(", 1)], edits=[
         ("sim.gd", need(r'^func sim_step\(dt\b', "funkce sim_step() nemá parametr dt")),
-        ("sim.gd", sub_once(r'^([ \t]*)(S\.boiler\.load = Qb / c\.boilerKW)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.energy_step(self, Qb, dt)   # FYZIKA+ R1')),
-        ("sim.gd", sub_once(r'^([ \t]*)(rep\.merge\(yields\(\)\))[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.report_extra(self, rep)   # FYZIKA+ R1')),
+        ("sim.gd", done_if("FP.energy_step(", sub_once(r'^([ \t]*)(S\.boiler\.load = Qb / c\.boilerKW)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.energy_step(self, Qb, dt)   # FYZIKA+ R1'))),
+        ("sim.gd", done_if("FP.report_extra(", sub_once(r'^([ \t]*)(rep\.merge\(yields\(\)\))[ \t]*$', r'\1\2' + '\n' + r'\1' + 'FP.report_extra(self, rep)   # FYZIKA+ R1'))),
     ], optional=True, needs=["H0"]))
     return H
 
@@ -293,6 +386,7 @@ def main(argv):
     proj = argv[1]
     dry = "--zkouska" in argv
     no_ui = "--bez-ui" in argv
+    no_look = "--bez-vzhledu" in argv
     if os.path.isfile(proj):
         proj = os.path.dirname(proj)
     if not os.path.isfile(os.path.join(proj, "sim.gd")):
@@ -334,6 +428,9 @@ def main(argv):
     for hk in build_hooks():
         if no_ui and hk.hid.startswith("U"):
             skipped.append((hk, "vynecháno (--bez-ui)"))
+            continue
+        if no_look and hk.hid.startswith("V"):
+            skipped.append((hk, "vynecháno (--bez-vzhledu)"))
             continue
         miss = [n for n in hk.needs if n not in [a.hid for a in applied]]
         if miss:

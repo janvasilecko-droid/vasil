@@ -1,6 +1,8 @@
 # Trenažér varny Zajíc – předávací dokument pro dalšího Clauda
-> **STAV 2026-10-25**: vydáno 2D **v69**, 3D **v151** (základ: aktuální zdroj z `unity/GodotSrc/` v tomto repu, ne ze zálohy v50 v `trenazer-zdroj/*.tar.gz`, ta je zastaralá). **Pracovat vždy z `unity/GodotSrc/`** (`git pull` nejdřív). Pozor: `unity/GodotSrc/updater.gd` je Unity varianta (UnityUpdate) a v Godotu se nezkompiluje – pro Godot pck použít čistý updater.gd (je v záloze `zdroj-2d-godot43.tar.gz`). 3D = stejné skripty + `view3d.gd/tscn` + project.godot (Godot 4.7.2, Forward+). Poslední změny: smyk míchadla (gel β-glukanu, `gelK` ODHAD, Kunze s. 241), usazování ve vířivce 20 min, konec vyslazování 1,0 °P.
-Stav: 2026-10-24, 2D verze 50 (Godot 4.3), 3D verze 133 (Godot 4.7.2). Uživatel: Vasil (Pivovar Zajíc, varna 40 hl), komunikuje česky, neformálně, stručně.
+> **STAV 2026-11-16**: vydáno 2D **v70**, 3D **v152** (pH ovlivňuje izomeraci chmele, `isoPh`; základ: aktuální zdroj z `unity/GodotSrc/` v tomto repu, ne ze zálohy v `trenazer-zdroj/*.tar.gz`, ta je starší). **Pracovat vždy z `unity/GodotSrc/`** (`git pull` nejdřív). Pozor: `unity/GodotSrc/updater.gd` je Unity varianta (UnityUpdate) a v Godotu se nezkompiluje – pro Godot pck použít čistý updater.gd (je v záloze `zdroj-2d-godot43.tar.gz`). 3D = stejné skripty + `view3d.gd/tscn` + project.godot (Godot 4.7.2, Forward+). Poslední změny: smyk míchadla (gel β-glukanu, `gelK` ODHAD, Kunze s. 241), usazování ve vířivce 20 min, konec vyslazování 1,0 °P.
+> **Pozor (29. 10.):** Vasil má doma novější verzi, než je zdroj v kontejneru a v repu („stop, tady mám starou verzi“). Na staré kopii dál neladit a nic nevydávat; úpravy připravovat jako přenositelný balíček (viz FYZIKA+ níže).
+> **Pozor (16. 11.):** Vasil často není u počítače (píše z telefonu). Práce musí jít dělat a převzít z jiného zařízení: výsledky dávat do repa `vasil` a do tohoto projektu, ne jen do konverzace. Chce, aby se pokračovalo automaticky, bez otázek.
+Uživatel: Vasil (Pivovar Zajíc, varna 40 hl), komunikuje česky, neformálně, stručně.
 
 ## Pravidla od Vasila
 - Česky, stručně, autonomně (žádné "zkopíruj si to"), nic nezměňovat bez zadání.
@@ -9,43 +11,70 @@ Stav: 2026-10-24, 2D verze 50 (Godot 4.3), 3D verze 133 (Godot 4.7.2). Uživatel
 - 2D verze je hlavní (říká, že funguje líp); 3D je kopie na Godot 4.7.2.
 
 ## Kde je co
-- **Zdroj (jen v kontejneru, nebyl v gitu!)**: `/home/claude/godot/zajic2d` (2D, Godot 4.3) a `/home/claude/godot/zajic47` (3D, 4.7.2; 2D se do něj kopíruje `cp` souborů .gd). Záloha zdrojů: `trenazer-zdroj/*.tar.gz` v tomto repu.
+- **Zdroj**: repo `janvasilecko-droid/vasil`, `unity/GodotSrc/` (skripty v70) + kostry projektů v `trenazer-zdroj/zdroj-2d-godot43.tar.gz` a `zdroj-3d-godot47.tar.gz` (starší verze, ale s project.godot, ikonami, čistým updater.gd a 3D soubory). Kontejner se mezi relacemi maže.
 - **Vydání**: GitHub repo `janvasilecko-droid/vasil` (větev main): `trenazer2d/trenazer2d.pck` + `version.json`, `trenazer3d/trenazer3d.pck` + `version.json` + `TrenazerVarny3D.zip` (první instalace). Program u Vasila stáhne novou verzi tlačítkem ⟳ Aktualizovat (updater.gd čte version.json).
-- **Skripty**: `tools/publish2d.sh N "poznámka"`, `tools/publish3d.sh N "poznámka" [exe]` (exportují .pck a pushnou do repa). Další verze: 2D **51**, 3D **134**.
-- **Godot binárky**: `/tmp/g43/Godot_v4.3-stable_linux.x86_64`, `/tmp/g47/Godot_v4.7.2-stable_linux.x86_64` (v novém kontejneru stáhnout z GitHubu godotengine/godot-builds + export templates; preset `WinPack`).
+- **Skripty**: `trenazer-zdroj/publish2d.sh N "poznámka"`, `publish3d.sh N "poznámka" [exe]` (exportují .pck a pushnou do repa; cesty P=, R=, G= upravit). Další verze: 2D **71**, 3D **153**.
 - **Vasilův PC**: složka `D:\stazene\Trenazer-varny-aplikace` (Dell Precision 7530, 32 GB).
 
 ## Soubory (2D)
-main.gd (~3600 řádků, UI/vykreslení/editor/rozvaděč), sim.gd (fyzika: rmutování, scezování Darcy+jerk, chmelovar, vířivka, chlazení, kvašení, CIP), cabinet.gd (rozvaděč, ráz míchadla), editor.gd (editor plánu, hadice DN10/DN15), sight.gd (průhledítko), rotametr.gd, auto.gd + lauter_auto.gd (automat), training.gd, tests.gd + audit_tests.gd, params.gd (zdroj/nejistota parametrů), plan.json (zapojení, flagy `_pitch2`).
+main.gd (~4400 řádků, UI/vykreslení/editor/rozvaděč), sim.gd (fyzika: rmutování, scezování Darcy+jerk, chmelovar, vířivka, chlazení, kvašení, CIP), cabinet.gd (rozvaděč, ráz míchadla), editor.gd (editor plánu, hadice DN10/DN15), sight.gd (průhledítko), rotametr.gd, auto.gd + lauter_auto.gd (automat), training.gd, tests.gd + audit_tests.gd, params.gd (zdroj/nejistota parametrů), liquidfx.gd (vzhled kapalin), plan.json (zapojení, flagy `_pitch2`).
 
 ## Testy (vždy před vydáním)
-- `cd /home/claude/godot/zajic2d && timeout 280 /tmp/g43/Godot_v4.3-stable_linux.x86_64 --headless --path . -- --tests` → očekává "202 kontrol, 0 selhání".
-- `... -- --autotest --autodt=2` → "done=true failed=''" (várka 10,1 h, výtěžnost ≈ 93 %, bilance extraktu uzavřená).
-- Screenshot: `/tmp/gt/shot.sh name "args" secs` (dočasné debug argumenty vždy po použití odstranit).
-- Po změně: `cp` .gd do zajic47, pak publish2d.sh + publish3d.sh.
+- `timeout 600 Godot_v4.3 --headless --path <projekt> -- --tests` → očekává "0 selhání" (v70: 269 kontrol).
+- `... -- --autotest --autodt=2` → "done=true failed=''" (várka 10,7 h, bilance extraktu uzavřená).
+- Testy nespouštět souběžně ve dvou kopiích projektu: stejný název projektu = stejné `user://`, test uložení pak náhodně selže. Chyba skriptu (parse error) nechá headless Godot viset – vždy `timeout`.
+- Snímek obrazovky: `xvfb-run -a -s "-screen 0 1366x768x24" Godot --path . --rendering-driver opengl3 -- --demo --fresh --nopanel --rect=x,y,w,h --shot=soubor.png` (jde i pro 3D projekt v pohledu na plánek).
+- Vlastní měření bez úprav programu: `-- --fresh --diag=res://muj.gd` (skript s `var m` a `func run()`).
 
-## Co je hotovo (poslední relace)
-Lupa v rozvaděči; hydraulika i při pauze; otáčky míchadel; rotametr (ideál 20 l/min); pletená nerezová hadice; DN10/DN15; libovolné přiškrcování klapek (slider, Ctrl+kolečko, tažení); ráz po zastavení míchadla + RESET; trhání mláta klapkou (3–4 trhnutí smyje nános, pak trhá lože); realistické trubky s koleny/příchytkami; připnuté průhledítko se sladem; spilková hadice s průhledítkem/T/vývodem; víčko spilky (tlak při zavření); vířivka usazení 20 min (Kosa/Kunze); konec vyslazování 1,0 °P (Kosa s. 147/156).
+## Co je hotovo (dřívější relace)
+Lupa v rozvaděči; hydraulika i při pauze; otáčky míchadel; rotametr (ideál 20 l/min); pletená nerezová hadice; DN10/DN15; libovolné přiškrcování klapek (slider, Ctrl+kolečko, tažení); ráz po zastavení míchadla + RESET; trhání mláta klapkou (3–4 trhnutí smyje nános, pak trhá lože); realistické trubky s koleny/příchytkami; připnuté průhledítko se sladem; spilková hadice s průhledítkem/T/vývodem; víčko spilky (tlak při zavření); vířivka usazení 20 min (Kosař/Kunze); konec vyslazování 1,0 °P (Kosař s. 147/156).
+
+## FYZIKA+ (verze 1.1 z 2026-11-16, NEVYDÁNO – Vasil si to vloží sám doma)
+Vasil chtěl projít fyziku, chemii a mechaniku (kapaliny, přenos tepla), najít reálná data z jiných varen a připravit úpravu,
+kterou si vloží do své **novější verze doma**. 16. 11. k tomu přidal: „ať je voda kapalina a chová se realisticky, i dílo“.
+Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplněk 1.1).
+- **Kde to je:** repo `janvasilecko-droid/vasil`, složka `trenazer-zdroj/fyzika-plus/` + `trenazer-zdroj/fyzika-plus.zip`.
+- **Co to je:** moduly `fyzika_plus.gd` (výpočet) a `fyzika_plus_vzhled.gd` (kreslení) + krátké háčky do sim.gd, ctl.gd, main.gd,
+  tests.gd, audit_tests.gd a params.gd. Vkládá je `aplikuj_fyzika_plus.py "<projekt>" [--zkouska] [--bez-ui] [--bez-vzhledu]`
+  podle textu, ne čísel řádků. Háček vloží, jen když místo najde přesně jednou (některé jen uvnitř dané funkce); skupiny všechno,
+  nebo nic; zálohy `*.pred-fyzika-plus`; seznam vložených háčků zapíše do `fyzika_plus_hooks.gd`. Jde spustit opakovaně,
+  i přes verzi 1.0 a přes ručně vloženou část háčku.
+- **Obsah 1.0 (29. 10.):** pára do pláště přes ventil (Spirax; ekviprocentní R 30 ODHAD; Kvs dopočítané), tlak v plášti z rovnováhy
+  ventil = kondenzace, vzduch (Dalton), zavzdušňovací ventil a podtlak (Kunze s. 290–291), stall kondenzátu (TLV);
+  přestup na straně náplně (CDJ, viskozita, přirozená konvekce `hNatC` 0,28); pH mladiny (pokles za varu 0,08/h,
+  tlačítko kyseliny mléčné do mladiny, pufr podle Kunzeho s. 229); barva Maillard (1,2 EBC/h, Ea 77 kJ/mol, pH, °P) ve všech
+  nádobách; vířivka (nátok ≤ 3,5 m/s, Kunze s. 341); chladnutí trubek podle průměru; Kell; IAPWS-IF97 pro páru.
+- **Obsah 1.1 (16. 11.):** H10 pára do topného hadu bojleru stejným modelem; H11 průtok ledové vody podle přiškrcení klapek
+  (`lvPumpQ`; teplota mladiny se v praxi řídí ledovou vodou, Kosař s. 186); H12 odpar z horké hladiny mimo var (ASHRAE,
+  `evapOpen` 0,1 ODHAD); H13 rychlost rmutu v potrubí nad 1,5 m/s (Kunze s. 903) zhoršuje scezování; H14 připalování bez
+  ztráty energie v bilanci (značka přes `set_meta`); H15 samospád podle hydrauliky trasy (`path_head` + výtoková ztráta);
+  U3 řádky v panelu (chladič, bod varu u dna); V1/V2 kreslení proudů obloukem a vlnky na hladině.
+- **Ověřeno:** viz kapitola 7.4 dokumentu (v70 2D i v152 3D bez selhání, starší archivní verze, přechod z 1.0, CRLF, tabulátory).
+  První i druhá verze prošly nezávislou kontrolou (druhý agent bez znalosti postupu); nálezy jsou opravené.
+  **Na Vasilově novější verzi vyzkoušené není** (je jen na jeho PC; až ji nahraje do repa, ověřit tam).
+- **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Návrhy N3–N22 a seznam měření jsou ve FYZIKA_PLUS.md.
+- **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
+  Kosař–Procházka: PDF strana = tištěná. Autor je Kosař (v názvu souboru „Kosa“).
+- **Obnova prostředí po restartu kontejneru:** Godot 4.3 z `github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip`,
+  4.7.2 z `github.com/godotengine/godot-builds/releases/download/4.7.2-stable/…`. Základ v70 2D = kostra z `zdroj-2d-godot43.tar.gz`
+  + všechny `.gd` z `unity/GodotSrc/` kromě `updater.gd`; základ v152 3D = kostra z `zdroj-3d-godot47.tar.gz` + tytéž `.gd` kromě
+  `updater.gd`, `boot.gd` a `view3d.gd` (ty jsou ve 3D jiné). Kontrola: v70 dává 269 kontrol, 0 selhání.
 
 ## Zdroje čísel
-- `KOSA_KUNZE_PARAMETRY.md` (i v projektu Zajic na claude.ai): čísla z Kosa–Procházka (Technologie výroby sladu a piva) a Kunze (Technology Brewing and Malting, s. 255–356) se stránkami. Kunzeho celý sken se OCR-uje do `kunze_ocr.txt` (viz níže).
-- Sim už sedí s knihami: tříslověny (76 °C, pH 5,7), DMS po 30 min varu, jodové barvy, prokvašení 76 %.
+- `KOSA_KUNZE_PARAMETRY.md` (i v projektu Zajic na claude.ai): čísla z Kosař–Procházka (Technologie výroby sladu a piva) a Kunze (Technology Brewing and Malting, s. 255–356) se stránkami.
+- Sim už sedí s knihami: tříslověny (76 °C, pH 5,7), DMS po 30 min varu, jodové barvy, prokvašení 76 %; z kontroly 16. 11. i voda zadržená v mlátě, viskozita sladiny, měrné teplo díla, teplota vystírky (viz FYZIKA_PLUS.md, 7.1).
 
 ## Otevřené / nápady (Vasil zatím neschválil)
-- Okyselení mladiny na pH 5,1–5,2 před koncem varu (potřeba tlačítko dávkování kyseliny).
-- Odvzdušnění parního pláště a podtlak (potřebuje změnu zapojení páry).
-- Nátok do vířivky ≤ 3,5 m/s (neznámý průměr vtoku – nevymýšlet).
-- Odhady k doptání: délka potrubí scezování 12 m, prahy 80/160 mbar (skDpCompact/skDpChannel), jednotka rotametru l/min.
+- Okyselení mladiny na pH 5,1–5,2 před koncem varu (potřeba tlačítko dávkování kyseliny). → Je v balíčku FYZIKA+ (nevydáno).
+- Odvzdušnění parního pláště a podtlak (potřebuje změnu zapojení páry). → FYZIKA+ to modeluje parametry (`jVacBreaker`, odvzdušňovač) bez změny zapojení.
+- Nátok do vířivky ≤ 3,5 m/s (neznámý průměr vtoku – nevymýšlet). → FYZIKA+: `wpInletMM` 0 = průměr trubky z plánku; skutečné hrdlo změřit.
+- Odhady k doptání: délka potrubí scezování 12 m, prahy 80/160 mbar (skDpCompact/skDpChannel), jednotka rotametru l/min; nově průměry nádob, tvar dna, průtok a škrcení ledové vody, typ čerpadel (NPSH).
 - Dále z původního seznamu: přepěnění po chmelení, lom + zanášení deskového chladiče/zpětný proplach, měření (refraktometr, pH, jod co 5 min), využití chmele podle času/teploty, CIP sekvence, poruchy, bezpečnost (LOTO, horké povrchy, chemie).
 
-## Pozn. k prostředí
-Kontejner je dočasný – zdroj hned zálohovat do repa (viz `trenazer-zdroj/`). V novém kontejneru: rozbalit tar.gz, stáhnout Godot 4.3 a 4.7.2, upravit cesty ve skriptech (P=, R=, G=); R je klon repa `vasil`.
-
 ## ÚKOL: pokračovat ve čtení Kunzeho (Wolfgang Kunze, Technology Brewing and Malting, 946 s., sken)
-Vasil chce, aby se z obou knih (Kosa–Procházka i Kunze) vzalo **všechno, co může simulátor udělat realističtější** ("projdi celé knihy").
-- **Stav (2026-10-25)**: Kunze má i celé OCR (946 stran, jen lokálně v kontejneru, ne v repu). Přečteno: rmutování (s. 234–250), provzdušnění, řízení, bezpečnost (354–361) a dříve kapitoly o varně: scezování (s. 255–272), chmelovar a odpar (281–291, 322–325), výtěžek (323–325), vířivka a separátory (341–344), chladič (350–356). Výstupy jsou v `KOSA_KUNZE_PARAMETRY.md`. Kosa–Procházka (327 s.) je projitá pro varnu (kap. 11–18, 20); kvašení (kap. 21) a zbytek ne.
-- **Nepřečteno u Kunzeho** (obsah na PDF stranách 7–11, kniha = PDF − 1 strana): 3.1 šrotování (s. 196–213), 3.4.2–3.4.3 konstrukce varny a postup chmelovaru (s. 289–322), 3.8 chlazení a provzdušnění (347–355), 3.10 řízení, **3.11 bezpečnost práce při výrobě mladiny (s. 359–366)**; kap. 1 suroviny (chmel, voda, kvasnice, s. 32–95), kap. 4 kvašení a filtrace (od s. 367) a další kapitoly (CIP, energie, laboratoř, automatizace).
-- **Jak číst**: PDF je sken bez textu a je příliš velký pro Read (>100 MB). Postup: `pdftoppm -r 95 -f N -l M -png Kunze.pdf x` a pak Read na PNG stránky. Případně OCR: `kunze_ocr_resume.sh` (tesseract, ~10–20 s/stránka, přeskočí hotové). OCR text ber jen jako pomůcku, čísla ověř proti obrázku stránky.
+Vasil chce, aby se z obou knih (Kosař–Procházka i Kunze) vzalo **všechno, co může simulátor udělat realističtější** ("projdi celé knihy").
+- **Stav (2026-10-25)**: Kunze má i celé OCR (946 stran, jen lokálně v kontejneru a v přílohách konverzace, ne v repu). Přečteno: rmutování (s. 234–250), provzdušnění, řízení, bezpečnost (354–361) a dříve kapitoly o varně: scezování (s. 255–272), chmelovar a odpar (281–291, 322–325), výtěžek (323–325), vířivka a separátory (341–344), chladič (350–356). Výstupy jsou v `KOSA_KUNZE_PARAMETRY.md`. Kosař–Procházka (327 s.) je projitá pro varnu (kap. 11–18, 20); kvašení (kap. 21) a zbytek ne.
+- **Nepřečteno u Kunzeho**: 3.1 šrotování (s. 196–213), 3.4.2–3.4.3 konstrukce varny a postup chmelovaru (s. 289–322), 3.8 chlazení a provzdušnění (347–355), 3.10 řízení, **3.11 bezpečnost práce při výrobě mladiny (s. 359–366)**; kap. 1 suroviny (chmel, voda, kvasnice, s. 32–95), kap. 4 kvašení a filtrace (od s. 367) a další kapitoly (CIP, energie, laboratoř, automatizace).
+- **Jak číst**: PDF je sken bez textu a je příliš velký pro Read (>100 MB). Postup: `pdftoppm -r 95 -f N -l M -png Kunze.pdf x` a pak Read na PNG stránky. OCR text ber jen jako pomůcku, čísla ověř proti obrázku stránky nebo aspoň proti číslu strany v OCR.
 - **Autorská práva**: text knih (ani OCR) nedávat do repa ani do projektu, jen vlastní shrnutí čísel se stránkou, bez dlouhých citací.
 - **Postup**: projít kapitoly, vypsat čísla a jevy do `KOSA_KUNZE_PARAMETRY.md`, porovnat se `sim.gd`/`params.gd`, navrhnout Vasilovi nové jevy a po jeho "ano" je implementovat s testem. Čísla nahrazující odhad přepsat v `params.gd` na LITERATURE se stránkou.
-- Soubor, který Vasil nahrál: `/mnt/user-data/uploads/pdfcoffee_com_wolfgang-kunze-technology-brewing-and-malting-2-pdf-free.pdf` (když chybí, požádat o nový upload).

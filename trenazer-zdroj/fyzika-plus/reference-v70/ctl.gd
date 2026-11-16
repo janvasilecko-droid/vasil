@@ -579,6 +579,7 @@ func refresh() -> void :
     lines.append("[b]Bojler:[/b] %s" % m.vessel_text("hlt"))
     lines.append("[b]Ledovka:[/b] %s" % m.vessel_text("lv"))
     lines.append("[b]Spilka:[/b] %s" % m.vessel_text("spilka"))
+    for fp_l in preload("res://fyzika_plus.gd").panel_lines(m.sim): lines.append(fp_l)   # FYZIKA+ U3
 
     var tr = sim.training
     var cs: String = tr.text() + "\n[color=#7b858e]" + tr.list_text() + "[/color]"
