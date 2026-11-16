@@ -67,7 +67,7 @@ Hlavní nové parametry a výchozí hodnoty (celý seznam se zdroji je ve `fyzik
 | `rvpDiaM`, `mpDiaM`, `wpDiaM` | 0 | vnitřní průměr nádoby v metrech; 0 = odhad z objemu (pánev výška = průměr, vířivka 3 : 1) |
 | `evapOpen` | 0,1 (ODHAD) | odpar z hladiny mimo var: 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem, 0 = vypnuto |
 | `mashVmax` | 1,5 m/s | nejvyšší rychlost rmutu v potrubí (Kunze s. 903) |
-| `pumpPass` | 1 | stojící čerpadlo je průchozí (samospád a zpětný tok); **0 = jako dřív – nastav, jestli máš za čerpadly zpětné klapky** |
+| `pumpPass` | 1 | stojící čerpadlo je průchozí (samospád a zpětný tok). Na Zajíci zpětné klapky za čerpadly nejsou (potvrzeno 16. 11.), proto 1; 0 = jako dřív |
 | `pumpPassK` | 5 | ztráta ve stojícím čerpadle v násobcích rychlostní výšky (GIW/KSB: 5 volně se protáčí, 10 stojí) |
 | `dryWallK` | 0,5 (ODHAD) | ztráty suché stěny nádoby proti smáčené; 1 = ztráty nezávisí na hladině (jako dřív, dobře izolovaná nádoba) |
 

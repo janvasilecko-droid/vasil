@@ -54,7 +54,8 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   násobí rychlostí hry; čerpadlo v `auto.pend` se bere jako běžící); kvůli tomu automat v `_end_step()` volá `_close_all()`
   a H16b zavírá klapky po skončení automatu scezování (`FP.lauter_stop`). Vypnutí: `pumpPass` = 0. H17 ztráty tepla pánve
   a vířivky podle zaplnění (`FP.loss_k`, `dryWallK` 0,5 ODHAD; 1 = jako dřív). V3 kreslení usazeného díla (`S.clog`).
-  Nevím, jestli má Vasil za čerpadly zpětné klapky a jak jsou nádoby izolované – zeptat se, až na to přijde řeč.
+  **Vasil 16. 11.: zpětné klapky za čerpadly na Zajíci nejsou** → `pumpPass` = 1 platí (v params.gd označeno STATED).
+  Jak jsou nádoby izolované nad hladinou, nevím (`dryWallK` je ODHAD) – zeptat se, až na to přijde řeč.
 - **Ověřeno:** viz kapitoly 7.4 a 8.3 dokumentu (v70 2D i v152 3D 333 kontrol bez selhání, starší archivní verze 266,
   přechod z 1.0 i 1.1, CRLF, tabulátory, ručně vložená půlka háčku; automatická várka 2D = 3D).
   Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2 jen vlastní kontrolou a testy.

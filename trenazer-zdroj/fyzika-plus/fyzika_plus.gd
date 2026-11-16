@@ -550,6 +550,7 @@ static func gravity_q(sim, path: Array, head_m: float, src_key) -> float:
 ## Odstředivé čerpadlo nemá nic, co by po vypnutí zavřelo průtok: kapalina jím teče podle rozdílu hladin dopředu i zpátky.
 ## Proto se po vypnutí čerpadla zavírá klapka za ním a před ním. Ztráta v čerpadle: K ≈ 5 (oběžné kolo se volně protáčí),
 ## K ≈ 10 (zablokované) násobků rychlostní výšky (GIW/KSB) – parametr pumpPassK. pumpPass = 0 vrací dřívější chování.
+## Na Zajíci za čerpadly zpětné klapky nejsou (Vasil 16. 11. 2026), výchozí pumpPass = 1 tomu odpovídá.
 ## Doběh: první 3 s po vypnutí se čerpadlo ještě bere jako neprůchozí (kolo dobíhá a drží tlak; ODHAD) – obsluha i automat
 ## tak stihnou zavřít klapku dřív, než se proud otočí. Stejně dlouho trvá, než se proud rozběhne po přestavení klapek
 ## (setrvačnost kapaliny v potrubí). Při zrychleném čase se ta doba násobí rychlostí – obsluha má vždycky 3 s skutečného

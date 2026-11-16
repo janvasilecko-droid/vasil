@@ -1,5 +1,5 @@
---- v70/sim.gd	2026-11-16 13:55:01.908324187 +0100
-+++ v70+fyzika-plus/sim.gd	2026-11-16 13:55:01.909778039 +0100
+--- v70/sim.gd	2026-11-16 15:33:46.757985324 +0100
++++ v70+fyzika-plus/sim.gd	2026-11-16 15:33:46.760061926 +0100
 @@ -1,5 +1,6 @@
  extends RefCounted
  const Physics = preload("res://physics.gd")
@@ -236,8 +236,8 @@
          var th: = 0.0
          if gb == "rvp": th = thick_factor(S.rvp) * (1.0 - 0.85 * S.clog.get("rvp", 0.0))
          elif gb == "sk" and vol(S.sk.mash) > 5: th = thick_factor(S.sk.mash) * (1.0 - 0.85 * S.clog.get("sk", 0.0))
---- v70/ctl.gd	2026-11-16 13:55:01.919405661 +0100
-+++ v70+fyzika-plus/ctl.gd	2026-11-16 13:55:01.920699607 +0100
+--- v70/ctl.gd	2026-11-16 15:33:46.774308763 +0100
++++ v70+fyzika-plus/ctl.gd	2026-11-16 15:33:46.776372190 +0100
 @@ -128,6 +128,8 @@
  
      r = _row(box)
@@ -272,8 +272,8 @@
  
      var tr = sim.training
      var cs: String = tr.text() + "\n[color=#7b858e]" + tr.list_text() + "[/color]"
---- v70/main.gd	2026-11-16 13:55:01.929978170 +0100
-+++ v70+fyzika-plus/main.gd	2026-11-16 13:55:01.931288715 +0100
+--- v70/main.gd	2026-11-16 15:33:46.788668600 +0100
++++ v70+fyzika-plus/main.gd	2026-11-16 15:33:46.790656909 +0100
 @@ -2885,6 +2885,7 @@
                      Art.pill(self, m.font_b, "VYTÉKÁ!", p + Vector2(0, -28), 13, Color("ff6b5b"))
  
@@ -316,8 +316,8 @@
                  surf.append(Vector2(px2, yy))
                  # zadní okraj hladiny (pohled mírně shora): elipsa
                  back.append(Vector2(px2, yy - 9.0 * sqrt(maxf(0.0, 1.0 - r2 * r2))))
---- v70/auto.gd	2026-11-16 13:55:01.941108022 +0100
-+++ v70+fyzika-plus/auto.gd	2026-11-16 13:55:01.942735540 +0100
+--- v70/auto.gd	2026-11-16 15:33:46.802986048 +0100
++++ v70+fyzika-plus/auto.gd	2026-11-16 15:33:46.804438859 +0100
 @@ -323,6 +323,7 @@
          "boil", "d1_boil", "d2_boil": S.rvp.heat = 0.0;T_set = 0.0
          "malt": S.malt.gate = false
@@ -326,8 +326,8 @@
      i += 1
      if i >= STEPS.size():
          on = false;done = true;status = "AUTO-VÁRKA HOTOVA"
---- v70/lauter_auto.gd	2026-11-16 13:55:01.951819863 +0100
-+++ v70+fyzika-plus/lauter_auto.gd	2026-11-16 13:55:01.953032705 +0100
+--- v70/lauter_auto.gd	2026-11-16 15:33:46.815969359 +0100
++++ v70+fyzika-plus/lauter_auto.gd	2026-11-16 15:33:46.817261529 +0100
 @@ -54,6 +54,7 @@
  func stop(reason: String) -> void :
      var a = state();a.on = false;a.stage = "zastaven";a.reason = reason
@@ -336,8 +336,8 @@
      sim.logm("Automat scezování zastaven: " + reason)
  
  func update(seconds: float) -> void :
---- v70/tests.gd	2026-11-16 13:55:01.963445513 +0100
-+++ v70+fyzika-plus/tests.gd	2026-11-16 13:55:01.964837991 +0100
+--- v70/tests.gd	2026-11-16 15:33:46.827293348 +0100
++++ v70+fyzika-plus/tests.gd	2026-11-16 15:33:46.828998482 +0100
 @@ -420,7 +420,7 @@
      var hv = S.rvp;hv.w = 2000.0;hv.T = 50.0;hv.Tsens = 50.0;hv.stir = true;hv.hz = 35.0;hv.heat = 1.0
      for i in 20: sim.sim_step(1.0)
@@ -355,8 +355,8 @@
      var bad: = 0
      for r in results:
          if not r[1]: bad += 1
---- v70/audit_tests.gd	2026-11-16 13:55:01.974362657 +0100
-+++ v70+fyzika-plus/audit_tests.gd	2026-11-16 13:55:01.975747417 +0100
+--- v70/audit_tests.gd	2026-11-16 15:33:46.840830409 +0100
++++ v70+fyzika-plus/audit_tests.gd	2026-11-16 15:33:46.842825044 +0100
 @@ -707,7 +707,7 @@
  
  	# --- film u husté náplně: voda = beze změny, hustý rmut zhorší přestup; celkové UA zůstane referenční ---
@@ -366,8 +366,8 @@
  	var thick = sim.vessel(); thick.w = 1900.0; thick.g = 400.0; thick.sg = 300.0; thick.stir = true; thick.hz = 35.0
  	var ff_w: float = sim.film_factor(w); var ff_t: float = sim.film_factor(thick)
  	c.rvpUAst = 30.0
---- v70/params.gd	2026-11-16 13:55:01.985368277 +0100
-+++ v70+fyzika-plus/params.gd	2026-11-16 13:55:01.986733129 +0100
+--- v70/params.gd	2026-11-16 15:33:46.855581212 +0100
++++ v70+fyzika-plus/params.gd	2026-11-16 15:33:46.857562542 +0100
 @@ -5,6 +5,38 @@
  ## Hodnoty jsou v sim.gd → CFG_DEFAULT; přepsat je jde souborem user://kalibrace.json (viz sim.apply_calibration).
  
@@ -401,7 +401,7 @@
 +	"wpDiaM": ["m", "ESTIMATED", "0 = odhad", "vnitřní průměr vířivé kádě; 0 = odhad z objemu při průměr : výška mladiny = 3 : 1 (Kunze s. 340–341) – změřit"],   # FYZIKA+ H8
 +	"evapOpen": ["-", "ESTIMATED", "0,05–1", "odpar z hladiny, když nádoba nevře, vůči volné hladině v klidném vzduchu (ASHRAE: při 90 °C ~10 kg/(m²·h)); 1 = otevřený průlez, 0,1 = zavřená nádoba s odtahem (ODHAD – knihy uvádějí jen, že mladina jde na chladič s 95–98 °C)"],   # FYZIKA+ H8
 +	"mashVmax": ["m/s", "LITERATURE", "1,2–1,5", "nejvyšší rychlost rmutu v potrubí do scezovací kádě (Kunze s. 903: pod 1,5 m/s; Kosař s. 140: 1,2–1,5 m/s); nad ní smyk zhoršuje scezování"],   # FYZIKA+ H8
-+	"pumpPass": ["0/1", "ESTIMATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky; 0 = stojící čerpadlo nic nepustí (dřívější chování – nastav 0, jestli máš za čerpadly zpětné klapky)"],   # FYZIKA+ H8
++	"pumpPass": ["0/1", "STATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky. Na Zajíci za čerpadly zpětné klapky nejsou (Vasil 16. 11. 2026), proto 1; 0 = stojící čerpadlo nic nepustí (dřívější chování, pro varnu se zpětnými klapkami)"],   # FYZIKA+ H8
 +	"pumpPassK": ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"],   # FYZIKA+ H8
 +	"dryWallK": ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"],   # FYZIKA+ H8
  	"rvpCap": ["L", "MANUFACTURER", "±5 %", "nominální objem pánve 50 hl (údaj provozovatele)"],

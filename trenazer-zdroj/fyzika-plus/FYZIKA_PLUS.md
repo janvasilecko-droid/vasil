@@ -184,7 +184,8 @@ N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole
 8. **Chladič:** průtok ledové vody a čím ho ubíráte (klapka, měnič), teplota ohřáté vody do bojleru, teplota mladiny
    na vstupu do chladiče na začátku a na konci chlazení.
 9. **Vystírka:** výška hladiny (měrka) před sypáním a po něm – objem, který přidá slad.
-10. **Čerpadla:** jsou za C1–C5 zpětné klapky? Když ano, nastav `pumpPass` na 0 (stojící čerpadlo pak nic nepustí).
+10. **Čerpadla:** zpětné klapky za čerpadly nejsou (potvrdil jsi 16. 11.), `pumpPass` proto zůstává 1. Změřit by šlo
+    jen to, jak rychle stojícím čerpadlem teče (`pumpPassK`): o kolik klesne hladina za minutu při známém rozdílu hladin.
 11. **Izolace nádob:** je plášť pánve a vířivky izolovaný i nad hladinou a na víku? Podle toho se nastaví `dryWallK`
     (izolovaná 0,9–1, holá kolem 0,5). Nejlíp změřit chladnutí plné a poloprázdné nádoby za hodinu.
 
@@ -362,7 +363,8 @@ Dřív stojící čerpadlo trasu zavíralo jako klapka.
   na zavření klapky. Pak deník napíše „kapalina přetéká samospádem otevřenými klapkami“.
 - **Automat** po každém kroku zavře klapky (dřív je nechával otevřené do dalšího čerpání). **Automat scezování** po
   skončení zavře klapky, které si otevřel; když jsi mezitím klapkami hýbal ty, nesahá na nic.
-- Vypnutí: `pumpPass` = 0 vrátí dřívější chování. **Nastav to, jestli máš za čerpadly zpětné klapky** – to nevím.
+- **Na Zajíci za čerpadly zpětné klapky nejsou (potvrdil jsi 16. 11.), takže to platí tak, jak to je** (`pumpPass` = 1).
+  Hodnota 0 by vrátila dřívější chování; hodí se jen pro varnu se zpětnými klapkami.
 - Co to nepočítá: výpust do kanálu přes stojící čerpadlo a zpětný tok horním nátokem (návrh N23).
 
 **P17. Ztráty tepla podle hladiny (H17, `FP.loss_k`).** Ztráty pánve a vířivky do okolí byly stejné, ať byla nádoba

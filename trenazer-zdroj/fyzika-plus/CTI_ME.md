@@ -18,8 +18,8 @@ Nejrychlejší cesta: stáhni složku (je i v repozitáři `vasil`, `trenazer-zd
 
 Co je nového ve verzi 1.2 (proti 1.1 z dopoledne):
 - **Stojící čerpadlo je průchozí.** Otevřenou trasou přes vypnuté čerpadlo teče kapalina podle rozdílu hladin, i zpátky.
-  Po čerpání se proto zavírá klapka; automat i automat scezování to dělají samy. Vypíná se parametrem `pumpPass` = 0
-  (nastav, jestli máš za čerpadly zpětné klapky).
+  Po čerpání se proto zavírá klapka; automat i automat scezování to dělají samy. Odpovídá to varně bez zpětných
+  klapek za čerpadly, jak jsi potvrdil 16. 11. (parametr `pumpPass` = 1; hodnota 0 by to vypnula).
 - **Ztráty tepla podle hladiny.** Poloprázdná pánev a vířivka ztrácejí míň tepla než plné (parametr `dryWallK`).
 - **Usazené dílo na plánku.** Bez míchání se nahoře oddělí čirá kapalina a u dna zůstane vrstva zrna.
 
