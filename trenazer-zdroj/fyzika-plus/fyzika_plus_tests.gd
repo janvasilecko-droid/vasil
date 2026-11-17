@@ -27,6 +27,7 @@ func run(t) -> void:
 	_mashv()
 	if _has("H16"): _pumppass()
 	if _has("H18"): _drainpump()
+	if _has("H19"): _cone()
 	if _has("H17"): _losses()
 	T.fresh()
 
@@ -622,3 +623,64 @@ func _drainpump() -> void:
 	if not found:
 		T.chk("FP výpust: trasa pánev → C1 v plánku není – test přeskočen", true); return
 	T.chk("FP výpust: otevřeným koncem trubky za stojícím C1 vytéká pánev do kanálu (dřív stojící čerpadlo nepustilo nic); s pumpPass = 0 neteče", res[0][0] > 20.0 and res[0][1] >= res[0][0] - 1.0 and res[1][0] < 0.5, "%.0f L do kanálu za minutu (z pánve ubylo %.0f L – zbytek je v trubkách a v SK); pumpPass 0: %.1f L" % [res[0][0], res[0][1], res[1][0]])
+
+# ---------- kalový kužel ve vířivce (H19) ----------
+func _cone() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	var w = S.wp; w.trubSet = 10.0
+	var g: Dictionary = FP.cone_geo(sim)
+	var D: float = FP.vessel_dia(sim, "wp")
+	var ok_geo: bool = absf(PI * g.rc * g.rc * g.h / 3.0 - 0.06) < 1e-6 and (g.rc <= D / 2.0 - 0.6 + 1e-9 or g.rc <= 0.1 * D + 1e-9)
+	var ok_lv := true
+	for VL in [61.0, 200.0, 500.0, 1000.0, 3000.0]:
+		var y: float = FP.cone_level(g, VL)
+		var t: float = clampf((g.h - y) / g.h, 0.0, 1.0)
+		var Vb: float = (g.A * y + (g.Vc * t * t * t if y < g.h else 0.0)) * 1000.0
+		if absf(Vb - VL) > 0.5: ok_lv = false
+	T.chk("FP kužel: 10 kg kalu = 60 L vlhkého kužele, u stěny mezikruží aspoň 60 cm (Kosař s. 181); výška hladiny podle objemu i u kužele sedí", ok_geo and ok_lv, "Ø vířivky %.2f m, Ø kužele %.2f m, výška %.1f cm" % [D, 2.0 * g.rc, g.h * 100.0])
+	# přímo: stejný odběr u kužele rychle a pomalu
+	var res := []
+	for q in [200.0, 0.5 * FP.wp_cone_cap(sim)]:
+		T.fresh(); S = sim.S; w = S.wp; w.trubSet = 10.0
+		var g2: Dictionary = FP.cone_geo(sim)
+		w.w = g2.A * g2.h * 1000.0 * 0.6; w.T = 95.0
+		var part = sim.lp(); part.w = 20.0
+		var rel0: float = float(w.trubSet)
+		var out = FP.wp_cone(sim, part, 20.0, q)
+		res.append([rel0 - float(w.trubSet), float(out.trubSus), q])
+	T.chk("FP kužel: když hladina klesá podél kužele rychle, kužel se rozpadá a kal jde s mladinou; pomalu ne (Kunze s. 341); kal se neztrácí ani nepřibývá", res[0][0] > 0.0 and absf(res[0][0] - res[0][1]) < 1e-9 and res[1][0] == 0.0, "%.0f L/min: %.3f kg kalu; %.0f L/min: %.3f kg" % [res[0][2], res[0][0], res[1][2], res[1][0]])
+	# v simulaci: vířivka u kužele, C3 rychle vs. pomalu
+	var sims := []
+	var found := true
+	for fast in [true, false]:
+		T.fresh(); S = sim.S
+		if not _open_route("wp", "spilka", ["p3"]):
+			found = false; break
+		w = S.wp; w.trubSet = 10.0; w.w = 700.0; w.f = 100.0; w.T = 95.0; w.settleMin = 30.0
+		S.cfg["wpConeAuto"] = 0.0
+		S.p3.flow = 100.0 if fast else 0.8 * FP.wp_cone_cap(sim)
+		S.p3.on = true; S.p3.prime = 1.0
+		var t0: float = float(S.sp.trub)
+		for i in 1800:
+			if not fast: S.p3.flow = maxf(5.0, 0.8 * FP.wp_cone_cap(sim))
+			sim.sim_step(1.0)
+			if not S.p3.on: break
+		sims.append([float(S.sp.trub) - t0, float(S.sp.L)])
+	T.fresh()
+	if not found:
+		T.chk("FP kužel: trasa vířivka → spilka přes C3 v plánku není – test v simulaci přeskočen", true)
+	else:
+		T.chk("FP kužel: v simulaci rychlé stahování konce vířivky (100 L/min) strhne kal do spilky, pomalé (pod mezí) ne – Kosař s. 181: na konci zpomalit", sims[0][0] > 0.1 and sims[1][0] < 0.02, "rychle %.2f kg kalu do spilky, pomalu %.3f kg" % [sims[0][0], sims[1][0]])
+	# automat: u kužele omezí C3 a ve stejném poměru ubere ledovou vodu
+	T.fresh(); S = sim.S; w = S.wp; w.trubSet = 10.0
+	var g3: Dictionary = FP.cone_geo(sim)
+	w.w = g3.A * g3.h * 1000.0 * 0.8; w.T = 95.0
+	var cap: float = FP.wp_cone_cap(sim)
+	var f1: float = FP.auto_cone_flow(sim, 60.0)
+	var q_ice: float = FP.ice_flow(sim, [], 1)
+	S.t += 30.0
+	var q_ice2: float = FP.ice_flow(sim, [], 1)
+	w.w = 3000.0
+	var f_hi: float = FP.auto_cone_flow(sim, 60.0)
+	T.fresh()
+	T.chk("FP kužel: automat u kužele zpomalí C3 pod mez a ve stejném poměru ubere ledovou; nad kuželem a po skončení nic neomezuje", absf(f1 - cap) < 1e-6 and cap < 60.0 and absf(q_ice - FP.cf(sim, "lvPumpQ") * cap / 60.0) < 0.01 and absf(q_ice2 - FP.cf(sim, "lvPumpQ")) < 1e-6 and f_hi == 60.0, "C3 %.0f → %.0f L/min, ledová %.0f L/min" % [60.0, f1, q_ice])

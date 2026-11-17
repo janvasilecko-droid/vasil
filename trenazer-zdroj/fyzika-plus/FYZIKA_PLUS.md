@@ -2,7 +2,7 @@
 
 Vypracováno 29. 10. 2026 na zdrojích 2D v70 / 3D v152 (`vasil/unity/GodotSrc`), **doplněno 16. 11. 2026 (verze 1.1:
 kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8;
-17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5)**.
+17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5; verze 1.4: kalový kužel ve vířivce, kapitola 8.6)**.
 Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
 **Nic z toho není vydané** v ⟳ Aktualizovat. Balíček leží v repozitáři `vasil` ve složce `trenazer-zdroj/fyzika-plus/`.
 Vzorce, jednotky a vkládací skript první verze prošla ještě nezávislá kontrola, její připomínky jsou zapracované.
@@ -153,9 +153,8 @@ N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole
 | N3 | Zanášení otopné plochy (připálení) během várky a jeho odstranění louhem (CIP ↔ přestup tepla) | špinavá pánev topí pomaleji, proto má CIP smysl. Číslo pro odpor nánosu rmutu jsem v literatuře nenašel | doba ohřevu čisté pánve a pánve po várce |
 | N4 | pH rmutu během rmutování klesá o 0,15–0,30 (Kosař s. 137); pH výstřelků roste s alkalitou vyslazovací vody | třísloviny počítat z pH poslední sladiny, ne z pH rmutu | rozbor vody, pH poslední sladiny |
 | N5 | Rozpustnost α-kyselin a ztráty izo-α na kalech místo pevného faktoru 0,44 | využití chmele klesá s dávkou | laboratorní IBU vyražené mladiny a piva |
-| N6 | Kyslík: vystírání shora, čerpání, provzdušnění 8–10 mg/L podle teploty a °P | kyslík při vystírání = tmavší barva, horší stabilita | – |
+| N6 | Kyslík: vystírání shora, čerpání, provzdušnění | provzdušnění už sedí s Kunzem (8 mg/L, s. 353), ale kyslík ve spilce zatím nic neovlivňuje. Aby měl smysl, musel by řídit množení kvasnic a kvašení, a k tomu čísla nemám (Kunze i Kosař to popisují jen slovně) | rozhodnutí, jestli to chceš; pak data o kvašení (rychlost, množení kvasnic) |
 | N8 | Výkon míchadla Np·ρ·N³·D⁵ (teplo do rmutu ~0,5–2 kW) | malý, ale měřitelný vliv při prodlevách | štítek motoru míchadla |
-| N9 | Rozpad kužele kalu na konci stahování z vířivky (Kunze: na konci zpomalit) | kal v posledních hl | – |
 | N11 | Hodnotit barvu proti odhadu barvy piva, ne proti zákvasné mladině | cíl receptu 9 EBC je nejspíš barva piva | potvrď, co znamená EBC v receptu |
 | N12 | Kyselina mléčná do rmutu: 80 % = 10,6 mEq/mL (teď 11,8 = 88 %) | účinek je teď o 11 % silnější | jakou kyselinu používáte (80 / 88 %) |
 | N13 | Poměr odporů pára/náplň (HA_REF): ve skutečnosti ~55 % na straně náplně, v modelu ~26 % | míchadlo, viskozita a teplota by pak působily víc; znamená to znovu nastavit `mashFilmK` | doby ohřevu rmutu s míchadlem a bez něj |
@@ -447,6 +446,44 @@ nepustilo nic. Počítá se to stejně jako ostatní výpusti (P8), čerpadlo p�
 0 selhání; přechod z verzí 1.0, 1.1 i 1.2 doplní jen nový háček a druhé spuštění nic nezmění. Automatická várka dává
 ve 2D i 3D stejný protokol jako verze 1.2 (tabulka v 8.3) a v deníku není žádné vytékání ani přetékání samospádem.
 Na tvé novější verzi z domu to vyzkoušené není.
+
+### 8.6 Doplněk 17. 11. 2026 odpoledne (verze 1.4): kalový kužel ve vířivce
+
+**P20. Rozpad kalového kužele na konci stahování (H19, `FP.wp_cone`).** Dřív zůstal kal ve vířivce celý, ať se stahovalo
+jakkoli rychle. Teď se počítá tvar kužele a výška hladiny u něj:
+- Kužel: objem vlhkého kalu je trubSet × 6 L (stejné číslo, jaké program bere jako mrtvý objem kalu). U stěny zůstává
+  mezikruží bez kalu 60 cm (Kosař s. 181, `wpConeAnn`). Ve vířivce 50 hl (odhad Ø 2,67 m) má kužel z automatické várky
+  Ø 1,47 m a výšku ~12 cm.
+- Když hladina klesá podél kužele rychleji, než z něj stačí vytékat zadržená mladina, kužel se rozpadá a kal jde
+  s mladinou (Kunze s. 341). Mez je `wpConeV` 0,6 cm/min, podíl rozpadlého kalu `wpConeBreak` 0,1 – **obojí ODHAD**,
+  číslo jsem v knihách nenašel. Za vířivkou má být průměrně pod 100 mg/L hrubého kalu (Kosař s. 184).
+- Bez zpomalení (C3 ~48 L/min až do konce) by šlo do spilky 423 mg/L kalu a deník napíše, že se kužel rozpadá
+  a o kolik zpomalit. Se zpomalením 3 mg/L.
+- **Automat** na konci stahování zpomalí C3 pod mez (Kosař s. 181: spojité snižování rychlosti) a ve stejném poměru
+  ubere ledovou, aby mladina nešla do spilky přechlazená (bez toho by spadla na 2,4 °C). Vypnutí: `wpConeAuto` = 0.
+- Protokol nově ukazuje `kal_do_spilky_mg_L`.
+
+**Kyslík (N6) jsem nedělal.** Provzdušnění v programu už odpovídá Kunzemu (cíl 8 mg/L, s. 353), ale kyslík ve spilce
+zatím nic neovlivňuje. Aby měl smysl, musel by řídit kvasnice a kvašení, a pro to nemám čísla – bylo by to vymyšlené.
+Zůstává v návrzích.
+
+**Co jsem cestou našel (neměnil jsem):** ve vířivce zůstává po automatické várce 101 L (2,6 % várky), Kosař uvádí mladinu
+zadrženou v kalu 0,7–1,3 % (s. 182). Model bere z chmele 70 % dávky do kalu, Kosař uvádí asi 50 % (s. 179); hrubý kal
+z mladiny 600 mg/L v modelu sedí s Kosařem (400–800 mg/L).
+
+**Ověření verze 1.4:** 2D v70 i 3D v152 339 kontrol, 0 selhání (70 kontrol FYZIKA+, 4 nové: tvar kužele, rozpad
+rychle/pomalu, tok v simulaci, zpomalení automatu s ubráním ledové); starší verze 272 kontrol, 0 selhání; přechod
+z verzí 1.0, 1.1 i 1.3 doplní jen nové a druhé spuštění nic nezmění. Automatická várka ve 2D i 3D stejně:
+
+| Veličina | + FYZIKA+ 1.3 | + FYZIKA+ 1.4 |
+|---|---|---|
+| Objem ve spilce | 37,2 hl | 37,2 hl |
+| Stupňovitost | 12,81 °P | 12,82 °P |
+| Teplota ve spilce (průměr) | 8,2 °C | 7,8 °C |
+| Kal ve spilce | – | 3 mg/L |
+| Délka várky | 637 min | 646 min |
+
+Ostatní (IBU, EBC, DMS, pára, výtěžnost) beze změny. Na tvé novější verzi z domu to vyzkoušené není.
 
 ## Zdroje
 

@@ -64,6 +64,11 @@ NEW_PARAMS = [
     ("pumpPass", 1.0, (0.0, 1.0), ["0/1", "STATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky. Na Zajíci za čerpadly zpětné klapky nejsou (Vasil 16. 11. 2026), proto 1; 0 = stojící čerpadlo nic nepustí (dřívější chování, pro varnu se zpětnými klapkami)"]),
     ("pumpPassK", 5.0, (0.0, 50.0), ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"]),
     ("dryWallK", 0.5, (0.0, 1.0), ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"]),
+    # --- verze 1.4 (17. 11. 2026) ---
+    ("wpConeV", 0.006, (0.0005, 0.1), ["m/min", "ESTIMATED", "×3", "jak rychle smí klesat hladina ve vířivce podél kalového kužele, aby z něj stačila vytékat zadržená mladina a kužel se nerozpadl (Kunze s. 341, Kosař s. 181: na konci spílání zpomalit); 0,006 = 0,6 cm/min je ODHAD – změřit zákal mladiny na konci stahování při různém průtoku"]),
+    ("wpConeBreak", 0.1, (0.0, 1.0), ["-", "ESTIMATED", "×3", "kolik vynořeného kužele se při rychlém odtahu (aspoň dvojnásobek wpConeV) rozpadne a odteče s mladinou; ODHAD – podle Kosaře s. 184 má být za vířivkou průměrně pod 100 mg/L hrubého kalu"]),
+    ("wpConeAnn", 0.6, (0.0, 2.0), ["m", "LITERATURE", "≥ 0,6", "šířka mezikruží bez kalu mezi okrajem kalového kužele a stěnou vířivky (Kosař s. 181: aspoň 60 cm) – určuje průměr a výšku kužele"]),
+    ("wpConeAuto", 1.0, (0.0, 1.0), ["0/1", "ESTIMATED", "-", "1 = automat na konci stahování z vířivky zpomalí C3 tak, aby se kužel nerozpadl (Kosař s. 181: spojité snižování rychlosti); 0 = nezpomaluje"]),
 ]
 
 
@@ -366,6 +371,11 @@ def build_hooks():
         ("sim.gd", within("net_step", done_if('",".join(PackedStringArray(fp_idle))', sub_once(r'^([ \t]*)var gk: String = "gd\|" \+ v\.id[ \t]*$', r'\1' + 'var fp_idle: Array = FP.idle_pumps(self)   # FYZIKA+ H18 – výpust smí vést přes stojící čerpadlo' + '\n' + r'\1' + 'var gk: String = "gd|" + v.id + "|" + ",".join(PackedStringArray(fp_idle))')))),
         ("sim.gd", within("net_step", done_if('bfs([s0], "liq", fp_idle)', sub_once(r'var r = bfs\(\[s0\]\)', 'var r = bfs([s0], "liq", fp_idle)', comment="# FYZIKA+ H18")))),
     ], optional=True, needs=["H16"]))
+    # H19 – rozpad kalového kužele na konci stahování z vířivky; automat na konci zpomalí
+    H.append(Hook("H19", "sim.gd + auto.gd: kalový kužel se při rychlém odtahu z vířivky rozpadá; automat na konci stahování zpomalí C3", probes=[("sim.gd", "FP.wp_cone(self", 1), ("auto.gd", ".auto_cone_flow(sim, S.p3.flow)", 1)], edits=[
+        ("sim.gd", within("srcTake", done_if("FP.wp_cone(self", sub_once(r'return takePart\(w, LL2, 1\.0\)', 'return FP.wp_cone(self, takePart(w, LL2, 1.0), LL2, Lmin)', comment="# FYZIKA+ H19 – rozpad kalového kužele")))),
+        ("auto.gd", within("tick", done_if(".auto_cone_flow(sim, S.p3.flow)", sub_once(r'S\.p3\.flow = clampf\(S\.p3\.flow \+ \(8\.5 - cool_tf\) \* COOL_G \* dt / 60\.0, 30\.0, 200\.0\)', 'S.p3.flow = clampf(S.p3.flow + (8.5 - cool_tf) * COOL_G * dt / 60.0, 30.0, 200.0);S.p3.flow = ' + FPM + '.auto_cone_flow(sim, S.p3.flow)', comment="# FYZIKA+ H19 – u kalového kužele zpomalit")))),
+    ], optional=True, needs=["H0"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[
         ("ctl.gd", need(r'r = _row\(box\)', "ctl.gd nemá řádky r = _row(box)")),

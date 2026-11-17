@@ -390,7 +390,7 @@ func tick(dt: float) -> void :
         # regulace teploty mladiny do spilky: vyhlazená teplota (plechový chladič + trubky mají zpoždění, rychlá regulace by kmitala 3 ↔ 23 °C)
         if cool_tf < -50.0: cool_tf = S.cool.Tout
         cool_tf += (S.cool.Tout - cool_tf) * minf(1.0, dt / COOL_TAU)
-        S.p3.flow = clampf(S.p3.flow + (8.5 - cool_tf) * COOL_G * dt / 60.0, 30.0, 200.0)
+        S.p3.flow = clampf(S.p3.flow + (8.5 - cool_tf) * COOL_G * dt / 60.0, 30.0, 200.0);S.p3.flow = preload("res://fyzika_plus.gd").auto_cone_flow(sim, S.p3.flow)   # FYZIKA+ H19 – u kalového kužele zpomalit
     if ice_prep:
         if S.lv.w >= 0.35 * c.lvVol and not S.lv.chill: sim.lvChillSet(true)
         if S.lv.w >= 0.75 * c.lvVol and ice_inlet_on(): _inlet(false)

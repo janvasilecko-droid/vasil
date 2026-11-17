@@ -21,8 +21,9 @@ extends RefCounted
 ## 13) ztráty tepla nádoby podle smáčené plochy (poloprázdná nádoba ztrácí míň než plná)
 ## Doplněno 17. 11. 2026 (verze 1.3):
 ## 14) výpust do kanálu otevřeným koncem trubky i přes stojící čerpadlo (H18)
+## 15) rozpad kalového kužele na konci stahování z vířivky (H19)
 
-const VERZE := "FYZIKA+ 1.3 (2026-11-17)"
+const VERZE := "FYZIKA+ 1.4 (2026-11-17)"
 
 ## výchozí hodnoty nových parametrů (stejné řádky jsou v CFG_DEFAULT; tady jako pojistka, kdyby v něm chyběly)
 const DEF := {
@@ -33,6 +34,7 @@ const DEF := {
 	"wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0,
 	"hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,
 	"pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,
+	"wpConeV": 0.006, "wpConeBreak": 0.1, "wpConeAnn": 0.6, "wpConeAuto": 1.0,
 }
 ## povolené rozsahy (pro CALIB_RANGE)
 const RANGE := {
@@ -43,6 +45,7 @@ const RANGE := {
 	"wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0],
 	"hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],
 	"pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],
+	"wpConeV": [0.0005, 0.1], "wpConeBreak": [0.0, 1.0], "wpConeAnn": [0.0, 2.0], "wpConeAuto": [0.0, 1.0],
 }
 
 static func cf(sim, k: String) -> float:
@@ -467,6 +470,9 @@ static func energy_step(sim, Qb_kW: float, dt: float) -> void:
 
 ## do protokolu: pára na hl, pH mladiny, odhad barvy piva (barva během kvašení klesá; Kunze s. 287: zákvasná 11,5–12 → pivo 7–8 EBC)
 static func report_extra(sim, rep: Dictionary) -> void:
+	var spd = sim.S.get("sp", null)
+	if spd is Dictionary and float(spd.get("L", 0.0)) > 100.0:
+		rep["kal_do_spilky_mg_L"] = float(spd.get("trub", 0.0)) * 1000000.0 / float(spd.L)
 	var V_hl: float = float(rep.get("V", 0.0))
 	if V_hl > 0.1:
 		rep["kWh_pary_na_hl"] = float(sim.S.get("Esteam", 0.0)) / 3600.0 / V_hl
@@ -485,6 +491,10 @@ static func report_extra(sim, rep: Dictionary) -> void:
 static func ice_flow(sim, path: Array, n_dest: int) -> float:
 	var q: float = cf(sim, "lvPumpQ") / maxf(1.0, float(n_dest))
 	if sim.has_method("path_pct"): q *= clampf(float(sim.path_pct(path)), 0.0, 1.0)
+	var ik = (sim.get_meta("fpIceK") if sim.has_meta("fpIceK") else null)          # automat u kalového kužele ubírá ledovou (H19)
+	if ik is Dictionary:
+		var dt_: float = float(sim.S.get("t", 0.0)) - float(ik.get("t", -1e9))
+		if dt_ >= 0.0 and dt_ <= 5.0: q *= float(ik.k)
 	return q
 
 
@@ -667,6 +677,102 @@ static func loss_k(sim, key: String, v) -> float:
 	var side: float = PI * d * Hfull
 	var z: float = clampf(float(sim.vol(v)) / cap, 0.0, 1.0)
 	return (A + z * side + dk * ((1.0 - z) * side + A)) / (A + side + dk * A)
+
+
+# ======================================================================
+# 8e) Kalový kužel ve vířivce na konci stahování (H19)
+# ======================================================================
+
+## Tvar kužele: objem vlhkého kalu Vc = trubSet × 6 L (stejné číslo, jaké program bere jako mrtvý objem kalu), základna
+## kužele nechá u stěny mezikruží bez kalu wpConeAnn (Kosař s. 181: aspoň 60 cm), nejvýš však 3/4 průměru dna.
+## Vrací {A, rc, h, Vc} v m², m, m, m³.
+static func cone_geo(sim) -> Dictionary:
+	var w = sim.S.wp
+	var D: float = vessel_dia(sim, "wp")
+	var A: float = PI * D * D / 4.0
+	var rc: float = clampf(D / 2.0 - cf(sim, "wpConeAnn"), 0.1 * D, 0.375 * D)
+	var Vc: float = maxf(0.0, float(w.get("trubSet", 0.0))) * 6.0 / 1000.0
+	var h: float = 3.0 * Vc / (PI * rc * rc) if Vc > 0.0 else 0.0
+	return {"A": A, "rc": rc, "h": h, "Vc": Vc}
+
+## Výška hladiny nad dnem [m] při objemu V [L]: vlhký kal je napitý mladinou (jeho mladina je v objemu vířivky), takže
+## pod vrcholem kužele platí V = A·y + Vc·((h − y)/h)³ (část kužele nad hladinou zabírá místo).
+static func cone_level(g: Dictionary, V_L: float) -> float:
+	var V: float = maxf(0.0, V_L) / 1000.0
+	var A: float = g.A; var h: float = g.h
+	if h <= 1e-6 or V >= A * h: return V / A
+	var lo := 0.0; var hi := h
+	for i in 40:
+		var y: float = (lo + hi) * 0.5
+		var t: float = (h - y) / h
+		if A * y + g.Vc * t * t * t < V: lo = y
+		else: hi = y
+	return (lo + hi) * 0.5
+
+## volná plocha hladiny [m²] ve výšce y (kužel zabírá kruh o poloměru rc·(1 − y/h))
+static func cone_free_area(g: Dictionary, y: float) -> float:
+	if g.h <= 1e-6 or y >= g.h: return g.A
+	var r: float = g.rc * (1.0 - y / g.h)
+	return maxf(0.05 * g.A, g.A - PI * r * r)
+
+## Odtah z vířivky (háček H19 ve srcTake): když hladina klesá podél kalového kužele rychleji, než z něj stačí vytékat
+## zadržená mladina, kužel se rozpadá a kal jde s mladinou (Kunze s. 341). Kosař s. 181: rychlost spílání snižovat, když
+## se hladina přiblíží vrcholu kužele; při pozvolném vytékání se strhávání kalu omezí. Za vířivkou má být průměrně
+## pod 100 mg/L hrubého kalu (Kosař s. 184).
+## Model (ODHAD): z části kužele, která se při tomto odběru vynoří, se uvolní podíl
+##   f = wpConeBreak × clamp((u − u0)/u0, 0, 1),  u = rychlost klesání hladiny, u0 = wpConeV (jak rychle se kužel odvodňuje).
+## part = to, co srcTake právě vzalo (L litrů při průtoku Lmin L/min).
+static func wp_cone(sim, part, L: float, Lmin: float):
+	if part == null or not (part is Dictionary): return part
+	var w = sim.S.wp
+	if float(w.get("trubSet", 0.0)) <= 1e-4 or L <= 0.0: return part
+	var g: Dictionary = cone_geo(sim)
+	if g.h <= 1e-6: return part
+	var V1: float = float(sim.vol(w)); var V0: float = V1 + L
+	var y0: float = cone_level(g, V0); var y1: float = cone_level(g, V1)
+	if y1 >= g.h: return part
+	var e0: float = pow(clampf((g.h - y0) / g.h, 0.0, 1.0), 3.0)
+	var e1: float = pow(clampf((g.h - y1) / g.h, 0.0, 1.0), 3.0)
+	if e1 <= e0 + 1e-9: return part
+	var u: float = Lmin / 1000.0 / cone_free_area(g, (y0 + y1) * 0.5)        # m/min
+	var u0: float = maxf(1e-5, cf(sim, "wpConeV"))
+	var f: float = cf(sim, "wpConeBreak") * clampf((u - u0) / u0, 0.0, 1.0)
+	if f <= 0.0: return part
+	var rel: float = float(w.trubSet) * (e1 - e0) / maxf(1e-6, 1.0 - e0) * f
+	rel = minf(rel, float(w.trubSet))
+	w.trubSet -= rel
+	part["trubSus"] = float(part.get("trubSus", 0.0)) + rel
+	sim.S["coneLoss"] = float(sim.S.get("coneLoss", 0.0)) + rel
+	if sim.has_method("once") and sim.has_method("tb"):
+		sim.once("fpcone%d" % sim.tb(600), "Vířivá káď: hladina klesá podél kalového kužele rychleji (%s cm/min), než z něj stačí vytékat mladina – kužel se rozpadá a kal jde s mladinou. Na konci stahování zpomal čerpadlo (pod %s cm/min, teď by to bylo pod %d L/min)." % [f2(u * 100.0), f2(u0 * 100.0), int(wp_cone_cap(sim))], "warn")
+	return part
+
+## Nejvyšší průtok odtahu z vířivky [L/min], při kterém se kužel ještě nerozpadá (hladina klesá nejvýš wpConeV).
+## Nad kuželem (s rezervou 20 % výšky) žádné omezení. Používá automat (krok chlazení), když wpConeAuto = 1.
+static func wp_cone_cap(sim) -> float:
+	var w = sim.S.wp
+	if float(w.get("trubSet", 0.0)) <= 1e-4: return 1e9
+	var g: Dictionary = cone_geo(sim)
+	if g.h <= 1e-6: return 1e9
+	var y: float = cone_level(g, float(sim.vol(w)))
+	if y > g.h * 1.2: return 1e9
+	return cf(sim, "wpConeV") * cone_free_area(g, minf(y, g.h)) * 1000.0 * 0.95
+
+## automat: omezení průtoku C3 u kužele (vrací průtok, který má automat nastavit). Když zpomalí mladinu, ubere ve stejném
+## poměru i ledovou vodu (jinak by šla mladina do spilky přechlazená – teplota se v praxi řídí ledovou vodou, Kosař s. 186).
+## Ubrání ledové platí jen pár sekund od posledního volání (značka na objektu simulace, neukládá se), takže po skončení
+## kroku nebo zastavení automatu samo zmizí.
+static func auto_cone_flow(sim, flow: float) -> float:
+	if cf(sim, "wpConeAuto") < 0.5: return flow
+	var cap: float = wp_cone_cap(sim)
+	if cap >= flow: return flow
+	# poměr se bere k průtoku před začátkem zpomalování (regulace teploty by jinak průtok tlačila zpátky nahoru)
+	var now: float = float(sim.S.get("t", 0.0))
+	var ik = (sim.get_meta("fpIceK") if sim.has_meta("fpIceK") else null)
+	var ref: float = flow
+	if ik is Dictionary and now - float(ik.get("t", -1e9)) <= 5.0 and now >= float(ik.get("t", 0.0)): ref = float(ik.get("ref", flow))
+	sim.set_meta("fpIceK", {"k": clampf(cap / maxf(1.0, ref), 0.15, 1.0), "t": now, "ref": ref})
+	return cap
 
 
 # ======================================================================

@@ -14,7 +14,7 @@ const SOL: = ["g", "su", "sc", "ni"]
 const CELLK: = ["w", "f", "n", "smm", "dms", "col"]
 
 const CFG_DEFAULT: = {
-    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5, "pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,   # FYZIKA+ H8
+    "stValveR": 30.0, "rvpKvs": 0.0, "mpKvs": 0.0, "stCondBack": 0.15, "jWaterKg": 150.0, "jDrainKgS": 0.6, "jAirTau": 20.0, "jAirInTau": 15.0, "jVacBreaker": 1.0, "hNatC": 0.28, "colK100": 1.2, "colEa": 77.0, "colPh": 0.7, "colMashK": 1.0, "phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0, "hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5, "pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5, "wpConeV": 0.006, "wpConeBreak": 0.1, "wpConeAnn": 0.6, "wpConeAuto": 1.0,   # FYZIKA+ H8
     "rvpCap": 5000.0, "rvpUA": 0.25, "rvpSteel": 450.0, "rvpDead": 20.0, 
     "mpCap": 6000.0, "mpUA": 0.3, "mpSteel": 600.0, "mpDead": 60.0, 
     "wpCap": 5000.0, "wpDead": 30.0, "wpUA": 0.35, "wpSteel": 550.0, 
@@ -98,7 +98,7 @@ const CALIB_PATH: = "user://kalibrace.json"
 var calib_applied: = []
 ## povolené rozsahy (fyzikálně smysluplné) – hodnota mimo rozsah se odmítne a zapíše do calib_rejected
 const CALIB_RANGE: = {
-    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0], "pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],   # FYZIKA+ H8
+    "stValveR": [1.0, 50.0], "rvpKvs": [0.0, 200.0], "mpKvs": [0.0, 200.0], "stCondBack": [0.0, 2.0], "jWaterKg": [20.0, 1000.0], "jDrainKgS": [0.05, 5.0], "jAirTau": [2.0, 600.0], "jAirInTau": [2.0, 600.0], "jVacBreaker": [0.0, 1.0], "hNatC": [0.05, 1.5], "colK100": [0.0, 10.0], "colEa": [40.0, 150.0], "colPh": [0.0, 3.0], "colMashK": [0.0, 5.0], "phBoilDrop": [0.0, 0.4], "phSparge": [-0.2, 0.4], "wortBuf": [5.0, 80.0], "wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0], "hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0], "pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0], "wpConeV": [0.0005, 0.1], "wpConeBreak": [0.0, 1.0], "wpConeAnn": [0.0, 2.0], "wpConeAuto": [0.0, 1.0],   # FYZIKA+ H8
     "rvpCap": [1000.0, 10000.0], "mpCap": [1000.0, 10000.0], "wpCap": [1000.0, 10000.0], "skCap": [1000.0, 10000.0], "spCap": [1000.0, 20000.0],
     "rvpUA": [0.0, 3.0], "mpUA": [0.0, 3.0], "wpUA": [0.0, 3.0], "skUA": [0.0, 3.0], "hltUA": [0.0, 3.0],
     "rvpSteel": [0.0, 3000.0], "mpSteel": [0.0, 3000.0], "wpSteel": [0.0, 3000.0], "skSteel": [0.0, 3000.0], "hltSteel": [0.0, 5000.0], "cpSteel": [0.4, 0.6],
@@ -691,7 +691,7 @@ func srcTake(key: String, Lmin: float, m: float, pump: = "") -> Variant:
     if key == "wp":
         var w = S.wp; var LL2 = minf(L, maxf(0.0, vol(w) - c.wpDead - w.trubSet * 6.0))
         if LL2 <= 0.01: return null
-        return takePart(w, LL2, 1.0)
+        return FP.wp_cone(self, takePart(w, LL2, 1.0), LL2, Lmin)   # FYZIKA+ H19 – rozpad kalového kužele
     if key == "sk" and vol(S.sk.mash) > 5 and pump != "p2":
         var LL3 = minf(L, vol(S.sk.mash) - 5.0)
         if LL3 <= 0.01: return null
