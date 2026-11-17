@@ -7,6 +7,7 @@ Použití (Windows i Linux, stačí Python 3.8+ bez dalších knihoven):
     python aplikuj_fyzika_plus.py "D:\\stazene\\Trenazer-varny-aplikace"            # vloží všechno
     python aplikuj_fyzika_plus.py "D:\\...\\projekt" --zkouska                       # jen ukáže, co by udělal
     python aplikuj_fyzika_plus.py "D:\\...\\projekt" --bez-ui                        # bez tlačítka kyseliny a tlaku pláště v panelu
+    python aplikuj_fyzika_plus.py "D:\\...\\projekt" --bez-vypoctu                   # nechá původní odhady ztrát nádob a chladiče
 
 Co dělá:
   * zkopíruje fyzika_plus.gd, fyzika_plus_tests.gd a fyzika_plus_vzhled.gd do složky projektu (kde je sim.gd),
@@ -63,7 +64,7 @@ NEW_PARAMS = [
     # --- verze 1.2 (16. 11. 2026) ---
     ("pumpPass", 1.0, (0.0, 1.0), ["0/1", "STATED", "-", "1 = stojící odstředivé čerpadlo je průchozí: otevřenou trasou teče kapalina samospádem dopředu i zpátky (spojené nádoby), proto se po čerpání zavírají klapky. Na Zajíci za čerpadly zpětné klapky nejsou (Vasil 16. 11. 2026), proto 1; 0 = stojící čerpadlo nic nepustí (dřívější chování, pro varnu se zpětnými klapkami)"]),
     ("pumpPassK", 5.0, (0.0, 50.0), ["-", "LITERATURE", "5–10", "ztráta ve stojícím čerpadle v násobcích rychlostní výšky: ~5 když se oběžné kolo volně protáčí, ~10 když stojí (GIW/KSB, údaj pro kalová čerpadla – pro čerpadla na varně ODHAD)"]),
-    ("dryWallK", 0.5, (0.0, 1.0), ["-", "ESTIMATED", "0,4–1", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené: 1 = stejně (dobře izolovaná nádoba, ztráty nezávisí na hladině – dřívější chování), 0,5 = holá stěna. Podle toho poloprázdná pánev a vířivka ztrácejí míň než plné; rvpUA, mpUA a wpUA platí pro plnou nádobu"]),
+    ("dryWallK", 0.95, (0.0, 1.0), ["-", "LITERATURE (odvozeno)", "0,9–1 izolovaná, ~0,5 holá", "kolik tepla ztrácí suchá stěna nádoby (plášť nad hladinou a víko) proti smáčené. Vypočteno pro izolovanou nádobu s 80 mm minerální vlny: 0,95 (VYPOCTY.md); 1 = ztráty nezávisí na hladině; holá stěna ~0,5. rvpUA, mpUA a wpUA platí pro plnou nádobu"]),
     # --- verze 1.4 (17. 11. 2026) ---
     ("wpConeV", 0.006, (0.0005, 0.1), ["m/min", "ESTIMATED", "×3", "jak rychle smí klesat hladina ve vířivce podél kalového kužele, aby z něj stačila vytékat zadržená mladina a kužel se nerozpadl (Kunze s. 341, Kosař s. 181: na konci spílání zpomalit); 0,006 = 0,6 cm/min je ODHAD – změřit zákal mladiny na konci stahování při různém průtoku"]),
     ("wpConeBreak", 0.1, (0.0, 1.0), ["-", "ESTIMATED", "×3", "kolik vynořeného kužele se při rychlém odtahu (aspoň dvojnásobek wpConeV) rozpadne a odteče s mladinou; ODHAD – podle Kosaře s. 184 má být za vířivkou průměrně pod 100 mg/L hrubého kalu"]),
@@ -73,6 +74,10 @@ NEW_PARAMS = [
     ("aerEff", 0.9, (0.0, 1.5), ["-", "ESTIMATED", "0,7–1", "jaké části nasycení se dosáhne provzdušněním vzduchem; čistým kyslíkem jde výš. Výsledek 8–10 mg/L u zákvasné mladiny sedí s Kunzem s. 353 a VLB"]),
     ("o2PlatoK", 0.017, (0.0, 0.06), ["1/°P", "ESTIMATED", "0,01–0,025", "o kolik rozpuštěný extrakt snižuje rozpustnost kyslíku; 0,017/°P znamená ve 12% mladině zhruba o pětinu méně než ve vodě. Knihy udávají jen výsledek, ne závislost"]),
     ("o2Rest", 0.5, (0.0, 5.0), ["mg/L", "ESTIMATED", "0–1", "zbytkový kyslík v mladině bez provzdušnění (dřívější pevná hodnota v programu)"]),
+    # --- verze 1.6 (17. 11. 2026) ---
+    ("autoIce", 1.0, (0.0, 1.0), ["0/1", "ESTIMATED", "-", "1 = automat při chlazení řídí i ledovou vodu: pustí jí jen tolik, aby mladina šla do spilky s teplotou pitchT (Kosař s. 186: teplota se řídí ledovou vodou); 0 = ledová naplno jako dřív"]),
+    ("decoT1", 63.0, (0.0, 80.0), ["°C", "LITERATURE", "62–64", "teplota celého díla po vrácení prvního rmutu (Kosař s. 143); automat podle ní z tepelné bilance spočítá, jak velký díl povařit. 0 = původní pevná polovina"]),
+    ("decoT2", 76.0, (0.0, 80.0), ["°C", "LITERATURE", "75–78", "odrmutovací teplota po vrácení druhého rmutu (Kosař s. 143, s. 136: 76–78); 0 = původní pevné dvě třetiny"]),
 ]
 
 
@@ -384,6 +389,33 @@ def build_hooks():
     H.append(Hook("H20", "sim.gd: kyslík v zákvasné mladině podle teploty a stupňovitosti (dřív natvrdo 8 mg/L)", probes=[("sim.gd", "FP.o2_dose(self", 1)], edits=[
         ("sim.gd", within("spAdd", done_if("FP.o2_dose(self", sub_once(r'sp\.O2 \+= Lp \* \(8\.0 if S\.aer else 0\.5\)', 'sp.O2 += Lp * FP.o2_dose(self, Tout, plato(p))', comment="# FYZIKA+ H20 (dřív: 8.0 if S.aer else 0.5)")))),
     ], optional=True, needs=["H0"]))
+    # K1 – vypočtené výchozí hodnoty místo odhadů (jen když je v souboru ještě původní odhad)
+    K1 = [("rvpUA", "0.25", "0.02"), ("mpUA", "0.3", "0.022"), ("wpUA", "0.35", "0.02"), ("skUA", "0.2", "0.02"), ("lvUA", "0.15", "0.01"), ("UA1", "25.0", "50.0")]
+    def k1_edit(text, style):
+        blk = dict_block(text, "CFG_DEFAULT")
+        if blk is None:
+            return None, "nenašel jsem const CFG_DEFAULT = {"
+        s0, bs, be = blk
+        body = text[bs:be]; n = 0
+        for key, old, new in K1:
+            rx = re.compile(r'"%s": %s(?![\d.])' % (key, re.escape(old)))
+            if len(rx.findall(body)) == 1:
+                body = rx.sub('"%s": %s' % (key, new), body); n += 1
+        if n == 0 and "FYZIKA+ K1" not in body:
+            return None, "v CFG_DEFAULT nejsou původní odhady (rvpUA 0.25, wpUA 0.35, UA1 25.0 …) – hodnoty už někdo změnil, nechávám je"
+        if "FYZIKA+ K1" not in body:
+            ind = "\t" if style == "\t" else "    "
+            body = ind + "# FYZIKA+ K1: vypočtené hodnoty místo odhadů (VYPOCTY.md): rvpUA 0.25→0.02, mpUA 0.3→0.022, wpUA 0.35→0.02, skUA 0.2→0.02, lvUA 0.15→0.01 kW/K (izolované nádoby), UA1 25→50 kW/K (chladič)\n" + body
+        return text[:bs] + body + text[be:], ""
+    H.append(Hook("K1", "sim.gd: vypočtené ztráty izolovaných nádob a prostup deskového chladiče místo odhadů (mění jen původní hodnoty)", probes=[("sim.gd", "FYZIKA+ K1", 1)], edits=[
+        ("sim.gd", k1_edit),
+    ], optional=True, needs=["H0"]))
+    # A1 – automat: velikost dílčích rmutů z tepelné bilance místo pevné poloviny a dvou třetin
+    H.append(Hook("A1", "auto.gd: automat spočítá velikost dílčích rmutů z tepelné bilance (po prvním 63 °C, po druhém 76 °C)", probes=[("auto.gd", ".deco_frac(sim, 1, 0.5)", 1), ("auto.gd", ".deco_frac(sim, 2, 2.0 / 3.0)", 2)], edits=[
+        ("auto.gd", done_if(".deco_frac(sim, 1, 0.5)", sub_once(r'sim\.vol\(r\) <= mashV \* 0\.5: S\.p1\.on = false', 'sim.vol(r) <= mashV * ' + FPM + '.deco_frac(sim, 1, 0.5): S.p1.on = false', comment="# FYZIKA+ A1"))),
+        ("auto.gd", done_if(".deco_frac(sim, 2, 2.0 / 3.0): S.p1.on = false", sub_once(r'sim\.vol\(r\) >= total_mash \* 2\.0 / 3\.0: S\.p1\.on = false', 'sim.vol(r) >= total_mash * ' + FPM + '.deco_frac(sim, 2, 2.0 / 3.0): S.p1.on = false', comment="# FYZIKA+ A1"))),
+        ("auto.gd", done_if(".deco_frac(sim, 2, 2.0 / 3.0) * 0.9", sub_once(r'sim\.vol\(r\) >= total_mash \* 2\.0 / 3\.0 \* 0\.9', 'sim.vol(r) >= total_mash * ' + FPM + '.deco_frac(sim, 2, 2.0 / 3.0) * 0.9', comment="# FYZIKA+ A1"))),
+    ], optional=True, needs=["H0"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[
         ("ctl.gd", need(r'r = _row\(box\)', "ctl.gd nemá řádky r = _row(box)")),
@@ -440,6 +472,7 @@ def main(argv):
     dry = "--zkouska" in argv
     no_ui = "--bez-ui" in argv
     no_look = "--bez-vzhledu" in argv
+    no_calc = "--bez-vypoctu" in argv
     if os.path.isfile(proj):
         proj = os.path.dirname(proj)
     if not os.path.isfile(os.path.join(proj, "sim.gd")):
@@ -481,6 +514,9 @@ def main(argv):
     for hk in build_hooks():
         if no_ui and hk.hid.startswith("U"):
             skipped.append((hk, "vynecháno (--bez-ui)"))
+            continue
+        if no_calc and (hk.hid.startswith("K") or hk.hid.startswith("A")):
+            skipped.append((hk, "vynecháno (--bez-vypoctu)"))
             continue
         if no_look and hk.hid.startswith("V"):
             skipped.append((hk, "vynecháno (--bez-vzhledu)"))

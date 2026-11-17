@@ -29,7 +29,7 @@ main.gd (~4400 řádků, UI/vykreslení/editor/rozvaděč), sim.gd (fyzika: rmut
 ## Co je hotovo (dřívější relace)
 Lupa v rozvaděči; hydraulika i při pauze; otáčky míchadel; rotametr (ideál 20 l/min); pletená nerezová hadice; DN10/DN15; libovolné přiškrcování klapek (slider, Ctrl+kolečko, tažení); ráz po zastavení míchadla + RESET; trhání mláta klapkou (3–4 trhnutí smyje nános, pak trhá lože); realistické trubky s koleny/příchytkami; připnuté průhledítko se sladem; spilková hadice s průhledítkem/T/vývodem; víčko spilky (tlak při zavření); vířivka usazení 20 min (Kosař/Kunze); konec vyslazování 1,0 °P (Kosař s. 147/156).
 
-## FYZIKA+ (verze 1.5 z 2026-11-17, NEVYDÁNO – Vasil si to vloží sám doma)
+## FYZIKA+ (verze 1.6 z 2026-11-17, NEVYDÁNO – Vasil si to vloží sám doma)
 Vasil chtěl projít fyziku, chemii a mechaniku (kapaliny, přenos tepla), najít reálná data z jiných varen a připravit úpravu,
 kterou si vloží do své **novější verze doma**. 16. 11. k tomu přidal: „ať je voda kapalina a chová se realisticky, i dílo“.
 Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplněk 1.1, kapitola 8 = doplněk 1.2).
@@ -70,10 +70,20 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   Na výsledek várky to zatím nemá vliv – kyslík ve spilce nic neřídí, je to zpřesnění vstupu a ukazatel pro obsluhu.
   Zbytek N6 (vystírání shora, vliv na množení kvasnic) zůstává nevyřízený jako N6b: chybí rozlišení horního
   a spodního nátoku v plánku a čísla o kvašení.
-- **Ověřeno:** viz kapitoly 7.4, 8.3, 8.5, 8.6 a 8.7 dokumentu (1.5: v70 2D i v152 3D 343 kontrol bez selhání, starší archivní
-  verze 272, přechod z 1.0, 1.1, 1.3 i 1.4; CRLF, tabulátory a ručně vložená půlka háčku zkoušené u 1.2/1.3; automatická várka 2D = 3D).
-  Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2–1.5 jen vlastní kontrolou a testy.
+- **Obsah 1.6 (17. 11. večer, „vypočti ty údaje, jak by se to chovalo v reálu“; souběžně jiná relace vydala 1.5 s kyslíkem, sloučeno):** `VYPOCTY.md` v balíčku. K1 přepíše
+  v `CFG_DEFAULT` původní odhady vypočtenými (rvpUA 0.25→0.02, mpUA 0.3→0.022, wpUA 0.35→0.02, skUA 0.2→0.02,
+  lvUA 0.15→0.01, UA1 25→50) – jen když tam ještě jsou původní čísla; `dryWallK` 0,95. A1: automat počítá velikost
+  dílčích rmutů z tepelné bilance (`FP.deco_frac`, cíle `decoT1` 63 a `decoT2` 76 °C, Kosař s. 143; bez toho by
+  s malými ztrátami dílo mělo 73 a 88 °C). `autoIce`: v kroku chlazení `ice_flow` omezí ledovou na průtok pro `pitchT`
+  (`ice_for_target`, stejné vztahy jako `plate_cool`) a `auto_cone_flow` přidává mladinu, dokud ledová stačí.
+  Přepínač `--bez-vypoctu` vynechá K1 a A1. Předpoklad: nádoby jsou izolované (neověřeno u Vasila).
+- **Ověřeno:** viz kapitoly 7.4, 8.3, 8.5–8.7 dokumentu (1.6: v70 2D i v152 3D 346 kontrol bez selhání, starší archivní
+  verze 279, přechod z 1.0, 1.3 i 1.4; CRLF, tabulátory a ručně vložená půlka háčku zkoušené u 1.2/1.3; automatická várka 2D = 3D).
+  Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2–1.6 jen vlastní kontrolou a testy.
   **Na Vasilově novější verzi vyzkoušené není** (je jen na jeho PC; až ji nahraje do repa, ověřit tam).
+- **POZOR 17. 11.: Vasilova aktuální verze není v70, ale jiný program** – složka `Trenazer varny` na ploše jeho PC
+  (Godot 4.3, `scripts/sim.gd`, `net_flow.gd`, `plant_3d.gd`, checklist 43 kroků, vlastní testy v `tests/`). Balíček FYZIKA+
+  do něj skriptem vložit nejde (jiná stavba kódu); chce to přenést ručně po částech. Rozpracováno v relaci 17. 11.
 - **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Zbylé návrhy (N3–N24) a seznam měření jsou ve FYZIKA_PLUS.md.
 - **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
   Kosař–Procházka: PDF strana = tištěná. Autor je Kosař (v názvu souboru „Kosa“).
@@ -81,7 +91,7 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   4.7.2 z `github.com/godotengine/godot-builds/releases/download/4.7.2-stable/…`. Základ v70 2D = kostra z `zdroj-2d-godot43.tar.gz`
   + všechny `.gd` z `unity/GodotSrc/` kromě `updater.gd`; základ v152 3D = kostra z `zdroj-3d-godot47.tar.gz` + tytéž `.gd` kromě
   `updater.gd`, `boot.gd` a `view3d.gd` (ty jsou ve 3D jiné). Kontrola: v70 dává 269 kontrol, 0 selhání.
-  Starší verze balíčku pro zkoušku přechodu: `git archive 43c8ced` (1.0), `a4db14a` (1.1), `4aade71` (1.2) a `6a4b19b` (1.3), složka `trenazer-zdroj/fyzika-plus`.
+  Starší verze balíčku pro zkoušku přechodu: `git archive 43c8ced` (1.0), `a4db14a` (1.1), `4aade71` (1.2), `6a4b19b` (1.3) a `7bf4781` (1.4), složka `trenazer-zdroj/fyzika-plus`.
 
 ## Zdroje čísel
 - `KOSA_KUNZE_PARAMETRY.md` (i v projektu Zajic na claude.ai): čísla z Kosař–Procházka (Technologie výroby sladu a piva) a Kunze (Technology Brewing and Malting, s. 255–356) se stránkami.

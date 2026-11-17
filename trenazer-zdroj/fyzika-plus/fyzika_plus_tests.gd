@@ -28,8 +28,10 @@ func run(t) -> void:
 	if _has("H16"): _pumppass()
 	if _has("H18"): _drainpump()
 	if _has("H19"): _cone()
-	if _has("H17"): _losses()
+	if _has("K1"): _calc()
+	if _has("A1"): _deco()
 	_o2()
+	if _has("H17"): _losses()
 	T.fresh()
 
 ## čistý stav + otevřené klapky na parním potrubí (plánek s parními trubkami by jinak po fresh() neměl páru)
@@ -62,26 +64,6 @@ func _has(h: String) -> bool:
 	if h in HOOKS.APPLIED: return true
 	T.chk("FP háček %s není vložený – test přeskočen (viz zpráva aplikuj_fyzika_plus.py)" % h, true)
 	return false
-
-# ---------- kyslík v zákvasné mladině (H20) ----------
-func _o2() -> void:
-	# tabulková rozpustnost kyslíku ve vodě nasycené vzduchem (APHA): 10 °C 11,3 · 20 °C 9,1 mg/L
-	T.chk("FP kyslík: rozpustnost ve vodě 10 °C 11,3 a 20 °C 9,1 mg/L (tabulka)",
-		absf(FP.o2_water(10.0) - 11.3) < 0.2 and absf(FP.o2_water(20.0) - 9.1) < 0.2,
-		"%.2f / %.2f mg/L" % [FP.o2_water(10.0), FP.o2_water(20.0)])
-	# extrakt kyslík vytěsňuje: zákvasná 12,5° mladina při 8 °C má po provzdušnění 8–10 mg/L (Kunze s. 353, VLB)
-	var S = sim.S
-	var aer0 = S.get("aer", false)
-	S["aer"] = true
-	var d8: float = FP.o2_dose(sim, 8.0, 12.5)
-	var d20: float = FP.o2_dose(sim, 20.0, 12.5)
-	var dw: float = FP.o2_dose(sim, 8.0, 0.0)
-	S["aer"] = false
-	var doff: float = FP.o2_dose(sim, 8.0, 12.5)
-	S["aer"] = aer0
-	T.chk("FP kyslík: provzdušněná 12,5° mladina při 8 °C má 8–10 mg/L (Kunze s. 353, VLB)", d8 >= 8.0 and d8 <= 10.0, "%.2f mg/L" % d8)
-	T.chk("FP kyslík: teplá mladina pobere míň než studená a extrakt rozpustnost snižuje", d20 < d8 - 1.0 and d8 < dw, "20 °C %.2f < 8 °C %.2f < voda %.2f mg/L" % [d20, d8, dw])
-	T.chk("FP kyslík: bez provzdušnění jen zbytkový kyslík", absf(doff - FP.cf(sim, "o2Rest")) < 1e-6, "%.2f mg/L" % doff)
 
 # ---------- vlastnosti vody a páry ----------
 func _props() -> void:
@@ -696,12 +678,77 @@ func _cone() -> void:
 	T.fresh(); S = sim.S; w = S.wp; w.trubSet = 10.0
 	var g3: Dictionary = FP.cone_geo(sim)
 	w.w = g3.A * g3.h * 1000.0 * 0.8; w.T = 95.0
+	S.lv.T = 2.0
 	var cap: float = FP.wp_cone_cap(sim)
 	var f1: float = FP.auto_cone_flow(sim, 60.0)
+	var au = T.m.auto; var on0: bool = au.on; var i0: int = au.i
+	var ci := -1
+	for k in au.STEPS.size():
+		if au.STEPS[k][2] == "cool": ci = k
+	au.on = true; au.i = ci; S.p3.flow = f1
 	var q_ice: float = FP.ice_flow(sim, [], 1)
-	S.t += 30.0
+	var q_need: float = FP.ice_for_target(sim, cap, 95.0, 2.0, float(S.cfg.get("pitchT", 8.5)))
+	au.on = false
 	var q_ice2: float = FP.ice_flow(sim, [], 1)
+	au.on = on0; au.i = i0
 	w.w = 3000.0
 	var f_hi: float = FP.auto_cone_flow(sim, 60.0)
 	T.fresh()
-	T.chk("FP kužel: automat u kužele zpomalí C3 pod mez a ve stejném poměru ubere ledovou; nad kuželem a po skončení nic neomezuje", absf(f1 - cap) < 1e-6 and cap < 60.0 and absf(q_ice - FP.cf(sim, "lvPumpQ") * cap / 60.0) < 0.01 and absf(q_ice2 - FP.cf(sim, "lvPumpQ")) < 1e-6 and f_hi == 60.0, "C3 %.0f → %.0f L/min, ledová %.0f L/min" % [60.0, f1, q_ice])
+	T.chk("FP kužel: automat u kužele zpomalí C3 pod mez a ubere ledovou na průtok, při kterém mladina vyjde s teplotou do spilky; nad kuželem a mimo krok chlazení nic neomezuje", ci >= 0 and absf(f1 - cap) < 1e-6 and cap < 60.0 and absf(q_ice - q_need) < 0.01 and q_ice < FP.cf(sim, "lvPumpQ") and q_ice > 0.5 * cap and q_ice < 2.5 * cap and absf(q_ice2 - FP.cf(sim, "lvPumpQ")) < 1e-6 and f_hi == 60.0, "C3 %.0f → %.0f L/min, ledová %.0f L/min" % [60.0, f1, q_ice])
+
+# ---------- vypočtené hodnoty místo odhadů (K1, VYPOCTY.md) ----------
+func _calc() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	# deskový chladič v návrhovém bodě z literatury: mladina 75 L/min 97 → 8 °C, ledová voda 1,5 °C, 1,08× víc než mladiny
+	var Cw: float = 75.0 / 60.0 * 1.04 * 4.0; var Cc: float = 75.0 * 1.08 / 60.0 * 4.19
+	var Qk: float = Cw * (97.0 - 8.0); var Thot: float = 1.5 + Qk / Cc
+	var lm: float = ((97.0 - Thot) - (8.0 - 1.5)) / log((97.0 - Thot) / (8.0 - 1.5))
+	var UA_need: float = Qk / lm * pow(float(c.get("plateRefQ", 80.0)) / 75.0, 0.65)
+	T.chk("FP výpočet: deskový chladič – mladina 75 L/min 97 → 8 °C ledovou vodou 1,5 °C v poměru 1,08 dá ohřátou vodu 80–88 °C (Kosař s. 186, Kunze s. 352) a potřebuje prostup ~50 kW/K; UA1 tomu odpovídá na ±15 %", Thot > 80.0 and Thot < 88.0 and absf(float(c.UA1) / UA_need - 1.0) < 0.15, "ohřátá voda %.1f °C, potřeba %.1f kW/K, UA1 %.1f kW/K" % [Thot, UA_need, float(c.UA1)])
+	# izolovaná vířivka: za 20 min klidu ztratí jen zlomek stupně vedením; i s odparem zůstane nad 95 °C
+	var w = S.wp; w.w = 3345.0; w.f = 487.0; w.T = 97.5
+	for i in 1200: sim.sim_step(1.0)
+	var d20: float = 97.5 - float(w.T)
+	for i in 2400: sim.sim_step(1.0)
+	T.chk("FP výpočet: izolovaná vířivka 38 hl ztratí za 20 min klidu pod 1 K a po hodině má pořád přes 95 °C (Kosař s. 180: na chladič 95–97 °C)", d20 > 0.02 and d20 < 1.0 and float(w.T) > 95.0, "−%.2f K za 20 min, po 60 min %.1f °C" % [d20, float(w.T)])
+
+# ---------- velikost dílčích rmutů z tepelné bilance (A1) ----------
+func _deco() -> void:
+	T.fresh(); var S = sim.S; var c = S.cfg
+	var on0: bool = T.m.auto.on
+	T.m.auto.on = false
+	var v = S.rvp; v.w = 1960.0; v.g = 134.0; v.su = 380.0; v.f = 60.0; v.T = 50.0
+	S.sk["Tw"] = 50.0
+	sim.remove_meta("fpDeco") if sim.has_meta("fpDeco") else null
+	var x1: float = FP.deco_frac(sim, 1, 0.5)
+	var Tv: float = float(c.tbWater) - 4.5
+	var Cm: float = sim.cC(v); var Cs: float = float(c.skSteel) * float(c.cpSteel)
+	var Tmix: float = (x1 * Cm * Tv + (1.0 - x1) * Cm * 50.0 + Cs * 50.0) / (Cm + Cs)
+	c["decoT1"] = 0.0
+	var x_old: float = FP.deco_frac(sim, 1, 0.5)
+	c["decoT1"] = 63.0
+	var m2 = S.sk.mash; m2.w = 1960.0; m2.g = 134.0; m2.su = 200.0; m2.f = 240.0; m2.T = 62.0
+	var x2: float = FP.deco_frac(sim, 2, 2.0 / 3.0)
+	T.m.auto.on = on0
+	T.fresh()
+	T.chk("FP dílčí rmuty: z tepelné bilance vychází první rmut ~30 % díla (z 50 na 63 °C) a druhý ~40 % (z 62 na 76 °C) – klasické třetiny místo pevné poloviny a dvou třetin (Kosař s. 143); decoT1 = 0 vrací původní podíl", absf(Tmix - 63.0) < 0.05 and x1 > 0.25 and x1 < 0.36 and x2 > 0.33 and x2 < 0.48 and x_old == 0.5, "první %d %%, druhý %d %%" % [roundi(x1 * 100.0), roundi(x2 * 100.0)])
+
+# ---------- kyslík v zákvasné mladině (H20) ----------
+func _o2() -> void:
+	# tabulková rozpustnost kyslíku ve vodě nasycené vzduchem (APHA): 10 °C 11,3 · 20 °C 9,1 mg/L
+	T.chk("FP kyslík: rozpustnost ve vodě 10 °C 11,3 a 20 °C 9,1 mg/L (tabulka)",
+		absf(FP.o2_water(10.0) - 11.3) < 0.2 and absf(FP.o2_water(20.0) - 9.1) < 0.2,
+		"%.2f / %.2f mg/L" % [FP.o2_water(10.0), FP.o2_water(20.0)])
+	# extrakt kyslík vytěsňuje: zákvasná 12,5° mladina při 8 °C má po provzdušnění 8–10 mg/L (Kunze s. 353, VLB)
+	var S = sim.S
+	var aer0 = S.get("aer", false)
+	S["aer"] = true
+	var d8: float = FP.o2_dose(sim, 8.0, 12.5)
+	var d20: float = FP.o2_dose(sim, 20.0, 12.5)
+	var dw: float = FP.o2_dose(sim, 8.0, 0.0)
+	S["aer"] = false
+	var doff: float = FP.o2_dose(sim, 8.0, 12.5)
+	S["aer"] = aer0
+	T.chk("FP kyslík: provzdušněná 12,5° mladina při 8 °C má 8–10 mg/L (Kunze s. 353, VLB)", d8 >= 8.0 and d8 <= 10.0, "%.2f mg/L" % d8)
+	T.chk("FP kyslík: teplá mladina pobere míň než studená a extrakt rozpustnost snižuje", d20 < d8 - 1.0 and d8 < dw, "20 °C %.2f < 8 °C %.2f < voda %.2f mg/L" % [d20, d8, dw])
+	T.chk("FP kyslík: bez provzdušnění jen zbytkový kyslík", absf(doff - FP.cf(sim, "o2Rest")) < 1e-6, "%.2f mg/L" % doff)

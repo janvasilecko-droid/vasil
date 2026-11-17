@@ -2,8 +2,7 @@
 
 Vypracováno 29. 10. 2026 na zdrojích 2D v70 / 3D v152 (`vasil/unity/GodotSrc`), **doplněno 16. 11. 2026 (verze 1.1:
 kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8;
-17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5; verze 1.4: kalový kužel ve vířivce, kapitola 8.6;
-verze 1.5: kyslík v zákvasné mladině, kapitola 8.7)**.
+17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5; verze 1.4: kalový kužel ve vířivce, kapitola 8.6; verze 1.5: kyslík v zákvasné mladině, kapitola 8.7; verze 1.6: vypočtené hodnoty místo odhadů, kapitola 8.8 a VYPOCTY.md)**.
 Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
 **Nic z toho není vydané** v ⟳ Aktualizovat. Balíček leží v repozitáři `vasil` ve složce `trenazer-zdroj/fyzika-plus/`.
 Vzorce, jednotky a vkládací skript první verze prošla ještě nezávislá kontrola, její připomínky jsou zapracované.
@@ -60,7 +59,7 @@ Zbyla tahle slabá místa:
 | Vířivka | nátok ≤ 3,5 m/s, co největší objemový tok, často stačí mnohem menší rychlost; klid 20–30 min; D : H 3 : 1 | Kunze s. 340–341 | wpVmax 3,5; wpVmin 1,0 (ODHAD); hrdlo = trubka z plánku |
 | Horký kal | 0,2–0,4 % mladiny, částice 30–80 µm; 6,6–6,9 kg sušiny/100 hl u 12% | VLB | model ~2,4 kg lomu + chmel na 40 hl (sedí) |
 | Chladič | jednostupňově ledová 1–2 °C → 80–88 °C, mladina 95–98 °C → zákvasná; ledová ~3 °C pod zákvasnou | Kunze s. 351–352 | průtok ledové vody jde přiškrtit (H11) |
-| Kyslík po provzdušnění | 8–10 mg/L | VLB, Kunze s. 353 | dávka podle teploty a °P (H20) |
+| Kyslík po provzdušnění | 8–10 mg/L | VLB | návrh N6 |
 | Ztráty povrchem | holá nerez ~15 W/(m²·K) při 0,5 m/s vzduchu; izolovaná ~0,8; holé víko pánve 9 m² ≈ 10 kW | inzonex (ISO 12241) | pipeU 10 (holá trubka bez průvanu) |
 | Energie varny | infuze, 7,5 % odparu: rmutování 2,2 + ohřev k varu 3,4 + var 5,0 + CIP 0,3 + teplá voda 2,3 kWh/hl; 1 % odparu ≈ 0,67 kWh/hl | EU JRC | protokol ukáže kWh páry na hl |
 | Mladina | c_p ≈ 4,0 kJ/(kg·K); otopná plocha vnějšího vařáku ~0,2 m²/hl | Briggs | c_p v modelu 3,87 při 12 °P (ponecháno) |
@@ -155,7 +154,6 @@ N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole
 | N4 | pH rmutu během rmutování klesá o 0,15–0,30 (Kosař s. 137); pH výstřelků roste s alkalitou vyslazovací vody | třísloviny počítat z pH poslední sladiny, ne z pH rmutu | rozbor vody, pH poslední sladiny |
 | N5 | Rozpustnost α-kyselin a ztráty izo-α na kalech místo pevného faktoru 0,44 | využití chmele klesá s dávkou | laboratorní IBU vyražené mladiny a piva |
 | N6b | Kyslík: aby něco ovlivňoval (vystírání shora, čerpání, množení kvasnic) | dávku podle teploty a °P počítá verze 1.5, ale kyslík ve spilce pořád nic neřídí. Aby měl plný smysl, musel by ovlivňovat množení kvasnic a kvašení, a k tomu čísla nemám (Kunze i Kosař to popisují jen slovně); u vystírání shora bych musel v plánku rozlišit horní a spodní nátok | rozhodnutí, jestli to chceš; data o kvašení (rychlost, množení kvasnic); kudy se u vás vystírá |
-| N8 | Výkon míchadla Np·ρ·N³·D⁵ (teplo do rmutu ~0,5–2 kW) | malý, ale měřitelný vliv při prodlevách | štítek motoru míchadla |
 | N11 | Hodnotit barvu proti odhadu barvy piva, ne proti zákvasné mladině | cíl receptu 9 EBC je nejspíš barva piva | potvrď, co znamená EBC v receptu |
 | N12 | Kyselina mléčná do rmutu: 80 % = 10,6 mEq/mL (teď 11,8 = 88 %) | účinek je teď o 11 % silnější | jakou kyselinu používáte (80 / 88 %) |
 | N13 | Poměr odporů pára/náplň (HA_REF): ve skutečnosti ~55 % na straně náplně, v modelu ~26 % | míchadlo, viskozita a teplota by pak působily víc; znamená to znovu nastavit `mashFilmK` | doby ohřevu rmutu s míchadlem a bez něj |
@@ -464,10 +462,9 @@ jakkoli rychle. Teď se počítá tvar kužele a výška hladiny u něj:
   ubere ledovou, aby mladina nešla do spilky přechlazená (bez toho by spadla na 2,4 °C). Vypnutí: `wpConeAuto` = 0.
 - Protokol nově ukazuje `kal_do_spilky_mg_L`.
 
-**Kyslík (N6) jsem v téhle verzi nedělal.** Provzdušnění v programu už odpovídá Kunzemu (cíl 8 mg/L, s. 353), ale kyslík
-ve spilce zatím nic neovlivňuje. Aby měl plný smysl, musel by řídit množení kvasnic a kvašení, a pro to nemám čísla –
-bylo by to vymyšlené. Verze 1.5 proto udělala jen tu půlku, která vymyšlená není: samotnou dávku podle teploty
-a stupňovitosti (kapitola 8.7). Zbytek zůstává v návrzích jako N6b.
+**Kyslík (N6) jsem nedělal.** Provzdušnění v programu už odpovídá Kunzemu (cíl 8 mg/L, s. 353), ale kyslík ve spilce
+zatím nic neovlivňuje. Aby měl smysl, musel by řídit kvasnice a kvašení, a pro to nemám čísla – bylo by to vymyšlené.
+Zůstává v návrzích.
 
 **Co jsem cestou našel (neměnil jsem):** ve vířivce zůstává po automatické várce 101 L (2,6 % várky), Kosař uvádí mladinu
 zadrženou v kalu 0,7–1,3 % (s. 182). Model bere z chmele 70 % dávky do kalu, Kosař uvádí asi 50 % (s. 179); hrubý kal
@@ -514,6 +511,47 @@ rozpustnost, rozmezí 8–10 mg/L u zákvasné mladiny, vliv teploty a extraktu,
 Přechod z verze 1.3 doplní oba háčky verzí 1.4 a 1.5 najednou, druhé spuštění nic nezmění. Automatická várka
 se proti verzi 1.4 nezměnila, jen přibyl vypsaný kyslík. Tuhle verzi druhý agent nekontroloval — prošel jsem
 ji sám a testy. **Na tvé novější verzi z domu to vyzkoušené není.**
+
+### 8.8 Doplněk 17. 11. 2026 večer (verze 1.6): vypočtené hodnoty místo odhadů
+
+Na pokyn „vypočti ty údaje, jak by se to chovalo v reálu“. Celý postup je ve `VYPOCTY.md`. Stručně:
+
+- **Ztráty nádob (K1):** původní hodnoty 0,25–0,35 kW/K odpovídaly holé nerezi. Pro izolované nádoby vychází 0,02 kW/K
+  (pánev, vířivka, scezovací káď), ledovka 0,01. `dryWallK` 0,95.
+- **Deskový chladič (K1):** `UA1` 50 kW/K místo 25, z návrhového bodu v knihách (mladina 97 → 8 °C, ledová v poměru
+  1,08, ohřátá voda 83 °C).
+- **Dílčí rmuty (A1):** automat počítá jejich velikost z tepelné bilance (30 % a 44 % díla) místo pevné poloviny
+  a dvou třetin. Dílo má po rmutech 62,8 a 76,0 °C (Kosař s. 143: 62–64 a 75–78 °C). S pevnými podíly by s izolovanými
+  nádobami mělo 73 a 88 °C.
+- **Ledová voda (`autoIce`):** automat při chlazení pustí jen tolik ledové, aby mladina šla do spilky s 8,5 °C,
+  a mladinu přidává, dokud ledová stačí.
+- Původní chování vrátí přepínač `--bez-vypoctu` (K1 a A1) a parametry `autoIce` = 0, `decoT1` = `decoT2` = 0.
+- Návrh N8 (teplo od míchadla) ruším: vychází 0,02–0,1 kW, tedy nic.
+
+Automatická várka 12,5° (700 kg), 2D i 3D stejně:
+
+| Veličina | + FYZIKA+ 1.5 | + FYZIKA+ 1.6 | Knihy |
+|---|---|---|---|
+| Dílo po 1. / 2. rmutu | 68,9 / 82,2 °C | 62,8 / 76,0 °C | 62–64 / 75–78 °C |
+| Mladina na chladič (průměr) | 85,8 °C | 95,2 °C | 95–97 °C |
+| Ohřátá voda z chladiče | 60,8 °C | 85,6 °C | 80–88 °C |
+| Teplota do spilky (nejnižší) | 5,4 °C | 8,5 °C | cíl 8,5 °C |
+| Objem ve spilce | 37,2 hl | 36,7 hl | – |
+| Stupňovitost | 12,82 °P | 12,89 °P | – |
+| IBU | 33,1 | 34,4 | cíl 32 |
+| Barva ve spilce | 12,8 EBC | 12,9 EBC | – |
+| Dosažitelné prokvašení | 76 % | 84 % | 78–85 % |
+| DMS | 16 ppb | 25 ppb | pod 60 ppb |
+| Pára na varnu | 19,8 kWh/hl | 16,7 kWh/hl | – |
+| Délka várky | 646 min | 619 min | – |
+
+**Ověření verze 1.6:** 2D v70 i 3D v152 346 kontrol, 0 selhání (77 kontrol FYZIKA+); starší verze 279 kontrol,
+0 selhání; přechod z verzí 1.0, 1.3 i 1.4 doplní jen nové a druhé spuštění nic nezmění. V deníku automatické várky
+není přetékání, rozpad kužele ani studená mladina. Na tvé novější verzi z domu to vyzkoušené není.
+
+**Pozor na jedno:** prokvašení 84 % je na horním okraji. Dílo teď stojí při 62–63 °C asi 80 minut, než se povaří
+druhý rmut, a β-amylasa má víc času. Jestli ti to proti skutečnosti přijde moc, zkrať prodlevy druhého rmutu nebo
+zvyš `decoT1` na 64–65 °C.
 
 ## Zdroje
 

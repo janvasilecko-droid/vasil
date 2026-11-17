@@ -22,10 +22,11 @@ extends RefCounted
 ## Doplněno 17. 11. 2026 (verze 1.3):
 ## 14) výpust do kanálu otevřeným koncem trubky i přes stojící čerpadlo (H18)
 ## 15) rozpad kalového kužele na konci stahování z vířivky (H19)
-## Doplněno 17. 11. 2026 večer (verze 1.5):
-## 16) kyslík v zákvasné mladině podle teploty a stupňovitosti (H20)
+## 16) verze 1.5: kyslík v zákvasné mladině podle teploty a stupňovitosti (H20)
+## 17) verze 1.6: vypočtené hodnoty místo odhadů (ztráty izolovaných nádob, deskový chladič) – háček K1, VYPOCTY.md;
+##     automat počítá velikost dílčích rmutů z tepelné bilance (A1) a při chlazení řídí ledovou vodu
 
-const VERZE := "FYZIKA+ 1.5 (2026-11-17)"
+const VERZE := "FYZIKA+ 1.6 (2026-11-17)"
 
 ## výchozí hodnoty nových parametrů (stejné řádky jsou v CFG_DEFAULT; tady jako pojistka, kdyby v něm chyběly)
 const DEF := {
@@ -35,8 +36,8 @@ const DEF := {
 	"phBoilDrop": 0.08, "phSparge": 0.05, "wortBuf": 26.6, "isoPh": 0.5,
 	"wpInletMM": 0.0, "wpVmax": 3.5, "wpVmin": 1.0, "wpShearK": 0.1, "pipeU": 10.0,
 	"hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,
-	"pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,
-	"wpConeV": 0.006, "wpConeBreak": 0.1, "wpConeAnn": 0.6, "wpConeAuto": 1.0,
+	"pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.95,
+	"wpConeV": 0.006, "wpConeBreak": 0.1, "wpConeAnn": 0.6, "wpConeAuto": 1.0, "autoIce": 1.0, "decoT1": 63.0, "decoT2": 76.0,
 	"aerEff": 0.9, "o2PlatoK": 0.017, "o2Rest": 0.5,
 }
 ## povolené rozsahy (pro CALIB_RANGE)
@@ -48,7 +49,7 @@ const RANGE := {
 	"wpInletMM": [0.0, 150.0], "wpVmax": [1.0, 8.0], "wpVmin": [0.2, 5.0], "wpShearK": [0.0, 1.0], "pipeU": [0.5, 30.0],
 	"hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],
 	"pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],
-	"wpConeV": [0.0005, 0.1], "wpConeBreak": [0.0, 1.0], "wpConeAnn": [0.0, 2.0], "wpConeAuto": [0.0, 1.0],
+	"wpConeV": [0.0005, 0.1], "wpConeBreak": [0.0, 1.0], "wpConeAnn": [0.0, 2.0], "wpConeAuto": [0.0, 1.0], "autoIce": [0.0, 1.0], "decoT1": [0.0, 80.0], "decoT2": [0.0, 80.0],
 	"aerEff": [0.0, 1.5], "o2PlatoK": [0.0, 0.06], "o2Rest": [0.0, 5.0],
 }
 
@@ -496,10 +497,8 @@ static func report_extra(sim, rep: Dictionary) -> void:
 static func ice_flow(sim, path: Array, n_dest: int) -> float:
 	var q: float = cf(sim, "lvPumpQ") / maxf(1.0, float(n_dest))
 	if sim.has_method("path_pct"): q *= clampf(float(sim.path_pct(path)), 0.0, 1.0)
-	var ik = (sim.get_meta("fpIceK") if sim.has_meta("fpIceK") else null)          # automat u kalového kužele ubírá ledovou (H19)
-	if ik is Dictionary:
-		var dt_: float = float(sim.S.get("t", 0.0)) - float(ik.get("t", -1e9))
-		if dt_ >= 0.0 and dt_ <= 5.0: q *= float(ik.k)
+	sim.set_meta("fpIceNom", q)             # kolik ledové čerpadlo touhle větví dá naplno
+	q = minf(q, auto_ice_cap(sim))          # automat v kroku chlazení řídí ledovou podle teploty do spilky
 	return q
 
 
@@ -669,7 +668,8 @@ static func lauter_stop(sim) -> void:
 ##   k = [A_dna + z·A_pláště + dryWallK·((1 − z)·A_pláště + A_víka)] / [A_dna + A_pláště + dryWallK·A_víka],  z = zaplnění
 ## dryWallK = 1: dobře izolovaná nádoba (odpor izolace je mnohem větší než odpor na vnitřní straně) – ztráty na hladině
 ## nezávisí, tj. dřívější chování. dryWallK ≈ 0,5: holá stěna (vnější odpor ~0,1 m²K/W, uvnitř nad hladinou zhruba stejný).
-## Výchozí 0,5 je ODHAD: rvpUA 0,25 kW/K na ~16 m² povrchu pánve dává ~15 W/(m²·K), což odpovídá holé nádobě.
+## Výchozí 0,95 je VYPOČTENO pro izolovanou nádobu (80 mm minerální vlny: odpor izolace 1,78 m²K/W, vně 0,125, uvnitř nad
+## hladinou ~0,1 → suchá stěna 1,905/2,005 = 0,95 smáčené); viz VYPOCTY.md. Pro holou nádobu ~0,5.
 ## Geometrie z průměru nádoby (vessel_dia), válec s rovným dnem.
 static func loss_k(sim, key: String, v) -> float:
 	var dk: float = clampf(cf(sim, "dryWallK"), 0.0, 1.0)
@@ -763,26 +763,96 @@ static func wp_cone_cap(sim) -> float:
 	if y > g.h * 1.2: return 1e9
 	return cf(sim, "wpConeV") * cone_free_area(g, minf(y, g.h)) * 1000.0 * 0.95
 
-## automat: omezení průtoku C3 u kužele (vrací průtok, který má automat nastavit). Když zpomalí mladinu, ubere ve stejném
-## poměru i ledovou vodu (jinak by šla mladina do spilky přechlazená – teplota se v praxi řídí ledovou vodou, Kosař s. 186).
-## Ubrání ledové platí jen pár sekund od posledního volání (značka na objektu simulace, neukládá se), takže po skončení
-## kroku nebo zastavení automatu samo zmizí.
-static func auto_cone_flow(sim, flow: float) -> float:
-	if cf(sim, "wpConeAuto") < 0.5: return flow
-	var cap: float = wp_cone_cap(sim)
-	if cap >= flow: return flow
-	# poměr se bere k průtoku před začátkem zpomalování (regulace teploty by jinak průtok tlačila zpátky nahoru)
-	var now: float = float(sim.S.get("t", 0.0))
-	var ik = (sim.get_meta("fpIceK") if sim.has_meta("fpIceK") else null)
-	var ref: float = flow
-	if ik is Dictionary and now - float(ik.get("t", -1e9)) <= 5.0 and now >= float(ik.get("t", 0.0)): ref = float(ik.get("ref", flow))
-	sim.set_meta("fpIceK", {"k": clampf(cap / maxf(1.0, ref), 0.15, 1.0), "t": now, "ref": ref})
-	return cap
+## Průtok ledové vody [L/min], při kterém mladina o průtoku Lw a teplotě Tin vyjde z deskového chladiče s teplotou Tgoal.
+## Stejné vztahy jako plate_cool v sim.gd (ε-NTU protiproud, prostup roste s průtokem s exponentem 0,65).
+static func ice_for_target(sim, Lw: float, Tin: float, Tc: float, Tgoal: float) -> float:
+	var c = sim.S.cfg
+	var UA0: float = float(c.get("UA1", 25.0)); var qref: float = float(c.get("plateRefQ", 80.0))
+	var Cw: float = Lw / 60.0 * 1.04 * 4.0
+	if Cw <= 0.0 or Tin <= Tgoal or Tgoal <= Tc: return 1e9
+	var lo := 2.0; var hi := 600.0
+	for i in 40:
+		var Qc: float = (lo + hi) * 0.5
+		var UA: float = UA0 / (0.5 * pow(qref / maxf(1.0, Lw), 0.65) + 0.5 * pow(qref * 1.1 / Qc, 0.65))
+		var Cc: float = Qc / 60.0 * 4.19
+		var Cmin: float = minf(Cw, Cc); var Cr: float = Cmin / maxf(Cw, Cc); var NTU: float = UA / Cmin
+		var eff: float
+		if Cr > 0.999: eff = NTU / (1.0 + NTU)
+		else:
+			var x: float = exp(-NTU * (1.0 - Cr)); eff = (1.0 - x) / (1.0 - Cr * x)
+		var Tout: float = Tin - eff * Cmin * (Tin - Tc) / Cw
+		if Tout > Tgoal: lo = Qc
+		else: hi = Qc
+	return (lo + hi) * 0.5
 
+## automat v kroku chlazení (vrací průtok C3, který má nastavit):
+##  – když řídí ledovou (autoIce) a ledové je dost, přidává mladinu o 3 L/min za minutu, dokud ledová nestačí jen tak tak
+##    (92 % toho, co čerpadlo ledové dá) – várka se tak zchladí co nejrychleji, jak chladič a ledová dovolí;
+##  – u kalového kužele zpomalí pod mez (wpConeAuto). Ledovou vodu k tomu ubírá ice_flow.
+static func auto_cone_flow(sim, flow: float) -> float:
+	var f: float = flow
+	if cf(sim, "autoIce") >= 0.5 and sim.has_meta("fpIceNom"):
+		var S = sim.S
+		var now: float = float(S.get("t", 0.0))
+		var t0: float = float(sim.get_meta("fpAutoT", now))
+		var dts: float = clampf(now - t0, 0.0, 10.0)
+		sim.set_meta("fpAutoT", now)
+		var need: float = ice_for_target(sim, f, float(S.wp.T), float(S.lv.T), float(S.cfg.get("pitchT", 8.5)))
+		if need < 0.92 * float(sim.get_meta("fpIceNom")): f += 3.0 * dts / 60.0
+	if cf(sim, "wpConeAuto") >= 0.5: f = minf(f, wp_cone_cap(sim))
+	return f
+
+## Automat v kroku chlazení řídí i ledovou vodu (autoIce = 1): pustí jí jen tolik, aby mladina při nastaveném průtoku C3
+## vyšla s teplotou pitchT (teplota do spilky se v praxi řídí ledovou vodou, Kosař s. 186).
+## Vrací nejvyšší průtok ledové [L/min], nebo 1e9 (bez omezení).
+static func auto_ice_cap(sim) -> float:
+	if cf(sim, "autoIce") < 0.5: return 1e9
+	var mn = sim.get("main")
+	if mn == null or mn.get("auto") == null or not bool(mn.auto.get("on")) or not mn.auto.has_method("_id") or mn.auto._id() != "cool": return 1e9
+	var S = sim.S
+	if not (S.get("p3") is Dictionary) or not (S.get("wp") is Dictionary) or not (S.get("lv") is Dictionary): return 1e9
+	var Lw: float = float(S.p3.get("flow", 0.0))
+	if Lw <= 1.0: return 1e9
+	return ice_for_target(sim, Lw, float(S.wp.T), float(S.lv.T), float(S.cfg.get("pitchT", 8.5)))
 
 
 # ======================================================================
-# 8f) Kyslík v zákvasné mladině (H20)
+# 8f) Velikost dílčího rmutu z tepelné bilance (A1)
+# ======================================================================
+
+## Jak velký díl rmutu povařit, aby po vrácení mělo celé dílo cílovou teplotu (Kosař s. 143: po prvním rmutu 62–64 °C,
+## po druhém odrmutovací teplota 75–78 °C). Bilance: x·Cm·Tv + (1 − x)·Cm·Tz + Cs·Ts = (Cm + Cs)·Tc, kde Tv je teplota
+## vraceného rmutu (var − 4,5 K na cestu), Tz teplota zbytku díla, Cs a Ts tepelná kapacita a teplota oceli kádě.
+## Automat dřív bral pevně polovinu a pak dvě třetiny – to sedělo jen se silně chladnoucími nádobami.
+## n = 1 první rmut (celé dílo je v pánvi), n = 2 druhý rmut (dílo je ve scezovací kádi). old = původní podíl automatu,
+## vrátí se, když je cílová teplota (decoT1/decoT2) nastavená na 0. Podíl se spočítá jednou na začátku kroku automatu.
+static func deco_frac(sim, n: int, old: float) -> float:
+	var Tc: float = cf(sim, "decoT1") if n == 1 else cf(sim, "decoT2")
+	if Tc <= 0.0: return old
+	var S = sim.S; var c = S.cfg
+	var key := "%d" % n
+	var mn = sim.get("main")
+	if mn != null and mn.get("auto") != null and mn.auto.get("t0") != null: key = "%d|%s" % [n, str(mn.auto.t0)]
+	if sim.has_meta("fpDeco"):
+		var dm = sim.get_meta("fpDeco")
+		if dm is Dictionary and dm.get("key", "") == key and mn != null: return float(dm.x)
+	var v = S.rvp if n == 1 else S.sk.mash
+	var Cm: float = float(sim.cC(v))
+	if Cm < 100.0: return old
+	var Tz: float = float(v.T)
+	var Cs: float = float(c.get("skSteel", 500.0)) * float(c.get("cpSteel", 0.5))
+	var Ts: float = float(S.sk.get("Tw", Tz)) if n == 1 else Tz
+	var Tv: float = float(c.get("tbWater", 99.3)) - 4.5      # rmut cestou ohřívá studené potrubí a čerpadlo (v modelu ~4–5 K)
+	if Tv - Tz < 5.0 or Tc <= Tz: return old
+	var x: float = clampf(((Cm + Cs) * Tc - Cm * Tz - Cs * Ts) / (Cm * (Tv - Tz)), 0.15, 0.6)
+	sim.set_meta("fpDeco", {"key": key, "x": x})
+	if sim.has_method("logm") and mn != null and mn.get("auto") != null and bool(mn.auto.get("on")):
+		sim.logm("AUTO: %s rmut – povařit %d %% díla, aby po vrácení mělo dílo %s °C (teď %s °C)." % ["první" if n == 1 else "druhý", roundi(x * 100.0), f2(Tc), f2(Tz)])
+	return x
+
+
+# ======================================================================
+# 8g) Kyslík v zákvasné mladině (H20)
 # ======================================================================
 
 ## Rozpustnost kyslíku ve vodě nasycené vzduchem při 1 atm [mg/L], 0–40 °C (standardní tabulka, APHA/Weiss).

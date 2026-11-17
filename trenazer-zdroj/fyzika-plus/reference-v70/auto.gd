@@ -294,7 +294,7 @@ func _finished() -> bool:
         "d1_72", "d2_72": return held >= 20.0
         "d1_boil", "d2_boil": return r.boiling and r.grainBoilMin >= 10.0
         "d1_ret", "d2_ret": return not S.p1.on and sim.vol(r) <= c.rvpDead + 12.0
-        "d2split": return not S.p1.on and sim.vol(r) >= total_mash * 2.0 / 3.0 * 0.9
+        "d2split": return not S.p1.on and sim.vol(r) >= total_mash * preload("res://fyzika_plus.gd").deco_frac(sim, 2, 2.0 / 3.0) * 0.9   # FYZIKA+ A1
         "conv": return _wait_min() >= 10.0 and S.sk.mash.T >= 68.0
         "bed": return S.sk.mode == "lauter"
         "settle": return _wait_min() >= 20.0
@@ -344,8 +344,8 @@ func tick(dt: float) -> void :
         if _is_hold(id) and absf(r.Tsens - T_set) <= 1.5: held += dt / 60.0
         _regulate()
 
-    if id == "d1split" and S.p1.on and sim.vol(r) <= mashV * 0.5: S.p1.on = false
-    if id == "d2split" and S.p1.on and sim.vol(r) >= total_mash * 2.0 / 3.0: S.p1.on = false
+    if id == "d1split" and S.p1.on and sim.vol(r) <= mashV * preload("res://fyzika_plus.gd").deco_frac(sim, 1, 0.5): S.p1.on = false   # FYZIKA+ A1
+    if id == "d2split" and S.p1.on and sim.vol(r) >= total_mash * preload("res://fyzika_plus.gd").deco_frac(sim, 2, 2.0 / 3.0): S.p1.on = false   # FYZIKA+ A1
 
     if id == "d1_boil" or id == "d2_boil":
         S.rvp.stir = true
