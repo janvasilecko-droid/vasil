@@ -29,7 +29,7 @@ main.gd (~4400 řádků, UI/vykreslení/editor/rozvaděč), sim.gd (fyzika: rmut
 ## Co je hotovo (dřívější relace)
 Lupa v rozvaděči; hydraulika i při pauze; otáčky míchadel; rotametr (ideál 20 l/min); pletená nerezová hadice; DN10/DN15; libovolné přiškrcování klapek (slider, Ctrl+kolečko, tažení); ráz po zastavení míchadla + RESET; trhání mláta klapkou (3–4 trhnutí smyje nános, pak trhá lože); realistické trubky s koleny/příchytkami; připnuté průhledítko se sladem; spilková hadice s průhledítkem/T/vývodem; víčko spilky (tlak při zavření); vířivka usazení 20 min (Kosař/Kunze); konec vyslazování 1,0 °P (Kosař s. 147/156).
 
-## FYZIKA+ (verze 1.2 z 2026-11-16, NEVYDÁNO – Vasil si to vloží sám doma)
+## FYZIKA+ (verze 1.3 z 2026-11-17, NEVYDÁNO – Vasil si to vloží sám doma)
 Vasil chtěl projít fyziku, chemii a mechaniku (kapaliny, přenos tepla), najít reálná data z jiných varen a připravit úpravu,
 kterou si vloží do své **novější verze doma**. 16. 11. k tomu přidal: „ať je voda kapalina a chová se realisticky, i dílo“.
 Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplněk 1.1, kapitola 8 = doplněk 1.2).
@@ -56,9 +56,12 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   a vířivky podle zaplnění (`FP.loss_k`, `dryWallK` 0,5 ODHAD; 1 = jako dřív). V3 kreslení usazeného díla (`S.clog`).
   **Vasil 16. 11.: zpětné klapky za čerpadly na Zajíci nejsou** → `pumpPass` = 1 platí (v params.gd označeno STATED).
   Jak jsou nádoby izolované nad hladinou, nevím (`dryWallK` je ODHAD) – zeptat se, až na to přijde řeč.
-- **Ověřeno:** viz kapitoly 7.4 a 8.3 dokumentu (v70 2D i v152 3D 333 kontrol bez selhání, starší archivní verze 266,
-  přechod z 1.0 i 1.1, CRLF, tabulátory, ručně vložená půlka háčku; automatická várka 2D = 3D).
-  Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2 jen vlastní kontrolou a testy.
+- **Obsah 1.3 (17. 11., na pokyn „pokračuj“ k nabídce):** H18 výpust do kanálu otevřeným koncem trubky i přes stojící
+  čerpadlo (smyčka `for v in net.gravity:` dostane `bfs([s0], "liq", fp_idle)` a klíč mezipaměti se seznamem stojících
+  čerpadel); `gravity_q` rozliší přeskok trasy přes čerpadlo (K·v²/2g) a přes deskový chladič (4·(Q/200)² m).
+- **Ověřeno:** viz kapitoly 7.4, 8.3 a 8.5 dokumentu (v70 2D i v152 3D 335 kontrol bez selhání, starší archivní verze 268,
+  přechod z 1.0, 1.1 i 1.2, CRLF, tabulátory, u 1.2 i ručně vložená půlka háčku; automatická várka 2D = 3D).
+  Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2 a 1.3 jen vlastní kontrolou a testy.
   **Na Vasilově novější verzi vyzkoušené není** (je jen na jeho PC; až ji nahraje do repa, ověřit tam).
 - **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Zbylé návrhy (N3–N24) a seznam měření jsou ve FYZIKA_PLUS.md.
 - **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
@@ -67,7 +70,7 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   4.7.2 z `github.com/godotengine/godot-builds/releases/download/4.7.2-stable/…`. Základ v70 2D = kostra z `zdroj-2d-godot43.tar.gz`
   + všechny `.gd` z `unity/GodotSrc/` kromě `updater.gd`; základ v152 3D = kostra z `zdroj-3d-godot47.tar.gz` + tytéž `.gd` kromě
   `updater.gd`, `boot.gd` a `view3d.gd` (ty jsou ve 3D jiné). Kontrola: v70 dává 269 kontrol, 0 selhání.
-  Starší verze balíčku pro zkoušku přechodu: `git archive 43c8ced` (1.0) a `git archive a4db14a` (1.1), složka `trenazer-zdroj/fyzika-plus`.
+  Starší verze balíčku pro zkoušku přechodu: `git archive 43c8ced` (1.0), `a4db14a` (1.1) a `4aade71` (1.2), složka `trenazer-zdroj/fyzika-plus`.
 
 ## Zdroje čísel
 - `KOSA_KUNZE_PARAMETRY.md` (i v projektu Zajic na claude.ai): čísla z Kosař–Procházka (Technologie výroby sladu a piva) a Kunze (Technology Brewing and Malting, s. 255–356) se stránkami.

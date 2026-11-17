@@ -360,6 +360,12 @@ def build_hooks():
         ("sim.gd", within("heat", done_if("FP.loss_k(self, name, v)", sub_once(r'^([ \t]*)(var UA: float = c\.rvpUA if name == "rvp" else c\.mpUA)[ \t]*$', r'\1\2' + '\n' + r'\1' + 'UA *= FP.loss_k(self, name, v)   # FYZIKA+ H17 – ztráty podle smáčené plochy (UA platí pro plnou nádobu)')))),
         ("sim.gd", within("sim_step", done_if('FP.loss_k(self, "wp", wv)', sub_once(r'wv\.T -= c\.wpUA \* \(wv\.T - c\.ambientT\) \* dt / Cw', 'wv.T -= c.wpUA * FP.loss_k(self, "wp", wv) * (wv.T - c.ambientT) * dt / Cw', comment="# FYZIKA+ H17")))),
     ], optional=True, needs=["H0"]))
+    # H18 – výpust do kanálu (otevřený konec trubky) i přes stojící čerpadlo
+    H.append(Hook("H18", "sim.gd: otevřeným koncem trubky za stojícím čerpadlem vytéká nádoba do kanálu", probes=[("sim.gd", 'bfs([s0], "liq", fp_idle)', 1), ("sim.gd", '",".join(PackedStringArray(fp_idle))', 1)], edits=[
+        ("sim.gd", need(r'for v in net\.gravity:', "verze nemá smyčku výpustí do kanálu (net.gravity)")),
+        ("sim.gd", within("net_step", done_if('",".join(PackedStringArray(fp_idle))', sub_once(r'^([ \t]*)var gk: String = "gd\|" \+ v\.id[ \t]*$', r'\1' + 'var fp_idle: Array = FP.idle_pumps(self)   # FYZIKA+ H18 – výpust smí vést přes stojící čerpadlo' + '\n' + r'\1' + 'var gk: String = "gd|" + v.id + "|" + ",".join(PackedStringArray(fp_idle))')))),
+        ("sim.gd", within("net_step", done_if('bfs([s0], "liq", fp_idle)', sub_once(r'var r = bfs\(\[s0\]\)', 'var r = bfs([s0], "liq", fp_idle)', comment="# FYZIKA+ H18")))),
+    ], optional=True, needs=["H16"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[
         ("ctl.gd", need(r'r = _row\(box\)', "ctl.gd nemá řádky r = _row(box)")),

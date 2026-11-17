@@ -1,4 +1,4 @@
-# FYZIKA+ pro trenažér varny – obsah balíčku (verze 1.2, 16. 11. 2026)
+# FYZIKA+ pro trenažér varny – obsah balíčku (verze 1.3, 17. 11. 2026)
 
 | Soubor | Co to je |
 |---|---|
@@ -7,7 +7,7 @@
 | `aplikuj_fyzika_plus.py` | Skript, který úpravu vloží: `python aplikuj_fyzika_plus.py "<složka projektu>"` (napřed s `--zkouska`) |
 | `fyzika_plus.gd` | Modul s veškerým počítáním (pára a plášť, bojler, přestup tepla, pH, barva, vířivka, trubky, samospád, stojící čerpadlo, ledová voda, odpar, ztráty podle hladiny, rychlost rmutu) |
 | `fyzika_plus_vzhled.gd` | Kreslení kapalin na plánku: proudy padající obloukem, vlnky na hladině, usazené dílo (výpočet nemění) |
-| `fyzika_plus_tests.gd` | 64 nových automatických kontrol (spustí se s `-- --tests`) |
+| `fyzika_plus_tests.gd` | 66 nových automatických kontrol (spustí se s `-- --tests`) |
 | `proudy_pred_po.png` | Obrázek: sprcha v pánvi před úpravou kreslení a po ní |
 | `usazene_dilo.png` | Obrázek: dílo v pánvi s míchadlem, 90 s a 5 min bez míchání |
 | `reference-v70/` | Pro kontrolu: soubory v70 po vložení úpravy a rozdíl `zmeny-v70.diff` proti původní v70 |
@@ -16,7 +16,10 @@ Nejrychlejší cesta: stáhni složku (je i v repozitáři `vasil`, `trenazer-zd
 `python aplikuj_fyzika_plus.py "D:\stazene\Trenazer-varny-aplikace" --zkouska`, přečti si zprávu, pak to samé bez
 `--zkouska`. Nakonec spusť testy a automatickou várku.
 
-Co je nového ve verzi 1.2 (proti 1.1 z dopoledne):
+Co je nového ve verzi 1.3 (17. 11.): otevřeným koncem trubky za stojícím čerpadlem vytéká nádoba do kanálu
+(dřív stojící čerpadlo nepustilo nic). Jinak se nic nemění.
+
+Co přidala verze 1.2 (16. 11. odpoledne):
 - **Stojící čerpadlo je průchozí.** Otevřenou trasou přes vypnuté čerpadlo teče kapalina podle rozdílu hladin, i zpátky.
   Po čerpání se proto zavírá klapka; automat i automat scezování to dělají samy. Odpovídá to varně bez zpětných
   klapek za čerpadly, jak jsi potvrdil 16. 11. (parametr `pumpPass` = 1; hodnota 0 by to vypnula).
@@ -25,4 +28,4 @@ Co je nového ve verzi 1.2 (proti 1.1 z dopoledne):
 
 Verze 1.1 přidala: samospád podle průměru trubky, ubírání ledové vody klapkou, páru do bojleru stejným modelem jako
 do pánve, bilanci energie při připalování, odpar z horké hladiny mimo var, hlídání rychlosti rmutu v potrubí, bod varu
-u dna v panelu a kreslení proudů a vlnek. Kdo má vloženou verzi 1.0 nebo 1.1, spustí skript znovu a doplní se jen nové věci.
+u dna v panelu a kreslení proudů a vlnek. Kdo má vloženou starší verzi, spustí skript znovu a doplní se jen nové věci.

@@ -26,6 +26,7 @@ func run(t) -> void:
 	_evap()
 	_mashv()
 	if _has("H16"): _pumppass()
+	if _has("H18"): _drainpump()
 	if _has("H17"): _losses()
 	T.fresh()
 
@@ -564,3 +565,60 @@ func _losses() -> void:
 		var r = res[key]
 		if not (r[1] > 0.01 and absf(r[0] / r[1] - r[2]) < 0.03 * r[2] and r[2] < 0.97): ok = false
 	T.chk("FP ztráty podle hladiny: nádoba plná ze 30 % chladne v simulaci pomaleji přesně v poměru smáčené plochy (pánev i vířivka)", ok, "pánev −%.2f K místo −%.2f K za 10 min (×%.2f), vířivka −%.2f K místo −%.2f K (×%.2f)" % [res.rvp[0], res.rvp[1], res.rvp[2], res.wp[0], res.wp[1], res.wp[2]])
+
+# ---------- výpust do kanálu přes stojící čerpadlo (H18) ----------
+func _drainpump() -> void:
+	# přeskok trasy přes deskový chladič (trasa výpusti nese jen trubky) = ztráta chladiče, ne ztráta čerpadla
+	T.fresh(); var S = sim.S
+	var e1 = null; var e2 = null; var k1 = null; var k2 = null
+	for pid in sim.net.plateNodes:
+		for side in sim.net.plateNodes[pid]:
+			var ks: Array = sim.net.plateNodes[pid][side]
+			if ks.size() < 2 or e1 != null: continue
+			for e in sim.net.nodes[ks[0]].edges:
+				if e.medium != "steam" and e1 == null:
+					e1 = e; k1 = ks[0]
+			for e in sim.net.nodes[ks[1]].edges:
+				if e.medium != "steam" and e2 == null:
+					e2 = e; k2 = ks[1]
+			if e1 == null or e2 == null:
+				e1 = null; e2 = null
+	if e1 != null and e2 != null:
+		var path = [{"e": e1, "to": k1}, {"e": e2, "to": (e2.b if e2.a == k2 else e2.a)}]
+		S.cfg["pumpPassK"] = 0.0; var qa: float = FP.gravity_q(sim, path, 1.0, "hlt")
+		S.cfg["pumpPassK"] = 50.0; var qb: float = FP.gravity_q(sim, path, 1.0, "hlt")
+		S.cfg["pumpPassK"] = 5.0
+		var d2: float = sim.bore_mm(float(e2.dn)) / 1000.0; var vo: float = qa / 60000.0 / (PI * d2 * d2 / 4.0)
+		var hs: float = sim.path_head(path, qa, 1.0, sim.skViscosity(S.hlt.T, 0.0)) + vo * vo / 19.62 + 4.0 * pow(qa / 200.0, 2)
+		T.chk("FP výpust: přeskok trasy přes deskový chladič se počítá jako chladič (4 m při 200 L/min), ne jako stojící čerpadlo", absf(qa - qb) < 1e-6 and absf(hs - 1.0) < 0.02, "%.0f L/min při rozdílu 1 m" % qa)
+	else:
+		T.chk("FP výpust: v plánku jsem nenašel deskový chladič se dvěma trubkami na jedné straně – test přeskočen", true)
+	# otevřený konec trubky za stojícím C1: pánev jím vytéká do kanálu; s pumpPass = 0 ne
+	var res := []
+	var run0: bool = T.m.running
+	var found := true
+	for pp in [1.0, 0.0]:
+		T.fresh(); S = sim.S; S.cfg["pumpPass"] = pp
+		if not _open_route("rvp", "sk", ["p1"]):
+			found = false; break
+		var pid2 := ""
+		for id in sim.net.pumpNodes:
+			if sim.net.byId[id].get("bind", "") == "p1": pid2 = id
+		var kx = null
+		if pid2 != "":
+			for k in sim.net.pumpNodes[pid2].get("out", []):
+				if kx == null: kx = k
+		if kx == null:
+			found = false; break
+		sim.net.nodes[kx].openEnd = true      # jako by někdo za čerpadlem odpojil hadici
+		sim.valve_ver += 1
+		S.rvp.w = 3000.0; S.rvp.T = 20.0
+		var d0: float = float(S.drainL); var v0: float = sim.vol(S.rvp)
+		T.m.running = false
+		for i in 60: sim.sim_step(1.0)
+		res.append([float(S.drainL) - d0, v0 - sim.vol(S.rvp)])
+	T.m.running = run0
+	T.fresh()
+	if not found:
+		T.chk("FP výpust: trasa pánev → C1 v plánku není – test přeskočen", true); return
+	T.chk("FP výpust: otevřeným koncem trubky za stojícím C1 vytéká pánev do kanálu (dřív stojící čerpadlo nepustilo nic); s pumpPass = 0 neteče", res[0][0] > 20.0 and res[0][1] >= res[0][0] - 1.0 and res[1][0] < 0.5, "%.0f L do kanálu za minutu (z pánve ubylo %.0f L – zbytek je v trubkách a v SK); pumpPass 0: %.1f L" % [res[0][0], res[0][1], res[1][0]])

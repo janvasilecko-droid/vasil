@@ -19,8 +19,10 @@ extends RefCounted
 ## Doplněno 16. 11. 2026 odpoledne (verze 1.2):
 ## 12) stojící odstředivé čerpadlo je průchozí (samospád a zpětný tok přes vypnuté čerpadlo)
 ## 13) ztráty tepla nádoby podle smáčené plochy (poloprázdná nádoba ztrácí míň než plná)
+## Doplněno 17. 11. 2026 (verze 1.3):
+## 14) výpust do kanálu otevřeným koncem trubky i přes stojící čerpadlo (H18)
 
-const VERZE := "FYZIKA+ 1.2 (2026-11-16)"
+const VERZE := "FYZIKA+ 1.3 (2026-11-17)"
 
 ## výchozí hodnoty nových parametrů (stejné řádky jsou v CFG_DEFAULT; tady jako pojistka, kdyby v něm chyběly)
 const DEF := {
@@ -513,16 +515,29 @@ static func gravity_q(sim, path: Array, head_m: float, src_key) -> float:
 		if st is Dictionary and st.has("e"): d_out = float(sim.bore_mm(float(st.e.dn))) / 1000.0
 	if d_out <= 0.0: d_out = float(sim.bore_mm(50.0)) / 1000.0
 	var a_out: float = PI * d_out * d_out / 4.0
-	# stojící čerpadla na trase: každé přidá ztrátu K·v²/2g (trasa v místě čerpadla „přeskakuje“ mezi sáním a výtlakem)
+	# stojící čerpadla na trase: každé přidá ztrátu K·v²/2g (trasa v místě čerpadla „přeskakuje“ mezi sáním a výtlakem).
+	# Trasa výpusti do kanálu nese jen trubky (bez kroku chladiče): přeskok přes deskový chladič se pozná podle uzlu
+	# a dostane ztrátu chladiče stejnou jako v path_head (4 m při 200 L/min).
 	var pump_a: Array = []
+	var plates_x := 0
 	var prev_to = null
 	for st2 in path:
 		if not (st2 is Dictionary): continue
 		if st2.has("plate") or not st2.has("e"):
 			prev_to = null; continue
 		if prev_to != null and st2.e.get("a") != prev_to and st2.e.get("b") != prev_to:
-			var dp: float = float(sim.bore_mm(float(st2.e.dn))) / 1000.0
-			pump_a.append(PI * dp * dp / 4.0)
+			var is_plate := false
+			var nd = sim.net.nodes.get(prev_to) if sim.net is Dictionary and sim.net.has("nodes") else null
+			if nd != null:
+				var has_pump := false
+				for at in nd.att:
+					if at.kind == "pump": has_pump = true
+					elif at.kind == "plate": is_plate = true
+				if has_pump: is_plate = false
+			if is_plate: plates_x += 1
+			else:
+				var dp: float = float(sim.bore_mm(float(st2.e.dn))) / 1000.0
+				pump_a.append(PI * dp * dp / 4.0)
 		prev_to = st2.get("to")
 	var kp: float = cf(sim, "pumpPassK")
 	var need: Callable = func(Q: float) -> float:
@@ -531,6 +546,7 @@ static func gravity_q(sim, path: Array, head_m: float, src_key) -> float:
 		for ap in pump_a:
 			var vp: float = Q / 60000.0 / float(ap)
 			h += kp * vp * vp / (2.0 * 9.81)
+		h += plates_x * 4.0 * pow(Q / 200.0, 2)
 		return h
 	var hi: float = 6000.0
 	if float(need.call(hi)) <= head_m: return hi

@@ -1,7 +1,8 @@
 # FYZIKA+: realističtější fyzika a chemie trenažéru varny
 
 Vypracováno 29. 10. 2026 na zdrojích 2D v70 / 3D v152 (`vasil/unity/GodotSrc`), **doplněno 16. 11. 2026 (verze 1.1:
-kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8)**.
+kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8;
+17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5)**.
 Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
 **Nic z toho není vydané** v ⟳ Aktualizovat. Balíček leží v repozitáři `vasil` ve složce `trenazer-zdroj/fyzika-plus/`.
 Vzorce, jednotky a vkládací skript první verze prošla ještě nezávislá kontrola, její připomínky jsou zapracované.
@@ -164,7 +165,7 @@ N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole
 | N18 | Vrstvení v nemíchaných nádobách: studená voda přitečená do bojleru zůstane dole, horká nahoře | bojler teď při dopouštění hned zchladne celý; ve skutečnosti dává shora dál horkou vodu | kde má bojler nátok, odběr a topný had |
 | N21 | Zanášení deskového chladiče | Kosař s. 185: po třech várkách může být ohřátá voda o víc než 10 °C chladnější | jak často chladič čistíte |
 | N22 | Vzhled, další kroky: houpání hladiny se skutečnou periodou (nádoba Ø 2,2 m: 1,6 s), vír u výpusti, pára nad hladinou podle odparu, hromádka šrotu při vystírání | navazuje na V1–V3 | napiš, co ti na plánku vadí nejvíc |
-| N23 | Výpust do kanálu přes stojící čerpadlo a zpětný tok horním nátokem (násoska) | H16 počítá jen přetékání mezi nádobami spodními hrdly | – |
+| N23 | Zpětný tok horním nátokem, když trubka sahá pod hladinu (násoska) | nátok nad hladinou se po zastavení přeruší vzduchem, to je v pořádku; ponořená trubka by táhla zpátky | máš někde nátok ponořenou trubkou? |
 | N24 | Stěna nad hladinou jako samostatná hmota (po vypuštění chladne sama, při napouštění bere teplo náplni) | teď má ocel vždy teplotu náplně | hmotnost a izolace nádob |
 
 ---
@@ -365,7 +366,8 @@ Dřív stojící čerpadlo trasu zavíralo jako klapka.
   skončení zavře klapky, které si otevřel; když jsi mezitím klapkami hýbal ty, nesahá na nic.
 - **Na Zajíci za čerpadly zpětné klapky nejsou (potvrdil jsi 16. 11.), takže to platí tak, jak to je** (`pumpPass` = 1).
   Hodnota 0 by vrátila dřívější chování; hodí se jen pro varnu se zpětnými klapkami.
-- Co to nepočítá: výpust do kanálu přes stojící čerpadlo a zpětný tok horním nátokem (návrh N23).
+- Výpust do kanálu přes stojící čerpadlo je od verze 1.3 (kapitola 8.5). Zpětný tok ponořeným horním nátokem
+  (násoska) se nepočítá (návrh N23).
 
 **P17. Ztráty tepla podle hladiny (H17, `FP.loss_k`).** Ztráty pánve a vířivky do okolí byly stejné, ať byla nádoba
 plná nebo skoro prázdná. Teď se smáčená stěna (dno a plášť pod hladinou) počítá naplno a suchá stěna (plášť nad
@@ -430,6 +432,21 @@ Obrázek `usazene_dilo.png` v balíčku ukazuje pánev s míchadlem, po 90 s a p
   2 s ne. Je to v původním programu i bez balíčku.
 - Automat u kroku „Proplach pod síty“ nejdřív otevře trasu z bojleru pod síta a teprve pak zjistí, že plánek nemá
   výpust do kanálu, a krok přeskočí. Voda při tom neteče (klapky se hned zavřou), jen to na plánku problikne.
+
+### 8.5 Doplněk 17. 11. 2026 (verze 1.3): výpust do kanálu přes stojící čerpadlo
+
+**P19. Otevřený konec trubky za stojícím čerpadlem (H18).** Když je za vypnutým čerpadlem otevřený konec trubky
+(odpojená hadice, otevřený vývod) a trasa k němu je otevřená, nádoba jím vytéká do kanálu. Dřív stojící čerpadlo
+nepustilo nic. Počítá se to stejně jako ostatní výpusti (P8), čerpadlo přidá svou ztrátu a platí stejný doběh 3 s.
+- Příklad z modelu: pánev se 30 hl vody a otevřený konec hned za stojícím C1 – do kanálu vyteče 910 L za první minutu.
+- Opraveno při tom: když trasa výpusti vede přes deskový chladič, počítá se ztráta chladiče (4 m při 200 L/min, stejně
+  jako u čerpané trasy). Verze 1.2 tam omylem brala ztrátu stojícího čerpadla.
+- Vypíná se společně s P16 (`pumpPass` = 0).
+
+**Ověření verze 1.3:** 2D v70 i 3D v152 335 kontrol, 0 selhání (66 kontrol FYZIKA+, 2 nové); starší verze 268 kontrol,
+0 selhání; přechod z verzí 1.0, 1.1 i 1.2 doplní jen nový háček a druhé spuštění nic nezmění. Automatická várka dává
+ve 2D i 3D stejný protokol jako verze 1.2 (tabulka v 8.3) a v deníku není žádné vytékání ani přetékání samospádem.
+Na tvé novější verzi z domu to vyzkoušené není.
 
 ## Zdroje
 

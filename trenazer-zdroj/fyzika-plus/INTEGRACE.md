@@ -17,15 +17,15 @@ Přepínače: `--bez-ui` vynechá úpravy panelu (U1–U3), `--bez-vzhledu` vyne
 Balíček je i v repozitáři `janvasilecko-droid/vasil`, složka `trenazer-zdroj/fyzika-plus/` (`git pull`), takže ho
 nemusíš přenášet ručně.
 
-**Už máš vloženou verzi 1.0 nebo 1.1?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je vložené,
-a doplní jen nové háčky a parametry verze 1.2.
+**Už máš vloženou starší verzi (1.0 až 1.2)?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je
+vložené, a doplní jen nové háčky a parametry.
 
 Cesta je složka projektu, kde leží `project.godot` a `sim.gd`. Když zadáš nadřazenou složku, skript `sim.gd` najde sám.
 Pro 3D verzi spusť skript ještě jednou se složkou 3D projektu, protože obě verze mají vlastní kopii skriptů.
 
 Co skript dělá:
 - zkopíruje `fyzika_plus.gd`, `fyzika_plus_tests.gd` a `fyzika_plus_vzhled.gd` do projektu;
-- vloží háčky H0–H17, U1–U3, V1–V3 a R1 (tabulka níže). Od verze 1.2 sahá i do `auto.gd` a `lauter_auto.gd`
+- vloží háčky H0–H18, U1–U3, V1–V3 a R1 (tabulka níže). Od verze 1.2 sahá i do `auto.gd` a `lauter_auto.gd`
   (po jednom řádku: automat po kroku zavře klapky). **Háček, jehož místo nenajde přesně jednou, přeskočí a napíše proč.**
   Skupina úprav, která spolu souvisí, se vloží buď celá, nebo vůbec. Nic se tedy nerozbije napůl;
 - před první změnou si každý soubor zazálohuje jako `<soubor>.pred-fyzika-plus`;
@@ -35,7 +35,7 @@ Co skript dělá:
 
 Ověření po vložení (Godot 4.3 pro 2D, Godot 4.7 pro 3D):
 ```
-Godot --headless --path "<projekt>" -- --tests       ← všechny testy včetně 64 nových „FP …“
+Godot --headless --path "<projekt>" -- --tests       ← všechny testy včetně 66 nových „FP …“
 Godot --headless --path "<projekt>" -- --autotest    ← celá automatická várka
 ```
 Testy nespouštěj souběžně ve dvou kopiích projektu: mají stejný název, sdílejí `user://` (uložení várky)
@@ -113,10 +113,11 @@ Při ručním vkládání drž odsazení okolních řádků.
 | H16 (2. část) | auto.gd | v `_end_step()` řádek `i += 1` | Nad něj přidej `if preload("res://fyzika_plus.gd").cf(sim, "pumpPass") >= 0.5: _close_all()`. Automat po každém kroku zavře klapky, jinak by to stojícím čerpadlem teklo dál nebo zpátky. **Obě části H16 jen spolu** |
 | H16b | lauter_auto.gd | ve `stop()` řádek `sim.S.p2.on = false;sim.S.skWater.on = false` | Pod něj přidej `preload("res://fyzika_plus.gd").lauter_stop(sim)`. Automat scezování po skončení zavře klapky, které si otevřel. **Jen s H16** |
 | **H17** | sim.gd | v `heat()`: `var UA: float = c.rvpUA if name == "rvp" else c.mpUA`; v `sim_step()` u vířivky `wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw` | Pod první přidej `UA *= FP.loss_k(self, name, v)`; ve druhém vlož za `c.wpUA` násobek `* FP.loss_k(self, "wp", wv)`. Ztráty tepla podle zaplnění nádoby. **Obě části jen spolu** |
+| H18 | sim.gd | v `net_step()`, smyčka `for v in net.gravity:`: `var gk: String = "gd|" + v.id` a o pár řádků níž `var r = bfs([s0])` | Nad první přidej `var fp_idle: Array = FP.idle_pumps(self)` a klíč rozšiř na `"gd|" + v.id + "|" + ",".join(PackedStringArray(fp_idle))`; druhý změň na `var r = bfs([s0], "liq", fp_idle)`. Otevřeným koncem trubky za stojícím čerpadlem pak nádoba vytéká do kanálu. **Jen s H16, obě části spolu** |
 | V3 | main.gd | v `_liquid()` dvojici řádků `if b != "lv":` a pod ním `LiquidFx.draw_caustics(…)` | Nad ni přidej `preload("res://fyzika_plus_vzhled.gd").settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)`. Kreslí usazené dílo |
 
 Závislosti: H1–H7, H10–H13, H15–H17, U1, U3 a R1 potřebují H0. U2 a H14 potřebují H1, H9f a H9g potřebují H2,
-H9h potřebuje H3b, V2 potřebuje V1, H16b potřebuje H16. Na ostatních háčcích nic nezávisí.
+H9h potřebuje H3b, V2 potřebuje V1, H16b a H18 potřebují H16. Na ostatních háčcích nic nezávisí.
 
 **Co se s H16 změní v ovládání:** když čerpadlo stojí a trasa přes něj je otevřená, kapalina teče podle rozdílu hladin
 (i zpátky). Po čerpání proto zavři klapku – máš na to 3 s skutečného času (při 10× rychlosti 30 s simulace), pak se

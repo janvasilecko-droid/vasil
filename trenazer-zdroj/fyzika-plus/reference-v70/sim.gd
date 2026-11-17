@@ -2446,12 +2446,13 @@ func net_step(dt: float) -> void :
     for v in net.gravity:
         var b = v.get("bind")
 
-        var gk: String = "gd|" + v.id
+        var fp_idle: Array = FP.idle_pumps(self)   # FYZIKA+ H18 – výpust smí vést přes stojící čerpadlo
+        var gk: String = "gd|" + v.id + "|" + ",".join(PackedStringArray(fp_idle))
         var outs = _cached(gk)
         if outs == null:
             outs = []
             for s0 in starts_of(v.id, true):
-                var r = bfs([s0])
+                var r = bfs([s0], "liq", fp_idle)   # FYZIKA+ H18
                 var lk = null
                 for l in r.leaks:
                     if net.nodes[l.k].y >= v.y + v.h * 0.6:
