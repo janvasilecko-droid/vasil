@@ -26,7 +26,7 @@ Změny v `sim.gd`: tři místa označená `FYZIKA+` (načtení modulu, volání 
 | # | Co | Kde v tomhle programu | Poznámka |
 |---|---|---|---|
 | 2 | Pára: výkon podle rozdílu teplot pára – náplň, ventil a tlak v plášti | `_heat`, `_thermostat`, `max_kw` | teď má ohřev pevné kW bez ohledu na teplotu náplně |
-| 3 | Deskový chladič podle návrhového bodu z knih, řízení ledové vody | `plate_cool`, `_pitch`, `UA_WATER`, `UA_ICE`, `ICE_LPM` | **Vasil 17. 11.: chladič je jednostupňový.** Voda jde do nádoby (ledovky), tam ji vychladí glykol, a teprve ledová voda jde do chladiče. Stupeň „voda z řadu“ (`UA_WATER`) tedy pryč, chladí jen ledová |
+| 3 | Deskový chladič podle návrhového bodu z knih, řízení ledové vody | `plate_cool`, `_pitch`, `UA_WATER`, `UA_ICE`, `ICE_LPM` | **Vasil 17. 11.: chladič je jednostupňový.** Voda jde do nádoby (ledovky), tam ji vychladí glykol, a teprve ledová voda jde do chladiče. Stupeň „voda z řadu“ (`UA_WATER`) tedy pryč, chladí jen ledová. Voda z řadu se cestou do ledovky předchladí a v ledovce se okruhem přes glykol dochladí na 2 °C |
 | 4 | Velikost dílčích rmutů z tepelné bilance (63 a 76 °C po vrácení) | automat checklistu (`checklist_navrh.gd`) | s menšími ztrátami by pevné podíly přehřály dílo |
 | 5 | Stojící čerpadlo průchozí, zpětný tok, výpust přes čerpadlo | `net_flow.gd` (`solve_gravity`, BFS) | zpětné klapky na Zajíci nejsou |
 | 6 | Kalový kužel ve vířivce při rychlém stahování | `_settling`, `_pitch`, `CONE_LOSS` | |
