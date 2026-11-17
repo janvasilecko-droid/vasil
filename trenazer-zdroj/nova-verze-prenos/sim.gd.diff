@@ -1,0 +1,48 @@
+--- orig/scripts/sim.gd	2026-11-17 17:00:36.397134865 +0100
++++ prace/scripts/sim.gd	2026-11-17 17:29:49.299124913 +0100
+@@ -1,5 +1,6 @@
+ class_name BrewSim
+ extends RefCounted
++const FyzikaPlus = preload("res://scripts/fyzika_plus.gd")  # FYZIKA+: tepelné ztráty a odpar
+ ## Zjednodušená fyzika varu nad trasami z plan.json (objemy, teploty, extrakt, Darcyho filtrace).
+ ## Nejde o přesný model pivovaru – je to základ, který lze kalibrovat na reálné várce.
+ 
+@@ -173,6 +174,7 @@
+ var dead_malt: float = 0.0  # kg sladu, jehož extrakt zůstal v suchých hrudkách (nerozpustí se)
+ var hot_break_ext: float = 0.0  # extrakt vysrážený v hot breaku při chmelovaru (kg)
+ var kal_ext: float = 0.0  # extrakt zachycený v kalu na dně vířivky (kg)
++var evap_idle_l: float = 0.0  # FYZIKA+: voda odpařená z horké hladiny mimo var (L)
+ var yeast_pitched: bool = false  # kvasinky jsou v tanku (nastavuje rozvaděč při zakvašení); spotřebovávají O₂
+ var _said: Dictionary = {}  # jednorázová hlášení (klíč -> true), klíč se smaže, když pomine příčina
+ # --- spílání: spílací hadice na vratce (zpět do vířivky) nebo na tanku, voda stojící v chladiči a potrubí ---
+@@ -236,6 +238,7 @@
+ 	dead_malt = 0.0
+ 	hot_break_ext = 0.0
+ 	kal_ext = 0.0
++	evap_idle_l = 0.0
+ 	yeast_pitched = false
+ 	_said.clear()
+ 	line_water = 0.0
+@@ -730,10 +733,9 @@
+ 		sewer["malt"] = 0.0
+ 	elif _said.has("kanal_sit"):
+ 		_said.erase("kanal_sit")
+-	for k in vessels:  # tepelné ztráty
+-		var vs: Dictionary = vessels[k]
+-		if float(vs["v"]) > 0.5:
+-			vs["t"] = float(vs["t"]) - (float(vs["t"]) - cal_ambient) * dt / 43200.0
++	# FYZIKA+: tepelné ztráty izolovaných nádob podle výpočtu a odpar z horké hladiny mimo var (scripts/fyzika_plus.gd).
++	# Dřív: všechny nádoby stejně, časová konstanta 12 h (vs["t"] -= (t - okolí) * dt / 43200).
++	evap_idle_l += FyzikaPlus.losses(self, dt)
+ 
+ 
+ func _free_space(key: String) -> float:
+@@ -1425,7 +1427,7 @@
+ 		var t: float = float(vs["t"])
+ 		var cap: float = float(vs["v"]) * C_WATER + float(vs["malt"]) * C_MALT + float(vs.get("steel", 0.0)) * STEEL_C
+ 		# čistý příkon = ohřev - ztráty do haly (bez ohřevu jen ztráty řeší _step pomalé chladnutí)
+-		var net_kw: float = kw - (LOSS_KW_PER_K * (t - cal_ambient) if kw > 0.0 else 0.0)
++		var net_kw: float = kw  # FYZIKA+: ztráty do haly počítá FyzikaPlus.losses pro všechny nádoby stejně (dřív se tu při ohřevu odečítaly podruhé: LOSS_KW_PER_K)
+ 		var heat: float = net_kw * dt
+ 		var evap_l: float = 0.0
+ 		if heat > 0.0 and t + heat / cap >= cal_boil_t:

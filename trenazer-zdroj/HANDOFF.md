@@ -81,9 +81,15 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   verze 279, přechod z 1.0, 1.3 i 1.4; CRLF, tabulátory a ručně vložená půlka háčku zkoušené u 1.2/1.3; automatická várka 2D = 3D).
   Verze 1.0 a 1.1 prošly nezávislou kontrolou (druhý agent bez znalosti postupu), nálezy jsou opravené; 1.2–1.6 jen vlastní kontrolou a testy.
   **Na Vasilově novější verzi vyzkoušené není** (je jen na jeho PC; až ji nahraje do repa, ověřit tam).
-- **POZOR 17. 11.: Vasilova aktuální verze není v70, ale jiný program** – složka `Trenazer varny` na ploše jeho PC
-  (Godot 4.3, `scripts/sim.gd`, `net_flow.gd`, `plant_3d.gd`, checklist 43 kroků, vlastní testy v `tests/`). Balíček FYZIKA+
-  do něj skriptem vložit nejde (jiná stavba kódu); chce to přenést ručně po částech. Rozpracováno v relaci 17. 11.
+- **POZOR 17. 11.: Vasilova aktuální verze není v70, ale jiný program** – složka `C:\Users\Uzivatel\Desktop\Trenazer varny`
+  (Godot 4.3, `scripts/sim.gd` nad trasami – třída BrewSim, `net_flow.gd`, `plant_3d.gd`, checklist 43 kroků, vlastní testy
+  v `tests/` spouštěné `Godot --headless --path . -s tests/x_test.gd`, celá várka `-- --mode=chkauto`). Řekl: „dával jsi to do
+  staré verze, vše implementuj do aktuální, je to složka na ploše“. Vkládací skript tam nejde použít (jiná stavba kódu),
+  přenáší se ručně po částech. Rozpracováno v `trenazer-zdroj/nova-verze-prenos/` (CTI_ME.md tam): 1. část (ztráty
+  izolovaných nádob + odpar mimo var) je napsaná a jednotkově otestovaná, **na jeho PC zapsaná není** (spojení s PC
+  během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
+  v kontejneru nepodařilo dojet ani s původním kódem. Další části a pořadí: `FYZIKA-PLUS-PRENOS.md`. Chladič je tam
+  dvoustupňový (řad + ledová) – ověřit u Vasila, než se bude měnit.
 - **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Zbylé návrhy (N3–N24) a seznam měření jsou ve FYZIKA_PLUS.md.
 - **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
   Kosař–Procházka: PDF strana = tištěná. Autor je Kosař (v názvu souboru „Kosa“).
