@@ -17,7 +17,7 @@ Přepínače: `--bez-ui` vynechá úpravy panelu (U1–U3), `--bez-vzhledu` vyne
 Balíček je i v repozitáři `janvasilecko-droid/vasil`, složka `trenazer-zdroj/fyzika-plus/` (`git pull`), takže ho
 nemusíš přenášet ručně.
 
-**Už máš vloženou starší verzi (1.0 až 1.3)?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je
+**Už máš vloženou starší verzi (1.0 až 1.4)?** Spusť nový skript na stejnou složku ještě jednou. Pozná, co už je
 vložené, a doplní jen nové háčky a parametry.
 
 Cesta je složka projektu, kde leží `project.godot` a `sim.gd`. Když zadáš nadřazenou složku, skript `sim.gd` najde sám.
@@ -25,7 +25,7 @@ Pro 3D verzi spusť skript ještě jednou se složkou 3D projektu, protože obě
 
 Co skript dělá:
 - zkopíruje `fyzika_plus.gd`, `fyzika_plus_tests.gd` a `fyzika_plus_vzhled.gd` do projektu;
-- vloží háčky H0–H19, U1–U3, V1–V3 a R1 (tabulka níže). Od verze 1.2 sahá i do `auto.gd` a `lauter_auto.gd`
+- vloží háčky H0–H20, U1–U3, V1–V3 a R1 (tabulka níže). Od verze 1.2 sahá i do `auto.gd` a `lauter_auto.gd`
   (po jednom řádku: automat po kroku zavře klapky). **Háček, jehož místo nenajde přesně jednou, přeskočí a napíše proč.**
   Skupina úprav, která spolu souvisí, se vloží buď celá, nebo vůbec. Nic se tedy nerozbije napůl;
 - před první změnou si každý soubor zazálohuje jako `<soubor>.pred-fyzika-plus`;
@@ -119,10 +119,11 @@ Při ručním vkládání drž odsazení okolních řádků.
 | **H17** | sim.gd | v `heat()`: `var UA: float = c.rvpUA if name == "rvp" else c.mpUA`; v `sim_step()` u vířivky `wv.T -= c.wpUA * (wv.T - c.ambientT) * dt / Cw` | Pod první přidej `UA *= FP.loss_k(self, name, v)`; ve druhém vlož za `c.wpUA` násobek `* FP.loss_k(self, "wp", wv)`. Ztráty tepla podle zaplnění nádoby. **Obě části jen spolu** |
 | H18 | sim.gd | v `net_step()`, smyčka `for v in net.gravity:`: `var gk: String = "gd|" + v.id` a o pár řádků níž `var r = bfs([s0])` | Nad první přidej `var fp_idle: Array = FP.idle_pumps(self)` a klíč rozšiř na `"gd|" + v.id + "|" + ",".join(PackedStringArray(fp_idle))`; druhý změň na `var r = bfs([s0], "liq", fp_idle)`. Otevřeným koncem trubky za stojícím čerpadlem pak nádoba vytéká do kanálu. **Jen s H16, obě části spolu** |
 | H19 | sim.gd + auto.gd | v `srcTake()` u vířivky `return takePart(w, LL2, 1.0)`; v `auto.gd` v `tick()` řádek `S.p3.flow = clampf(S.p3.flow + (8.5 - cool_tf) * COOL_G * dt / 60.0, 30.0, 200.0)` | První změň na `return FP.wp_cone(self, takePart(w, LL2, 1.0), LL2, Lmin)`; za druhý připiš `;S.p3.flow = preload("res://fyzika_plus.gd").auto_cone_flow(sim, S.p3.flow)`. Kalový kužel se při rychlém odtahu rozpadá, automat na konci zpomalí. **Obě části jen spolu** |
+| H20 | sim.gd | ve `spAdd()`: `sp.O2 += Lp * (8.0 if S.aer else 0.5)` | Nahraď za `sp.O2 += Lp * FP.o2_dose(self, Tout, plato(p))`. Kyslík v zákvasné mladině podle teploty a stupňovitosti |
 | V3 | main.gd | v `_liquid()` dvojici řádků `if b != "lv":` a pod ním `LiquidFx.draw_caustics(…)` | Nad ni přidej `preload("res://fyzika_plus_vzhled.gd").settled_layer(self, m, it, b, fxs, outline, lv, y0, tt, is_mash)`. Kreslí usazené dílo |
 
 Závislosti: H1–H7, H10–H13, H15–H17, H19, U1, U3 a R1 potřebují H0. U2 a H14 potřebují H1, H9f a H9g potřebují H2,
-H9h potřebuje H3b, V2 potřebuje V1, H16b a H18 potřebují H16. Na ostatních háčcích nic nezávisí.
+H9h potřebuje H3b, V2 potřebuje V1, H16b a H18 potřebují H16, H20 potřebuje H0. Na ostatních háčcích nic nezávisí.
 
 **Co se s H16 změní v ovládání:** když čerpadlo stojí a trasa přes něj je otevřená, kapalina teče podle rozdílu hladin
 (i zpátky). Po čerpání proto zavři klapku – máš na to 3 s skutečného času (při 10× rychlosti 30 s simulace), pak se

@@ -22,8 +22,10 @@ extends RefCounted
 ## Doplněno 17. 11. 2026 (verze 1.3):
 ## 14) výpust do kanálu otevřeným koncem trubky i přes stojící čerpadlo (H18)
 ## 15) rozpad kalového kužele na konci stahování z vířivky (H19)
+## Doplněno 17. 11. 2026 večer (verze 1.5):
+## 16) kyslík v zákvasné mladině podle teploty a stupňovitosti (H20)
 
-const VERZE := "FYZIKA+ 1.4 (2026-11-17)"
+const VERZE := "FYZIKA+ 1.5 (2026-11-17)"
 
 ## výchozí hodnoty nových parametrů (stejné řádky jsou v CFG_DEFAULT; tady jako pojistka, kdyby v něm chyběly)
 const DEF := {
@@ -35,6 +37,7 @@ const DEF := {
 	"hltKvs": 0.0, "lvPumpQ": 120.0, "rvpDiaM": 0.0, "mpDiaM": 0.0, "wpDiaM": 0.0, "evapOpen": 0.1, "mashVmax": 1.5,
 	"pumpPass": 1.0, "pumpPassK": 5.0, "dryWallK": 0.5,
 	"wpConeV": 0.006, "wpConeBreak": 0.1, "wpConeAnn": 0.6, "wpConeAuto": 1.0,
+	"aerEff": 0.9, "o2PlatoK": 0.017, "o2Rest": 0.5,
 }
 ## povolené rozsahy (pro CALIB_RANGE)
 const RANGE := {
@@ -46,6 +49,7 @@ const RANGE := {
 	"hltKvs": [0.0, 200.0], "lvPumpQ": [10.0, 600.0], "rvpDiaM": [0.0, 5.0], "mpDiaM": [0.0, 5.0], "wpDiaM": [0.0, 6.0], "evapOpen": [0.0, 3.0], "mashVmax": [0.5, 4.0],
 	"pumpPass": [0.0, 1.0], "pumpPassK": [0.0, 50.0], "dryWallK": [0.0, 1.0],
 	"wpConeV": [0.0005, 0.1], "wpConeBreak": [0.0, 1.0], "wpConeAnn": [0.0, 2.0], "wpConeAuto": [0.0, 1.0],
+	"aerEff": [0.0, 1.5], "o2PlatoK": [0.0, 0.06], "o2Rest": [0.0, 5.0],
 }
 
 static func cf(sim, k: String) -> float:
@@ -473,6 +477,7 @@ static func report_extra(sim, rep: Dictionary) -> void:
 	var spd = sim.S.get("sp", null)
 	if spd is Dictionary and float(spd.get("L", 0.0)) > 100.0:
 		rep["kal_do_spilky_mg_L"] = float(spd.get("trub", 0.0)) * 1000000.0 / float(spd.L)
+		rep["O2_mg_l"] = float(spd.get("O2", 0.0)) / float(spd.L)   # kyslík pro kvasnice (Kunze s. 353: 8–10 mg/L)
 	var V_hl: float = float(rep.get("V", 0.0))
 	if V_hl > 0.1:
 		rep["kWh_pary_na_hl"] = float(sim.S.get("Esteam", 0.0)) / 3600.0 / V_hl
@@ -774,6 +779,31 @@ static func auto_cone_flow(sim, flow: float) -> float:
 	sim.set_meta("fpIceK", {"k": clampf(cap / maxf(1.0, ref), 0.15, 1.0), "t": now, "ref": ref})
 	return cap
 
+
+
+# ======================================================================
+# 8f) Kyslík v zákvasné mladině (H20)
+# ======================================================================
+
+## Rozpustnost kyslíku ve vodě nasycené vzduchem při 1 atm [mg/L], 0–40 °C (standardní tabulka, APHA/Weiss).
+## 0 °C 14,6 · 10 °C 11,3 · 20 °C 9,1 · 25 °C 8,3 mg/L.
+static func o2_water(T: float) -> float:
+	var t: float = clampf(T, 0.0, 40.0)
+	return 14.62 - 0.3898 * t + 0.006969 * t * t - 0.00005897 * t * t * t
+
+## Rozpustnost v mladině [mg/L]: rozpuštěný extrakt kyslík vytěsňuje. o2PlatoK 0,017/°P je ODHAD
+## (ve 12% mladině je rozpustnost zhruba o pětinu nižší než ve vodě); knihy udávají jen výsledek 8–10 mg/L.
+static func o2_sat(sim, T: float, P: float) -> float:
+	return maxf(0.0, o2_water(T) * (1.0 - cf(sim, "o2PlatoK") * maxf(0.0, P)))
+
+## Kolik kyslíku má mladina při spílání do spilky [mg/L]. Dřív to bylo natvrdo 8 mg/L při zapnutém provzdušnění
+## bez ohledu na teplotu a stupňovitost. Vzduchem se plné nasycení nedosáhne (aerEff 0,9 ODHAD), čistým kyslíkem
+## by to šlo výš. Kunze s. 353 a VLB: 8–10 mg/L u zákvasné mladiny; Kosař s. 188: 5–6 mg/L u flotace.
+## Teplá mladina pobere kyslíku míň – model to teď ukáže.
+static func o2_dose(sim, T: float, P: float) -> float:
+	var rest: float = cf(sim, "o2Rest")
+	if not bool(sim.S.get("aer", false)): return rest
+	return maxf(rest, o2_sat(sim, T, P) * clampf(cf(sim, "aerEff"), 0.0, 1.5))
 
 # ======================================================================
 # 9) Geometrie nádob, hladina

@@ -29,6 +29,7 @@ func run(t) -> void:
 	if _has("H18"): _drainpump()
 	if _has("H19"): _cone()
 	if _has("H17"): _losses()
+	_o2()
 	T.fresh()
 
 ## čistý stav + otevřené klapky na parním potrubí (plánek s parními trubkami by jinak po fresh() neměl páru)
@@ -61,6 +62,26 @@ func _has(h: String) -> bool:
 	if h in HOOKS.APPLIED: return true
 	T.chk("FP háček %s není vložený – test přeskočen (viz zpráva aplikuj_fyzika_plus.py)" % h, true)
 	return false
+
+# ---------- kyslík v zákvasné mladině (H20) ----------
+func _o2() -> void:
+	# tabulková rozpustnost kyslíku ve vodě nasycené vzduchem (APHA): 10 °C 11,3 · 20 °C 9,1 mg/L
+	T.chk("FP kyslík: rozpustnost ve vodě 10 °C 11,3 a 20 °C 9,1 mg/L (tabulka)",
+		absf(FP.o2_water(10.0) - 11.3) < 0.2 and absf(FP.o2_water(20.0) - 9.1) < 0.2,
+		"%.2f / %.2f mg/L" % [FP.o2_water(10.0), FP.o2_water(20.0)])
+	# extrakt kyslík vytěsňuje: zákvasná 12,5° mladina při 8 °C má po provzdušnění 8–10 mg/L (Kunze s. 353, VLB)
+	var S = sim.S
+	var aer0 = S.get("aer", false)
+	S["aer"] = true
+	var d8: float = FP.o2_dose(sim, 8.0, 12.5)
+	var d20: float = FP.o2_dose(sim, 20.0, 12.5)
+	var dw: float = FP.o2_dose(sim, 8.0, 0.0)
+	S["aer"] = false
+	var doff: float = FP.o2_dose(sim, 8.0, 12.5)
+	S["aer"] = aer0
+	T.chk("FP kyslík: provzdušněná 12,5° mladina při 8 °C má 8–10 mg/L (Kunze s. 353, VLB)", d8 >= 8.0 and d8 <= 10.0, "%.2f mg/L" % d8)
+	T.chk("FP kyslík: teplá mladina pobere míň než studená a extrakt rozpustnost snižuje", d20 < d8 - 1.0 and d8 < dw, "20 °C %.2f < 8 °C %.2f < voda %.2f mg/L" % [d20, d8, dw])
+	T.chk("FP kyslík: bez provzdušnění jen zbytkový kyslík", absf(doff - FP.cf(sim, "o2Rest")) < 1e-6, "%.2f mg/L" % doff)
 
 # ---------- vlastnosti vody a páry ----------
 func _props() -> void:

@@ -69,6 +69,10 @@ NEW_PARAMS = [
     ("wpConeBreak", 0.1, (0.0, 1.0), ["-", "ESTIMATED", "×3", "kolik vynořeného kužele se při rychlém odtahu (aspoň dvojnásobek wpConeV) rozpadne a odteče s mladinou; ODHAD – podle Kosaře s. 184 má být za vířivkou průměrně pod 100 mg/L hrubého kalu"]),
     ("wpConeAnn", 0.6, (0.0, 2.0), ["m", "LITERATURE", "≥ 0,6", "šířka mezikruží bez kalu mezi okrajem kalového kužele a stěnou vířivky (Kosař s. 181: aspoň 60 cm) – určuje průměr a výšku kužele"]),
     ("wpConeAuto", 1.0, (0.0, 1.0), ["0/1", "ESTIMATED", "-", "1 = automat na konci stahování z vířivky zpomalí C3 tak, aby se kužel nerozpadl (Kosař s. 181: spojité snižování rychlosti); 0 = nezpomaluje"]),
+    # --- verze 1.5 (17. 11. 2026 večer) ---
+    ("aerEff", 0.9, (0.0, 1.5), ["-", "ESTIMATED", "0,7–1", "jaké části nasycení se dosáhne provzdušněním vzduchem; čistým kyslíkem jde výš. Výsledek 8–10 mg/L u zákvasné mladiny sedí s Kunzem s. 353 a VLB"]),
+    ("o2PlatoK", 0.017, (0.0, 0.06), ["1/°P", "ESTIMATED", "0,01–0,025", "o kolik rozpuštěný extrakt snižuje rozpustnost kyslíku; 0,017/°P znamená ve 12% mladině zhruba o pětinu méně než ve vodě. Knihy udávají jen výsledek, ne závislost"]),
+    ("o2Rest", 0.5, (0.0, 5.0), ["mg/L", "ESTIMATED", "0–1", "zbytkový kyslík v mladině bez provzdušnění (dřívější pevná hodnota v programu)"]),
 ]
 
 
@@ -375,6 +379,10 @@ def build_hooks():
     H.append(Hook("H19", "sim.gd + auto.gd: kalový kužel se při rychlém odtahu z vířivky rozpadá; automat na konci stahování zpomalí C3", probes=[("sim.gd", "FP.wp_cone(self", 1), ("auto.gd", ".auto_cone_flow(sim, S.p3.flow)", 1)], edits=[
         ("sim.gd", within("srcTake", done_if("FP.wp_cone(self", sub_once(r'return takePart\(w, LL2, 1\.0\)', 'return FP.wp_cone(self, takePart(w, LL2, 1.0), LL2, Lmin)', comment="# FYZIKA+ H19 – rozpad kalového kužele")))),
         ("auto.gd", within("tick", done_if(".auto_cone_flow(sim, S.p3.flow)", sub_once(r'S\.p3\.flow = clampf\(S\.p3\.flow \+ \(8\.5 - cool_tf\) \* COOL_G \* dt / 60\.0, 30\.0, 200\.0\)', 'S.p3.flow = clampf(S.p3.flow + (8.5 - cool_tf) * COOL_G * dt / 60.0, 30.0, 200.0);S.p3.flow = ' + FPM + '.auto_cone_flow(sim, S.p3.flow)', comment="# FYZIKA+ H19 – u kalového kužele zpomalit")))),
+    ], optional=True, needs=["H0"]))
+    # H20 – kyslík v zákvasné mladině podle teploty a extraktu
+    H.append(Hook("H20", "sim.gd: kyslík v zákvasné mladině podle teploty a stupňovitosti (dřív natvrdo 8 mg/L)", probes=[("sim.gd", "FP.o2_dose(self", 1)], edits=[
+        ("sim.gd", within("spAdd", done_if("FP.o2_dose(self", sub_once(r'sp\.O2 \+= Lp \* \(8\.0 if S\.aer else 0\.5\)', 'sp.O2 += Lp * FP.o2_dose(self, Tout, plato(p))', comment="# FYZIKA+ H20 (dřív: 8.0 if S.aer else 0.5)")))),
     ], optional=True, needs=["H0"]))
     # U – panel (volitelné)
     H.append(Hook("U1", "ctl.gd: tlačítko kyseliny mléčné do mladiny", probes=[("ctl.gd", "fpAcid", 2)], edits=[

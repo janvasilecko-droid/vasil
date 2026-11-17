@@ -41,6 +41,9 @@ const META: = {
 	"wpConeBreak": ["-", "ESTIMATED", "×3", "kolik vynořeného kužele se při rychlém odtahu (aspoň dvojnásobek wpConeV) rozpadne a odteče s mladinou; ODHAD – podle Kosaře s. 184 má být za vířivkou průměrně pod 100 mg/L hrubého kalu"],   # FYZIKA+ H8
 	"wpConeAnn": ["m", "LITERATURE", "≥ 0,6", "šířka mezikruží bez kalu mezi okrajem kalového kužele a stěnou vířivky (Kosař s. 181: aspoň 60 cm) – určuje průměr a výšku kužele"],   # FYZIKA+ H8
 	"wpConeAuto": ["0/1", "ESTIMATED", "-", "1 = automat na konci stahování z vířivky zpomalí C3 tak, aby se kužel nerozpadl (Kosař s. 181: spojité snižování rychlosti); 0 = nezpomaluje"],   # FYZIKA+ H8
+	"aerEff": ["-", "ESTIMATED", "0,7–1", "jaké části nasycení se dosáhne provzdušněním vzduchem; čistým kyslíkem jde výš. Výsledek 8–10 mg/L u zákvasné mladiny sedí s Kunzem s. 353 a VLB"],   # FYZIKA+ H8
+	"o2PlatoK": ["1/°P", "ESTIMATED", "0,01–0,025", "o kolik rozpuštěný extrakt snižuje rozpustnost kyslíku; 0,017/°P znamená ve 12% mladině zhruba o pětinu méně než ve vodě. Knihy udávají jen výsledek, ne závislost"],   # FYZIKA+ H8
+	"o2Rest": ["mg/L", "ESTIMATED", "0–1", "zbytkový kyslík v mladině bez provzdušnění (dřívější pevná hodnota v programu)"],   # FYZIKA+ H8
 	"rvpCap": ["L", "MANUFACTURER", "±5 %", "nominální objem pánve 50 hl (údaj provozovatele)"],
 	"rvpSteel": ["kg oceli", "ESTIMATED", "±30 %", "hmotnost nádoby; kapacita = kg × cpSteel – z výkresu nebo štítku"],
 	"cpSteel": ["kJ/(kg·K)", "LITERATURE", "0,46–0,51", "měrná tepelná kapacita austenitické nerezi (AISI 304); jediné místo převodu sim.steelC()"],

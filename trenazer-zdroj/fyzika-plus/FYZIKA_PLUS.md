@@ -2,7 +2,8 @@
 
 Vypracováno 29. 10. 2026 na zdrojích 2D v70 / 3D v152 (`vasil/unity/GodotSrc`), **doplněno 16. 11. 2026 (verze 1.1:
 kapaliny a dílo, kapitola 7; verze 1.2: stojící čerpadlo, ztráty podle hladiny, usazené dílo, kapitola 8;
-17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5; verze 1.4: kalový kužel ve vířivce, kapitola 8.6)**.
+17. 11. verze 1.3: výpust do kanálu přes stojící čerpadlo, kapitola 8.5; verze 1.4: kalový kužel ve vířivce, kapitola 8.6;
+verze 1.5: kyslík v zákvasné mladině, kapitola 8.7)**.
 Balíček je stavěný tak, aby šel vložit i do novější verze (viz INTEGRACE.md).
 **Nic z toho není vydané** v ⟳ Aktualizovat. Balíček leží v repozitáři `vasil` ve složce `trenazer-zdroj/fyzika-plus/`.
 Vzorce, jednotky a vkládací skript první verze prošla ještě nezávislá kontrola, její připomínky jsou zapracované.
@@ -59,7 +60,7 @@ Zbyla tahle slabá místa:
 | Vířivka | nátok ≤ 3,5 m/s, co největší objemový tok, často stačí mnohem menší rychlost; klid 20–30 min; D : H 3 : 1 | Kunze s. 340–341 | wpVmax 3,5; wpVmin 1,0 (ODHAD); hrdlo = trubka z plánku |
 | Horký kal | 0,2–0,4 % mladiny, částice 30–80 µm; 6,6–6,9 kg sušiny/100 hl u 12% | VLB | model ~2,4 kg lomu + chmel na 40 hl (sedí) |
 | Chladič | jednostupňově ledová 1–2 °C → 80–88 °C, mladina 95–98 °C → zákvasná; ledová ~3 °C pod zákvasnou | Kunze s. 351–352 | průtok ledové vody jde přiškrtit (H11) |
-| Kyslík po provzdušnění | 8–10 mg/L | VLB | návrh N6 |
+| Kyslík po provzdušnění | 8–10 mg/L | VLB, Kunze s. 353 | dávka podle teploty a °P (H20) |
 | Ztráty povrchem | holá nerez ~15 W/(m²·K) při 0,5 m/s vzduchu; izolovaná ~0,8; holé víko pánve 9 m² ≈ 10 kW | inzonex (ISO 12241) | pipeU 10 (holá trubka bez průvanu) |
 | Energie varny | infuze, 7,5 % odparu: rmutování 2,2 + ohřev k varu 3,4 + var 5,0 + CIP 0,3 + teplá voda 2,3 kWh/hl; 1 % odparu ≈ 0,67 kWh/hl | EU JRC | protokol ukáže kWh páry na hl |
 | Mladina | c_p ≈ 4,0 kJ/(kg·K); otopná plocha vnějšího vařáku ~0,2 m²/hl | Briggs | c_p v modelu 3,87 při 12 °P (ponecháno) |
@@ -153,7 +154,7 @@ N20 (ztráty podle hladiny) a z N22 vrstva usazeného díla, popis je v kapitole
 | N3 | Zanášení otopné plochy (připálení) během várky a jeho odstranění louhem (CIP ↔ přestup tepla) | špinavá pánev topí pomaleji, proto má CIP smysl. Číslo pro odpor nánosu rmutu jsem v literatuře nenašel | doba ohřevu čisté pánve a pánve po várce |
 | N4 | pH rmutu během rmutování klesá o 0,15–0,30 (Kosař s. 137); pH výstřelků roste s alkalitou vyslazovací vody | třísloviny počítat z pH poslední sladiny, ne z pH rmutu | rozbor vody, pH poslední sladiny |
 | N5 | Rozpustnost α-kyselin a ztráty izo-α na kalech místo pevného faktoru 0,44 | využití chmele klesá s dávkou | laboratorní IBU vyražené mladiny a piva |
-| N6 | Kyslík: vystírání shora, čerpání, provzdušnění | provzdušnění už sedí s Kunzem (8 mg/L, s. 353), ale kyslík ve spilce zatím nic neovlivňuje. Aby měl smysl, musel by řídit množení kvasnic a kvašení, a k tomu čísla nemám (Kunze i Kosař to popisují jen slovně) | rozhodnutí, jestli to chceš; pak data o kvašení (rychlost, množení kvasnic) |
+| N6b | Kyslík: aby něco ovlivňoval (vystírání shora, čerpání, množení kvasnic) | dávku podle teploty a °P počítá verze 1.5, ale kyslík ve spilce pořád nic neřídí. Aby měl plný smysl, musel by ovlivňovat množení kvasnic a kvašení, a k tomu čísla nemám (Kunze i Kosař to popisují jen slovně); u vystírání shora bych musel v plánku rozlišit horní a spodní nátok | rozhodnutí, jestli to chceš; data o kvašení (rychlost, množení kvasnic); kudy se u vás vystírá |
 | N8 | Výkon míchadla Np·ρ·N³·D⁵ (teplo do rmutu ~0,5–2 kW) | malý, ale měřitelný vliv při prodlevách | štítek motoru míchadla |
 | N11 | Hodnotit barvu proti odhadu barvy piva, ne proti zákvasné mladině | cíl receptu 9 EBC je nejspíš barva piva | potvrď, co znamená EBC v receptu |
 | N12 | Kyselina mléčná do rmutu: 80 % = 10,6 mEq/mL (teď 11,8 = 88 %) | účinek je teď o 11 % silnější | jakou kyselinu používáte (80 / 88 %) |
@@ -463,9 +464,10 @@ jakkoli rychle. Teď se počítá tvar kužele a výška hladiny u něj:
   ubere ledovou, aby mladina nešla do spilky přechlazená (bez toho by spadla na 2,4 °C). Vypnutí: `wpConeAuto` = 0.
 - Protokol nově ukazuje `kal_do_spilky_mg_L`.
 
-**Kyslík (N6) jsem nedělal.** Provzdušnění v programu už odpovídá Kunzemu (cíl 8 mg/L, s. 353), ale kyslík ve spilce
-zatím nic neovlivňuje. Aby měl smysl, musel by řídit kvasnice a kvašení, a pro to nemám čísla – bylo by to vymyšlené.
-Zůstává v návrzích.
+**Kyslík (N6) jsem v téhle verzi nedělal.** Provzdušnění v programu už odpovídá Kunzemu (cíl 8 mg/L, s. 353), ale kyslík
+ve spilce zatím nic neovlivňuje. Aby měl plný smysl, musel by řídit množení kvasnic a kvašení, a pro to nemám čísla –
+bylo by to vymyšlené. Verze 1.5 proto udělala jen tu půlku, která vymyšlená není: samotnou dávku podle teploty
+a stupňovitosti (kapitola 8.7). Zbytek zůstává v návrzích jako N6b.
 
 **Co jsem cestou našel (neměnil jsem):** ve vířivce zůstává po automatické várce 101 L (2,6 % várky), Kosař uvádí mladinu
 zadrženou v kalu 0,7–1,3 % (s. 182). Model bere z chmele 70 % dávky do kalu, Kosař uvádí asi 50 % (s. 179); hrubý kal
@@ -484,6 +486,34 @@ z verzí 1.0, 1.1 i 1.3 doplní jen nové a druhé spuštění nic nezmění. Au
 | Délka várky | 637 min | 646 min |
 
 Ostatní (IBU, EBC, DMS, pára, výtěžnost) beze změny. Na tvé novější verzi z domu to vyzkoušené není.
+
+### 8.7 Doplněk 17. 11. 2026 večer (verze 1.5): kyslík pro kvasnice
+
+**P21. Kyslík v zákvasné mladině podle teploty a stupňovitosti (H20, `FP.o2_dose`).** Spilka dosud dostala
+natvrdo 8 mg/L při zapnutém provzdušnění, ať byla mladina jakkoli teplá a silná. Rozpustnost kyslíku přitom
+s teplotou prudce klesá (voda nasycená vzduchem: 0 °C 14,6 · 10 °C 11,3 · 20 °C 9,1 mg/L, tabulka APHA)
+a rozpuštěný extrakt ho vytěsňuje.
+
+- Rozpustnost ve vodě je tabulkový polynom; vliv extraktu `o2PlatoK` 0,017/°P je ODHAD (ve 12% mladině zhruba
+  o pětinu nižší než ve vodě). Knihy udávají jen výsledek: 8–10 mg/L (Kunze s. 353, VLB), u flotace 5–6 mg/L
+  (Kosař s. 188).
+- Vzduchem se plné nasycení nedosáhne: `aerEff` 0,9 je ODHAD. Čistým kyslíkem by to šlo výš.
+- Automatická várka (zákvasná 7,8 °C, 12,8 °P) dává **8,43 mg/L** — dřív pevných 8,0. Teplá mladina pobere
+  znatelně míň: při 20 °C by to bylo 6,5 mg/L. Pokud tedy někdy jde mladina do spilky tepleji, kvasnice
+  dostanou míň kyslíku a trenažér to teď ukáže.
+- Protokol nově vypisuje `O2_mg_l`.
+- **Na výsledek várky to zatím nemá vliv** – kyslík ve spilce nic neřídí, model kvašení ho nebere. Je to zpřesnění
+  vstupního čísla a ukazatel pro obsluhu, ne nový jev. Aby kyslík něco ovlivňoval, musel by řídit množení kvasnic;
+  na to čísla nemám, zůstává to jako návrh N6b.
+- Zbytek návrhu N6 (kyslík vnesený vystíráním shora a čerpáním → tmavší barva, hrubší chuť a horší stabilita,
+  Kunze s. 236–242) v balíčku **není**: musel bych v plánku rozlišit horní a spodní nátok.
+  Napiš, kudy se u vás vystírá, a doplním to.
+
+**Ověření verze 1.5:** 2D v70 i 3D v152 343 kontrol, 0 selhání (74 kontrol FYZIKA+, 4 nové: tabulková
+rozpustnost, rozmezí 8–10 mg/L u zákvasné mladiny, vliv teploty a extraktu, stav bez provzdušnění).
+Přechod z verze 1.3 doplní oba háčky verzí 1.4 a 1.5 najednou, druhé spuštění nic nezmění. Automatická várka
+se proti verzi 1.4 nezměnila, jen přibyl vypsaný kyslík. Tuhle verzi druhý agent nekontroloval — prošel jsem
+ji sám a testy. **Na tvé novější verzi z domu to vyzkoušené není.**
 
 ## Zdroje
 
@@ -512,3 +542,9 @@ Doplněno ve verzi 1.1:
 
 Doplněno ve verzi 1.2:
 - GIW Industries (KSB): Understanding the practice of pumping through (ztráta ve stojícím čerpadle, K ≈ 5 a 10). https://giw.ksb.com/blog/understanding-the-practice-of-pumping-through
+
+Doplněno ve verzi 1.5:
+- APHA / Weiss – rozpustnost kyslíku ve vodě nasycené vzduchem (tabulka 0–40 °C), polynom podle
+  https://www.waterboards.ca.gov/water_issues/programs/swamp/docs/cwt/guidance/3110en.pdf
+- W. Kunze: Technology Brewing and Malting, 3. angl. vyd. (s. 353 kyslík v zákvasné mladině) a Kosař, Procházka:
+  Technologie výroby sladu a piva (s. 188 provzdušnění). Jen čísla s odkazem na stranu, bez textu knih.
