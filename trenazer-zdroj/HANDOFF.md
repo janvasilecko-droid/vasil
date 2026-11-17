@@ -89,7 +89,8 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   izolovaných nádob + odpar mimo var) je napsaná a jednotkově otestovaná, **na jeho PC zapsaná není** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
   v kontejneru nepodařilo dojet ani s původním kódem. Další části a pořadí: `FYZIKA-PLUS-PRENOS.md`. Chladič je tam
-  dvoustupňový (řad + ledová) – ověřit u Vasila, než se bude měnit.
+  dvoustupňový (řad + ledová), ale **Vasil 17. 11. potvrdil, že na Zajíci je jednostupňový**: voda jde do ledovky, tam ji
+  vychladí glykol, a do deskového chladiče jde jen ledová voda. V aktuální verzi tedy zrušit stupeň s vodou z řadu.
 - **Nevydávat** přes ⟳ Aktualizovat bez jeho souhlasu. Zbylé návrhy (N3–N24) a seznam měření jsou ve FYZIKA_PLUS.md.
 - **Knihy – číslování stran:** Kunze (sken, OCR): tištěná strana = PDF − 1 do PDF 257, PDF + 2 pro 259–646, PDF + 3 od 647.
   Kosař–Procházka: PDF strana = tištěná. Autor je Kosař (v názvu souboru „Kosa“).
