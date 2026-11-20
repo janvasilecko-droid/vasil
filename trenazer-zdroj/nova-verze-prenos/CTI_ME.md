@@ -22,3 +22,10 @@ Práce s jeho PC: `device_bash` funguje (20. 11.), složky jsou v `$HOME/mnt/Des
 automat stál na kroku 4 (bojler aspoň 70 °C); prázdná nádoba se nehřeje. Je to tak i v jeho původní složce. V kopii
 FYZIKA+ je v `checklist_panel._start_auto` při nové várce bojler napuštěn 4000 L / 15 °C (moje volba, ne údaj od Vasila).
 Zapsáno na PC, záloha `checklist_panel.gd.pred-opravou-bojleru`. Celý automat u mě neověřen (headless je příliš pomalý).
+
+**20. 11. 23:10 – jedna složka (Vasil: „udělej jen jednu složku“):** všechno je teď přímo v `Desktop\Trenazer varny`;
+kopie `Trenazer varny FYZIKA+` je vyprázdněná (prázdná složka možná zůstala, nešla odstranit). Původní soubory jsou
+v `Trenazer varny\zaloha-pred-fyzika-plus\` (skripty jako `.txt`, je tam `.gdignore`). Oprava bojleru je místo
+`checklist_panel.gd` v `sim_panel.new_batch` (4000 L / 15 °C, platí i pro ruční várku – Vasil odsouhlasil). Aktivní
+`plan_edited.json` je ten z 20. 11. 20:52 (Vasil v kopii smazal trubku `pipe_mur91to7` a klapku `valve_muraghbe`,
+přidal novou trubku a klapku, posunul `valve_mur96gfu`); plán ze 17. 11. je v záloze.

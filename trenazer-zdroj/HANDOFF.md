@@ -88,6 +88,8 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   přenáší se ručně po částech. Rozpracováno v `trenazer-zdroj/nova-verze-prenos/` (CTI_ME.md tam): 1. část (ztráty
   izolovaných nádob + odpar mimo var) a 2. část (jednostupňový chladič) jsou od 20. 11. zapsané na jeho PC v kopii
   `Desktop\\Trenazer varny FYZIKA+` (původní složka beze změny; řekl „až to bude, ulož na plochu složku s tím programem“).
+  **Od 20. 11. 23:10 je vše v jediné složce `Desktop\\Trenazer varny`** (kopie zrušena, zálohy v `zaloha-pred-fyzika-plus`);
+  nová várka začíná s bojlerem 4000 L (jinak automat stál na kroku 4). Viz `nova-verze-prenos/CTI_ME.md`.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
   v kontejneru nepodařilo dojet ani s původním kódem. Další části a pořadí: `FYZIKA-PLUS-PRENOS.md`. Chladič je tam
