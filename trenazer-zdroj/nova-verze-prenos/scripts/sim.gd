@@ -34,8 +34,8 @@ const CAL_PARAMS := {
 	"gelK": {"var": "cal_gel_k", "lo": 0.005, "hi": 1.0, "txt": "rychlost rozpouštění škrobu (1/min)"},
 	"boilerKW": {"var": "cal_boiler_kw", "lo": 50.0, "hi": 3000.0, "txt": "výkon parního kotle (kW)"},
 	"boilerWaterKg": {"var": "cal_boiler_water_kg", "lo": 50.0, "hi": 20000.0, "txt": "voda v kotli (kg), určuje pokles tlaku"},
-	"UA1": {"var": "cal_ua_water", "lo": 1.0, "hi": 200.0, "txt": "deskový chladič, 1. stupeň voda (kW/K)"},
-	"UAice": {"var": "cal_ua_ice", "lo": 1.0, "hi": 300.0, "txt": "deskový chladič, 2. stupeň ledová voda (kW/K)"},
+	"UA1": {"var": "cal_ua_water", "lo": 1.0, "hi": 200.0, "txt": "nepoužívá se – chladič je jednostupňový, platí UAice"},
+	"UAice": {"var": "cal_ua_ice", "lo": 1.0, "hi": 400.0, "txt": "deskový chladič, ledová voda (kW/K)"},
 }
 const CAL_PUMPS := ["p1", "p2", "p3", "phw", "plv"]
 var cal_ambient: float = AMBIENT
@@ -199,7 +199,7 @@ const BOILER_KW := 650.0  # jmenovitý výkon parního kotle (kW páry)
 const STEAM_BAR := 2.5  # provozní přetlak páry (bar)
 const PLATE_EFF := 0.94  # účinnost čistého deskového chladiče (zanesený chladič: plate_eff < PLATE_EFF zmenší UA)
 const UA_WATER := 25.0  # kW/K 1. stupeň deskového chladiče (voda z řadu), z původního trenažéru (PARAMETRY.md: UA1)
-const UA_ICE := 76.0  # kW/K 2. stupeň (ledová voda); původně 65, tady nastaveno tak, aby při C3 200 L/min a C5 200 L/min vycházelo ~8,5 °C jako dosud
+const UA_ICE := 207.0  # FYZIKA+: jediný stupeň chladiče; 207 kW/K dává při C3 200 L/min, ledové 200 L/min a 3 °C z 95 °C na ~8,5 °C (dřív 76 za stupněm s vodou z řadu) # kW/K 2. stupeň (ledová voda); původně 65, tady nastaveno tak, aby při C3 200 L/min a C5 200 L/min vycházelo ~8,5 °C jako dosud
 const ICE_LPM := 200.0  # průtok ledové vody čerpadlem C5 chladičem (L/min): stejný jako mladiny, ať ledovka (4200 L) vystačí na celou várku (3440 L)
 var steam_on: bool = true  # parní kotel zapnutý – bez páry ohřev nejde
 var steam_bar: float = STEAM_BAR  # nejvyšší tlak, který hořák udrží (porucha ho sníží)
@@ -1009,34 +1009,26 @@ func _flow_instant(rn: String, src_key: String, dst_key: String, dq: float, sk_r
 	_mix(dst, dq, float(src["t"]), ext_out, src)
 
 
-## Deskový chladič (ε-NTU, protiproud) ve dvou stupních podle původního net.gd: 1. stupeň voda z řadu (UA_WATER, poměr
-## kapacit 0,83), 2. stupeň ledová voda z C5 (UA_ICE, průtok ICE_LPM). Zanesený chladič (plate_eff) zmenší UA.
-## q_lpm je průtok mladiny; vrací teplotu mladiny za chladičem a ledové vody za ním.
+## Deskový chladič (ε-NTU, protiproud), jeden stupeň: mladinu chladí jen ledová voda z C5 (UA_ICE, průtok ICE_LPM).
+## FYZIKA+ (Vasil 17. 11. 2026): na Zajíci voda z řadu mladinu přímo nechladí – předchladí se cestou do ledovky, tam se
+## okruhem přes glykol dochladí na 2 °C a teprve ledová voda jde do chladiče. Dřívější 1. stupeň „voda z řadu“ je pryč;
+## bez ledové vody se mladina nechladí. Zanesený chladič (plate_eff) zmenší UA.
 func plate_cool(t_in: float, q_lpm: float, ice: bool, t_ice: float) -> Dictionary:
 	var out := {"t_out": t_in, "t_ice_out": t_ice, "duty_kw": 0.0}
 	var cw: float = q_lpm / 60.0 * 1.04 * 4.0  # kW/K tepelná kapacita proudu mladiny
-	if cw <= 0.0:
+	if cw <= 0.0 or not ice:
 		return out
 	var foul: float = clampf(plate_eff / PLATE_EFF, 0.05, 1.0)
-	var ntu1: float = cal_ua_water * foul / cw
-	var x1: float = exp(-ntu1 * (1.0 - 0.83))
-	var t1: float = t_in - (1.0 - x1) / (1.0 - 0.83 * x1) * (t_in - cal_mains_t)
-	t1 = minf(t1, t_in)
-	out["t_out"] = t1
-	if ice:
-		var cc: float = ICE_LPM / 60.0 * 4.19
-		var cmin: float = minf(cw, cc)
-		var cr: float = cmin / maxf(cw, cc)
-		var ntu2: float = cal_ua_ice * foul / cmin
-		var e2: float = ntu2 / (1.0 + ntu2) if cr > 0.999 else (1.0 - exp(-ntu2 * (1.0 - cr))) / (1.0 - cr * exp(-ntu2 * (1.0 - cr)))
-		var t2: float = t1 - e2 * cmin / cw * (t1 - t_ice)
-		t2 = minf(t2, t1)
-		out["t_out"] = t2
-	out["duty_kw"] = cw * (t_in - float(out["t_out"]))
-	# zpětné získání tepla: veškeré teplo z mladiny (oba stupně) odnáší voda z chladiče do bojleru; ledová voda se sama
-	# ohřeje na 70–90 °C (tak to popisuje i původní trenažér), strop 95 °C
-	if ice:
-		out["t_ice_out"] = minf(t_ice + float(out["duty_kw"]) / (ICE_LPM / 60.0 * 4.19), 95.0)
+	var cc: float = ICE_LPM / 60.0 * 4.19
+	var cmin: float = minf(cw, cc)
+	var cr: float = cmin / maxf(cw, cc)
+	var ntu: float = cal_ua_ice * foul / cmin
+	var eff: float = ntu / (1.0 + ntu) if cr > 0.999 else (1.0 - exp(-ntu * (1.0 - cr))) / (1.0 - cr * exp(-ntu * (1.0 - cr)))
+	var t2: float = minf(t_in - eff * cmin / cw * (t_in - t_ice), t_in)
+	out["t_out"] = t2
+	out["duty_kw"] = cw * (t_in - t2)
+	# zpětné získání tepla: všechno teplo z mladiny odnáší ledová voda do bojleru (knihy: 80–88 °C), strop 95 °C
+	out["t_ice_out"] = minf(t_ice + float(out["duty_kw"]) / cc, 95.0)
 	return out
 
 
@@ -1051,9 +1043,9 @@ func _pitch(dq_max: float, dt: float) -> void:
 	if dq <= 0.0:
 		return
 	var t_in: float = float(wp["t"])
-	# deskový chladič ve dvou stupních (ε-NTU, protiproud): 1. voda z řadu, 2. ledová voda z C5 (jako v původním trenažéru)
+	# deskový chladič (ε-NTU, protiproud): chladí jen ledová voda z C5
 	var lv: Dictionary = vessels["lv"]
-	var ice: bool = active.get("ledovka", false) and float(lv["v"]) >= 1.0  # ledovka došla – chladí jen voda z řadu
+	var ice: bool = active.get("ledovka", false) and float(lv["v"]) >= 1.0  # ledovka došla nebo C5 stojí – mladina se nechladí
 	var plate: Dictionary = plate_cool(t_in, dq * 60.0 / maxf(dt, 0.001), ice, float(lv["t"]))
 	var t_out: float = float(plate["t_out"])
 	if ice:

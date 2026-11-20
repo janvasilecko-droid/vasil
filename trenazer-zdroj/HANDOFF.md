@@ -86,7 +86,9 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   v `tests/` spouštěné `Godot --headless --path . -s tests/x_test.gd`, celá várka `-- --mode=chkauto`). Řekl: „dával jsi to do
   staré verze, vše implementuj do aktuální, je to složka na ploše“. Vkládací skript tam nejde použít (jiná stavba kódu),
   přenáší se ručně po částech. Rozpracováno v `trenazer-zdroj/nova-verze-prenos/` (CTI_ME.md tam): 1. část (ztráty
-  izolovaných nádob + odpar mimo var) je napsaná a jednotkově otestovaná, **na jeho PC zapsaná není** (spojení s PC
+  izolovaných nádob + odpar mimo var) a 2. část (jednostupňový chladič) jsou od 20. 11. zapsané na jeho PC v kopii
+  `Desktop\\Trenazer varny FYZIKA+` (původní složka beze změny; řekl „až to bude, ulož na plochu složku s tím programem“).
+  Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
   v kontejneru nepodařilo dojet ani s původním kódem. Další části a pořadí: `FYZIKA-PLUS-PRENOS.md`. Chladič je tam
   dvoustupňový (řad + ledová), ale **Vasil 17. 11. potvrdil, že na Zajíci je jednostupňový**: voda jde do ledovky, tam ji
