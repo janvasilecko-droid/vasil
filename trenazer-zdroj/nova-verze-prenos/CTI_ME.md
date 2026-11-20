@@ -17,3 +17,8 @@ v `chkauto-vysledek.txt` v té složce.
 
 Práce s jeho PC: `device_bash` funguje (20. 11.), složky jsou v `$HOME/mnt/Desktop/…`; soubory z kontejneru přes
 `device_commit_files` z `/mnt/user-data/outputs/`. Testy se pouští `Godot --headless --path . -s tests/x_test.gd`.
+
+**20. 11. večer – oprava automatu:** `sim.reset()` nechává bojler prázdný a žádný krok checklistu ho nenapouští, takže
+automat stál na kroku 4 (bojler aspoň 70 °C); prázdná nádoba se nehřeje. Je to tak i v jeho původní složce. V kopii
+FYZIKA+ je v `checklist_panel._start_auto` při nové várce bojler napuštěn 4000 L / 15 °C (moje volba, ne údaj od Vasila).
+Zapsáno na PC, záloha `checklist_panel.gd.pred-opravou-bojleru`. Celý automat u mě neověřen (headless je příliš pomalý).
