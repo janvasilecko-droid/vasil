@@ -37,3 +37,9 @@ Zjištění: program má průtoky 5× zrychlené (`FLOW_SCALE`) a plochy nádob 
 závislé na skutečné rychlosti (kalový kužel podle klesání hladiny, rychlost rmutu v potrubí, řízení ledové vody) nejdou
 přenést beze změny – čeká na Vasilovo rozhodnutí. Pára: program už má vlastní model tlaku (`_steam_factor`).
 Startu programu bez grafiky trvá v kontejneru přes 4,5 min; `chkauto` proto běží desítky minut (pouštět na pozadí).
+
+**21. 11. 13:50 – Vasil: „tak to udělej“ (přepočítat na zrychlený čas).** Hotovo a otestováno (10 kontrol v
+`fyzika_plus_test.gd`): kalový kužel (`cone_break`, mez ve skutečném měřítku), zpomalení automatu u kužele, řízení
+ledové vody v automatu (`sim.ice_auto`, zapíná `checklist_panel._start_auto`), varování na rychlost rmutu.
+**Na PC NEZAPSÁNO** (nepřipojeno). Zapsat: `scripts/fyzika_plus.gd`, `scripts/sim.gd`, `scripts/checklist_panel.gd`,
+`tests/fyzika_plus_test.gd`, `FYZIKA-PLUS-PRENOS.md` (sim_panel.gd s bojlerem už na PC je).

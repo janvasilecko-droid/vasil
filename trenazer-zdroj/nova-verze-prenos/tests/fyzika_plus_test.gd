@@ -50,6 +50,39 @@ func _init() -> void:
 	for i in 3600:
 		s3.step(1.0)
 	check("bojler 45 hl 80 °C za hodinu ztratí pod 0,5 K a nic se neodpaří", 80.0 - float(h["t"]) < 0.5 and 80.0 - float(h["t"]) > 0.05 and absf(float(h["v"]) - 4500.0) < 1e-6, "(−%.2f K)" % (80.0 - float(h["t"])))
+	# kalový kužel: ve skutečném měřítku drží do ~34 L/min; nad kuželem se nerozpadá nikdy
+	var safe: float = FP.cone_safe_lpm(5000.0)
+	check("kalový kužel: mez ~34 L/min, pod ní 0, nad ní roste, nad kuželem 0", safe > 30.0 and safe < 37.0 and FP.cone_break(100.0, 5000.0, safe * 0.9) == 0.0 and FP.cone_break(100.0, 5000.0, 50.0) > 0.04 and FP.cone_break(1000.0, 5000.0, 80.0) == 0.0, "(%.1f L/min, výška kužele %.1f cm)" % [safe, FP.cone_height(5000.0) * 100.0])
+	# spílání posledních 200 L: plným výkonem C3 (200 L/min v měřítku programu) se kužel rozpadá, automat zpomalí a kužel drží
+	var res: Array = []
+	for au in [false, true]:
+		var s5 := BrewSim.new()
+		var w5: Dictionary = s5.vessels["wp"]
+		w5["v"] = 200.0; w5["t"] = 95.0; w5["ext"] = 25.0; w5["trub"] = 1.0; w5["tset"] = 1.0
+		s5.vessels["lv"]["v"] = 4000.0; s5.vessels["lv"]["t"] = 3.0
+		s5.active["ledovka"] = true
+		s5.line_water = 0.0
+		s5.ice_auto = au
+		var n := 0
+		while float(w5["v"]) > 1.0 and n < 4000:
+			w5["tset"] = 1.0
+			s5._pitch(200.0 / 60.0, 1.0)
+			n += 1
+		res.append([s5.cone_broken_l, float(s5.vessels["spilka"].get("trub", 0.0)), n])
+	check("konec spílání: naplno se kužel rozpadá a kal jde do spilky, automat zpomalí a kužel drží", float(res[0][0]) > 150.0 and float(res[0][1]) > 0.0 and float(res[1][0]) == 0.0 and float(res[1][1]) == 0.0 and int(res[1][2]) > int(res[0][2]), "(naplno %d s, kal %.3f; automat %d s, kal %.3f)" % [res[0][2], res[0][1], res[1][2], res[1][1]])
+	# řízení ledové vody: mladina polovičním průtokem – bez řízení přechlazená, s řízením 8,5 °C a míň ledové
+	var s6 := BrewSim.new()
+	var p_full: Dictionary = s6.plate_cool(96.0, 100.0, true, 3.0)
+	var w6: Dictionary = s6.vessels["wp"]
+	w6["v"] = 3000.0; w6["t"] = 96.0; w6["ext"] = 380.0
+	s6.vessels["lv"]["v"] = 4000.0; s6.vessels["lv"]["t"] = 3.0
+	s6.active["ledovka"] = true
+	s6.line_water = 0.0
+	s6.ice_auto = true
+	s6._pitch(100.0 / 60.0, 1.0)
+	check("řízení ledové: při 100 L/min mladiny bez řízení pod 5 °C, s řízením 8,5 °C a ledové pod 150 L/min", float(p_full["t_out"]) < 5.0 and absf(s6.cool_out_t - 8.5) < 0.1 and s6.ice_lpm_now < 150.0, "(bez řízení %.1f °C; s řízením %.2f °C, ledová %.0f L/min)" % [float(p_full["t_out"]), s6.cool_out_t, s6.ice_lpm_now])
+	# rychlost rmutu: 80 L/min (plný výkon C1 ve skutečném měřítku) je 0,68 m/s, mez 1,5 m/s je až u 177 L/min
+	check("rychlost v potrubí Ø 50 mm: 80 L/min = 0,68 m/s, 1,5 m/s při 177 L/min", absf(FP.pipe_velocity(80.0) - 0.679) < 0.01 and absf(FP.pipe_velocity(176.7) - 1.5) < 0.01)
 	# stojící trubka: 90 °C voda v trubce po 1,5 h zchladne asi o 63 % rozdílu k hale (τ 1,5 h); prázdná trubka se nemění
 	var s4 := BrewSim.new()
 	s4.pipe_hold["tp"] = {"v": 5.0, "t": 90.0, "ext": 0.0, "malt": 0.0, "med": "water"}

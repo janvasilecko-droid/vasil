@@ -180,6 +180,11 @@ var _said: Dictionary = {}  # jednorázová hlášení (klíč -> true), klíč 
 # --- spílání: spílací hadice na vratce (zpět do vířivky) nebo na tanku, voda stojící v chladiči a potrubí ---
 const LINE_L := 60.0  # chmelový filtr, deskový chladič, potrubí a spílací hadice (L)
 const PITCH_T := 8.5  # zakvašovací teplota (°C)
+## FYZIKA+: řízení ledové vody – když je zapnuté (zapíná ho automatické projetí checklistu), pustí se chladičem jen tolik
+## ledové vody, aby mladina šla do spilky se zakvašovací teplotou (obsluha přivírá ledovou podle teploměru za chladičem).
+var ice_auto: bool = false
+var ice_lpm_now: float = ICE_LPM  # průtok ledové vody chladičem v posledním kroku (L/min)
+var cone_broken_l: float = 0.0  # FYZIKA+: kolik litrů mladiny odteklo při rozpadajícím se kalovém kuželu
 var hose_tank: bool = true  # spílací hadice na tanku (false = na vratce: mladina se vrací do vířivky)
 var line_water: float = LINE_L  # voda po vyplachování stojí ve filtru, chladiči a hadici – vyteče jako první
 var line_ext: float = 0.0  # extrakt mladiny, která zůstala v potrubí místo vody (dostane se do tanku protláčkou)
@@ -239,6 +244,9 @@ func reset() -> void:
 	hot_break_ext = 0.0
 	kal_ext = 0.0
 	evap_idle_l = 0.0
+	ice_auto = false
+	ice_lpm_now = ICE_LPM
+	cone_broken_l = 0.0
 	yeast_pitched = false
 	_said.clear()
 	line_water = 0.0
@@ -897,6 +905,11 @@ func _flow(rn: String, dt: float) -> void:
 	var dq: float = q_lpm * float(flow_scale.get(rn, 1.0)) * dt / 60.0
 	if dq <= 0.0:
 		return
+	# FYZIKA+: rmut potrubím rychleji než 1,5 m/s drtí pluchy (Kunze s. 903, Kosař s. 140); průtok se bere ve skutečném měřítku
+	if src_key != "mains" and float(vessels[src_key].get("malt", 0.0)) > 1.0 and (src_key != "sk" or sk_rmut):
+		var vel: float = FyzikaPlus.pipe_velocity(q_lpm * float(flow_scale.get(rn, 1.0)) / FLOW_SCALE)
+		if vel > FyzikaPlus.MASH_VMAX:
+			_say_once("rmut_rychlost", "Rmut teče potrubím %.1f m/s – víc než %.1f m/s. Pluchy se drtí a scezování půjde hůř. Uber otáčky čerpadla." % [vel, FyzikaPlus.MASH_VMAX])
 	if rn == "virivka_chladic":
 		if not push_flow:  # při protláčce bere C3 vodu z řadu (_push_out), ne mladinu z vířivky
 			_pitch(dq, dt)  # spílání: chladič, voda v potrubí, hadice na vratce nebo na tanku
@@ -1014,13 +1027,13 @@ func _flow_instant(rn: String, src_key: String, dst_key: String, dq: float, sk_r
 ## FYZIKA+ (Vasil 17. 11. 2026): na Zajíci voda z řadu mladinu přímo nechladí – předchladí se cestou do ledovky, tam se
 ## okruhem přes glykol dochladí na 2 °C a teprve ledová voda jde do chladiče. Dřívější 1. stupeň „voda z řadu“ je pryč;
 ## bez ledové vody se mladina nechladí. Zanesený chladič (plate_eff) zmenší UA.
-func plate_cool(t_in: float, q_lpm: float, ice: bool, t_ice: float) -> Dictionary:
+func plate_cool(t_in: float, q_lpm: float, ice: bool, t_ice: float, ice_lpm: float = ICE_LPM) -> Dictionary:
 	var out := {"t_out": t_in, "t_ice_out": t_ice, "duty_kw": 0.0}
 	var cw: float = q_lpm / 60.0 * 1.04 * 4.0  # kW/K tepelná kapacita proudu mladiny
 	if cw <= 0.0 or not ice:
 		return out
 	var foul: float = clampf(plate_eff / PLATE_EFF, 0.05, 1.0)
-	var cc: float = ICE_LPM / 60.0 * 4.19
+	var cc: float = maxf(ice_lpm, 0.1) / 60.0 * 4.19
 	var cmin: float = minf(cw, cc)
 	var cr: float = cmin / maxf(cw, cc)
 	var ntu: float = cal_ua_ice * foul / cmin
@@ -1043,15 +1056,32 @@ func _pitch(dq_max: float, dt: float) -> void:
 		dq = minf(dq, _free_space("spilka"))
 	if dq <= 0.0:
 		return
+	# FYZIKA+: automat (ice_auto) u kalového kužele zpomalí odběr pod mez, při které se kužel rozpadá
+	if ice_auto and hose_tank and FyzikaPlus.cone_break(float(wp["v"]), float(wp["cap"]), 1.0e6) > 0.0:
+		dq = minf(dq, FyzikaPlus.cone_safe_lpm(float(wp["cap"])) * 0.95 * FLOW_SCALE * dt / 60.0)
 	var t_in: float = float(wp["t"])
 	# deskový chladič (ε-NTU, protiproud): chladí jen ledová voda z C5
 	var lv: Dictionary = vessels["lv"]
 	var ice: bool = active.get("ledovka", false) and float(lv["v"]) >= 1.0  # ledovka došla nebo C5 stojí – mladina se nechladí
-	var plate: Dictionary = plate_cool(t_in, dq * 60.0 / maxf(dt, 0.001), ice, float(lv["t"]))
+	var w_lpm: float = dq * 60.0 / maxf(dt, 0.001)
+	ice_lpm_now = ICE_LPM
+	if ice and ice_auto:
+		# FYZIKA+: nejmenší průtok ledové, při kterém je za chladičem zakvašovací teplota (půlením; víc ledové = studenější)
+		if float(plate_cool(t_in, w_lpm, true, float(lv["t"]), ICE_LPM)["t_out"]) < PITCH_T:
+			var lo: float = 1.0
+			var hi: float = ICE_LPM
+			for i in 20:
+				var mid: float = 0.5 * (lo + hi)
+				if float(plate_cool(t_in, w_lpm, true, float(lv["t"]), mid)["t_out"]) > PITCH_T:
+					lo = mid
+				else:
+					hi = mid
+			ice_lpm_now = hi
+	var plate: Dictionary = plate_cool(t_in, w_lpm, ice, float(lv["t"]), ice_lpm_now)
 	var t_out: float = float(plate["t_out"])
 	if ice:
 		# ledová voda projde chladičem jednou a ohřátá (zpětné získání tepla) odtéká do bojleru
-		var used: float = minf(ICE_LPM * dt / 60.0, float(lv["v"]))
+		var used: float = minf(ice_lpm_now * dt / 60.0, float(lv["v"]))
 		lv["v"] = float(lv["v"]) - used
 		_mix(vessels["hlt"], minf(used, _free_space("hlt")), float(plate["t_ice_out"]), 0.0)
 	cool_out_t = t_out
@@ -1062,6 +1092,14 @@ func _pitch(dq_max: float, dt: float) -> void:
 	wp["ext"] = float(wp["ext"]) - cone
 	kal_ext += cone
 	var cloudy: float = float(wp.get("trub", 0.0)) * (1.0 - float(wp.get("tset", 0.0)))
+	# FYZIKA+: kalový kužel – když hladina na konci stahování klesá podél kužele rychleji, než z něj stačí vytékat mladina,
+	# kužel se rozpadá a část usazeného kalu jde s mladinou (Kunze s. 341, Kosař s. 181)
+	var cone_f: float = FyzikaPlus.cone_break(float(wp["v"]), float(wp["cap"]), w_lpm / FLOW_SCALE)
+	if cone_f > 0.0 and float(wp.get("tset", 0.0)) > 0.05 and float(wp.get("trub", 0.0)) > 0.01:
+		cloudy += float(wp["trub"]) * float(wp["tset"]) * cone_f
+		cone_broken_l += dq
+		if hose_tank:
+			_say_once("kuzel", "Vířivka: hladina klesá podél kalového kužele moc rychle – kužel se rozpadá a kal jde s mladinou do spilky. Na konci stahování uber otáčky C3.")
 	wp["v"] = float(wp["v"]) - dq
 	wp["ext"] = float(wp["ext"]) - ext_out
 	# z hadice vyteče nejdřív voda stojící v potrubí, mladina zůstane v potrubí místo ní

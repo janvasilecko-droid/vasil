@@ -4,7 +4,11 @@ Stav 17. 11. 2026. Balíček FYZIKA+ (repozitář `vasil`, `trenazer-zdroj/fyzik
 (v70 / v152). Tenhle program má jinou stavbu (`scripts/sim.gd` nad trasami, `net_flow.gd`, checklist 43 kroků),
 takže vkládací skript tu nejde použít. Přenáší se ručně po částech, každá část s testem v `tests/`.
 
-Upravená verze je ve složce `Trenazer varny FYZIKA+` na ploše; původní složka `Trenazer varny` zůstala beze změny.
+Od 20. 11. večer je všechno v jediné složce `Trenazer varny` na ploše (chtěl jsi jen jednu). Původní soubory z doby před
+FYZIKA+ jsou v `zaloha-pred-fyzika-plus/` (skripty s příponou `.txt`, plán z 17. 11. jako `plan_edited-17-11.json`).
+
+**Oprava 20. 11.:** nová várka začíná s bojlerem napuštěným 4000 L studené vody (`sim_panel.new_batch`). Dřív byl prázdný,
+žádná cesta ho nenapouštěla a automat stál na kroku 4. Množství je moje volba.
 
 ## Hotovo
 
@@ -28,7 +32,26 @@ Upravená verze je ve složce `Trenazer varny FYZIKA+` na ploše; původní slo�
   ~8,5 °C. Ledová voda se vrací do bojleru s 89 °C (knihy: 80–88 °C).
 - Kalibrace: platí `UAice`; `UA1` se přijme, ale nepoužívá.
 
-Změny v `sim.gd` jsou označené `FYZIKA+`. Původní soubory jsou ve složce `Trenazer varny` na ploše (ta zůstala beze změny).
+### 3. část – 21. 11. (test `tests/fyzika_plus_test.gd`)
+
+Program čerpá 5× rychleji než skutečnost (`FLOW_SCALE`). Všechno níže se proto počítá z průtoku ve skutečném měřítku
+(průtok v programu / 5), takže meze z knih platí beze změny.
+
+- **Chladnutí stojících trubek.** Voda 90 °C v trubce má po 1,5 h asi 46 °C (holá nerez Ø 50 mm). Dřív si trubky držely
+  teplotu donekonečna.
+- **Kalový kužel ve vířivce.** V posledních asi 240 L (výška kužele 4 cm) se kužel rozpadá, když hladina klesá rychleji než
+  0,6 cm/min – to je 34 L/min ve skutečnosti, tedy 168 L/min v programu. C3 naplno (200 L/min v programu) je nad mezí:
+  část usazeného kalu jde do spilky a program to ohlásí. Podíl kalu v kuželu (0,6 % objemu) a podíl strženého kalu
+  (nejvýš 10 %) jsou ODHAD.
+- **Automat u kužele zpomalí** odběr pod mez, takže při automatické várce kužel drží.
+- **Řízení ledové vody (jen automat).** Automat pustí chladičem jen tolik ledové, aby mladina šla do spilky s 8,5 °C.
+  Při stejném průtoku mladiny a ledové (200/200) to vychází naplno; projeví se, když mladina teče pomaleji nebo je
+  ledová studenější. Ručně je průtok ledové dál 200 L/min.
+- **Rychlost rmutu v potrubí.** Nad 1,5 m/s program varuje. C1 naplno (80 L/min ve skutečnosti) dělá v trubce Ø 50 mm
+  0,68 m/s, takže varování přijde až při průtoku nad 177 L/min. Průměr 50 mm beru pro všechny trubky (sim průměry nezná).
+- **Pára:** nepřenáší se, program má vlastní model tlaku kotle a rozdílu teplot (`_steam_factor`).
+
+Změny v `sim.gd` jsou označené `FYZIKA+`. Původní soubory jsou v `zaloha-pred-fyzika-plus/`.
 
 ## Ověření (17.–20. 11., u mě bez grafiky)
 
@@ -39,18 +62,16 @@ Změny v `sim.gd` jsou označené `FYZIKA+`. Původní soubory jsou ve složce `
 - **Neověřeno: várka podle checklistu (`--mode=chkauto`, 43 kroků).** U mě bez grafiky neběží ani v původní verzi.
   Spusť `Zkouska cele varky.bat`; výsledek se zapíše do `chkauto-vysledek.txt`.
 
-## Zbývá přenést (v tomhle pořadí)
+## Zbývá přenést
 
-| # | Co | Kde v tomhle programu | Poznámka |
-|---|---|---|---|
-| 2 | Pára: výkon podle rozdílu teplot pára – náplň, ventil a tlak v plášti | `_heat`, `_thermostat`, `max_kw` | teď má ohřev pevné kW bez ohledu na teplotu náplně |
-| 3 | Řízení ledové vody podle teploty do spilky (jednostupňový chladič je hotový, 2. část) | `_pitch`, `ICE_LPM` | **Vasil 17. 11.: chladič je jednostupňový.** Voda jde do nádoby (ledovky), tam ji vychladí glykol, a teprve ledová voda jde do chladiče. Stupeň „voda z řadu“ (`UA_WATER`) tedy pryč, chladí jen ledová. Voda z řadu se cestou do ledovky předchladí a v ledovce se okruhem přes glykol dochladí na 2 °C |
-| 4 | Velikost dílčích rmutů z tepelné bilance (63 a 76 °C po vrácení) | automat checklistu (`checklist_navrh.gd`) | s menšími ztrátami by pevné podíly přehřály dílo |
-| 5 | Stojící čerpadlo průchozí, zpětný tok, výpust přes čerpadlo | `net_flow.gd` (`solve_gravity`, BFS) | zpětné klapky na Zajíci nejsou |
-| 6 | Kalový kužel ve vířivce při rychlém stahování | `_settling`, `_pitch`, `CONE_LOSS` | |
-| 7 | pH mladiny za varu, barva podle teploty a pH | `recipes.gd` (`model_ebc`), `_heat` | tady je barva jen ze sladu |
-| 8 | Rychlost rmutu v potrubí, nátok do vířivky | `_flow`, `net_flow.gd` | |
-| 9 | Chladnutí stojícího potrubí | `pipe_hold` | trubky tu teplotu mají, ale nechladnou |
-| 10 | Kreslení: proudy obloukem, vlnky, usazené dílo | `plant_3d.gd`, shadery | jiný (3D) vzhled, dělá se zvlášť |
+| Co | Kde v tomhle programu | Poznámka |
+|---|---|---|
+| Stojící čerpadlo průchozí, zpětný tok, výpust přes čerpadlo | `net_flow.gd` | zpětné klapky na Zajíci nejsou |
+| pH mladiny za varu, barva podle teploty a pH | `recipes.gd` (`model_ebc`), `_heat` | tady je barva jen ze sladu |
+| Nátok do vířivky (rychlost tangenciálního nástřiku) | `_settling` | |
+| Kreslení: proudy obloukem, vlnky, usazené dílo | `plant_3d.gd`, shadery | jiný (3D) vzhled, dělá se zvlášť |
+
+Dílčí rmuty: checklist má tvůj postup (asi 10 hl), velikost neměním. Jestli s menšími ztrátami vychází dílo po vrácení
+rmutu teplejší, ukáže to celá várka.
 
 Kyslík ve spilce tenhle program už má (`o2_spilka`).

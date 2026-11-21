@@ -82,3 +82,41 @@ static func pipe_cooling(sim, dt: float) -> void:
 		if float(e.get("v", 0.0)) > 0.01:
 			e["t"] = float(e["t"]) - (float(e["t"]) - amb) * k
 
+
+## Kalový kužel ve vířivce. Tvar: kal po varu zabírá asi 0,6 % objemu mladiny (ODHAD), základna kužele nechává u stěny
+## 60 cm bez kalu (Kosař s. 181), nejvýš 3/4 průměru dna. Kužel se rozpadá, když hladina v jeho výšce klesá rychleji než
+## CONE_V (0,6 cm/min, odvozeno z praxe: běžné spílání 40 hl za 50–60 min se má u kužele zpomalit). Průtok q_real_lpm je
+## ve skutečném měřítku (program čerpá FLOW_SCALE× rychleji, mez se tím přepočítá sama).
+## Vrací podíl usazeného kalu, který se chová jako zvířený (0 = kužel drží, nejvýš CONE_BREAK – ODHAD).
+const CONE_V := 0.006      # m/min
+const CONE_BREAK := 0.1
+const CONE_TRUB_FRAC := 0.006
+const CONE_ANNULUS := 0.6  # m
+
+static func cone_height(cap_l: float) -> float:
+	var d: float = vessel_dia("wp", cap_l)
+	var rc: float = clampf(d / 2.0 - CONE_ANNULUS, 0.1 * d, 0.375 * d)
+	return 3.0 * (cap_l * 0.8 * CONE_TRUB_FRAC / 1000.0) / (PI * rc * rc)
+
+static func cone_break(v_l: float, cap_l: float, q_real_lpm: float) -> float:
+	var d: float = vessel_dia("wp", cap_l)
+	var a: float = PI * d * d / 4.0
+	if v_l / 1000.0 / a >= cone_height(cap_l) or q_real_lpm <= 0.0:
+		return 0.0
+	var u: float = q_real_lpm / 1000.0 / a
+	return CONE_BREAK * clampf((u - CONE_V) / CONE_V, 0.0, 1.0)
+
+## největší průtok z vířivky ve skutečném měřítku [L/min], při kterém kužel ještě drží
+static func cone_safe_lpm(cap_l: float) -> float:
+	var d: float = vessel_dia("wp", cap_l)
+	return CONE_V * PI * d * d / 4.0 * 1000.0
+
+
+## Rychlost v potrubí [m/s] při průtoku ve skutečném měřítku; sim průměry trubek nezná, bere se světlost 50 mm (v plánu
+## jsou trubky DN 50–55). Rmut má téct pod 1,5 m/s (Kunze s. 903; Kosař s. 140: 1,2–1,5 m/s).
+const PIPE_BORE_M := 0.05
+const MASH_VMAX := 1.5
+
+static func pipe_velocity(q_real_lpm: float) -> float:
+	return q_real_lpm / 60000.0 / (PI * PIPE_BORE_M * PIPE_BORE_M / 4.0)
+
