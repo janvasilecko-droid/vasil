@@ -90,6 +90,14 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   `Desktop\\Trenazer varny FYZIKA+` (původní složka beze změny; řekl „až to bude, ulož na plochu složku s tím programem“).
   **Od 20. 11. 23:10 je vše v jediné složce `Desktop\\Trenazer varny`** (kopie zrušena, zálohy v `zaloha-pred-fyzika-plus`);
   nová várka začíná s bojlerem 4000 L (jinak automat stál na kroku 4). Viz `nova-verze-prenos/CTI_ME.md`.
+  **21. 11.: 3. část hotová a otestovaná jen v repu (commit 15a50fb), NA PC JEŠTĚ NENÍ** – konverzace nebyla s PC propojená.
+  Obsah: chladnutí stojících trubek, kalový kužel (mez 34 L/min skutečných = 168 v programu, automat u kužele zpomalí),
+  řízení ledové vody v automatu (`sim.ice_auto`), varování na rychlost rmutu > 1,5 m/s; vše z průtoku programu ÷ 5.
+  Na PC zapsat: `scripts/fyzika_plus.gd`, `scripts/sim.gd`, `scripts/checklist_panel.gd`, `tests/fyzika_plus_test.gd`,
+  `FYZIKA-PLUS-PRENOS.md` (nejdřív ověřit, že je Vasil mezitím neměnil; `plan_edited.json` nechat). ODHADY: podíl kalu 0,6 %,
+  strhne se max. 10 % kalu, trubky Ø 50 mm. Celá várka podle checklistu (`--mode=chkauto`) NEOVĚŘENA – v kontejneru
+  za 2 h nedoběhla (jen start programu trvá minuty); pustit na jeho PC přes `Zkouska cele varky.bat`.
+  Zbývá přenést: stojící čerpadlo v `net_flow.gd`, pH a barva mladiny, nátok do vířivky, kreslení.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
   v kontejneru nepodařilo dojet ani s původním kódem. Další části a pořadí: `FYZIKA-PLUS-PRENOS.md`. Chladič je tam
