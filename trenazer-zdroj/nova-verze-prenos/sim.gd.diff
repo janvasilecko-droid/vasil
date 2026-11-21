@@ -1,5 +1,5 @@
 --- /home/claude/nova/orig/scripts/sim.gd	2026-11-17 17:00:36.397134865 +0100
-+++ /home/claude/nova/prace/scripts/sim.gd	2026-11-20 19:30:22.722764448 +0100
++++ /home/claude/nova/prace/scripts/sim.gd	2026-11-21 13:33:11.830371057 +0100
 @@ -1,5 +1,6 @@
  class_name BrewSim
  extends RefCounted
@@ -43,7 +43,7 @@
  	yeast_pitched = false
  	_said.clear()
  	line_water = 0.0
-@@ -730,10 +733,9 @@
+@@ -730,10 +733,10 @@
  		sewer["malt"] = 0.0
  	elif _said.has("kanal_sit"):
  		_said.erase("kanal_sit")
@@ -54,10 +54,11 @@
 +	# FYZIKA+: tepelné ztráty izolovaných nádob podle výpočtu a odpar z horké hladiny mimo var (scripts/fyzika_plus.gd).
 +	# Dřív: všechny nádoby stejně, časová konstanta 12 h (vs["t"] -= (t - okolí) * dt / 43200).
 +	evap_idle_l += FyzikaPlus.losses(self, dt)
++	FyzikaPlus.pipe_cooling(self, dt)  # FYZIKA+: stojící obsah trubek chladne k teplotě haly
  
  
  func _free_space(key: String) -> float:
-@@ -1007,34 +1009,26 @@
+@@ -1007,34 +1010,26 @@
  	_mix(dst, dq, float(src["t"]), ext_out, src)
  
  
@@ -107,7 +108,7 @@
  	return out
  
  
-@@ -1049,9 +1043,9 @@
+@@ -1049,9 +1044,9 @@
  	if dq <= 0.0:
  		return
  	var t_in: float = float(wp["t"])
@@ -119,7 +120,7 @@
  	var plate: Dictionary = plate_cool(t_in, dq * 60.0 / maxf(dt, 0.001), ice, float(lv["t"]))
  	var t_out: float = float(plate["t_out"])
  	if ice:
-@@ -1425,7 +1419,7 @@
+@@ -1425,7 +1420,7 @@
  		var t: float = float(vs["t"])
  		var cap: float = float(vs["v"]) * C_WATER + float(vs["malt"]) * C_MALT + float(vs.get("steel", 0.0)) * STEEL_C
  		# čistý příkon = ohřev - ztráty do haly (bez ohřevu jen ztráty řeší _step pomalé chladnutí)

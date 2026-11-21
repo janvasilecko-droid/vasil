@@ -50,5 +50,13 @@ func _init() -> void:
 	for i in 3600:
 		s3.step(1.0)
 	check("bojler 45 hl 80 °C za hodinu ztratí pod 0,5 K a nic se neodpaří", 80.0 - float(h["t"]) < 0.5 and 80.0 - float(h["t"]) > 0.05 and absf(float(h["v"]) - 4500.0) < 1e-6, "(−%.2f K)" % (80.0 - float(h["t"])))
+	# stojící trubka: 90 °C voda v trubce po 1,5 h zchladne asi o 63 % rozdílu k hale (τ 1,5 h); prázdná trubka se nemění
+	var s4 := BrewSim.new()
+	s4.pipe_hold["tp"] = {"v": 5.0, "t": 90.0, "ext": 0.0, "malt": 0.0, "med": "water"}
+	s4.pipe_hold["te"] = {"v": 0.0, "t": 90.0, "ext": 0.0, "malt": 0.0, "med": "empty"}
+	for i in 5400:
+		s4.step(1.0)
+	var tp: float = float(s4.pipe_hold["tp"]["t"])
+	check("stojící trubka z 90 °C: po 1,5 h 44–48 °C, prázdná beze změny", tp > 44.0 and tp < 48.0 and absf(float(s4.pipe_hold["te"]["t"]) - 90.0) < 1e-6, "(%.1f °C)" % tp)
 	print("VÝSLEDEK: %s (chyb %d)" % ["VŠE V POŘÁDKU" if fails == 0 else "CHYBY", fails])
 	quit(1 if fails > 0 else 0)

@@ -736,6 +736,7 @@ func step(dt: float) -> void:
 	# FYZIKA+: tepelné ztráty izolovaných nádob podle výpočtu a odpar z horké hladiny mimo var (scripts/fyzika_plus.gd).
 	# Dřív: všechny nádoby stejně, časová konstanta 12 h (vs["t"] -= (t - okolí) * dt / 43200).
 	evap_idle_l += FyzikaPlus.losses(self, dt)
+	FyzikaPlus.pipe_cooling(self, dt)  # FYZIKA+: stojící obsah trubek chladne k teplotě haly
 
 
 func _free_space(key: String) -> float:

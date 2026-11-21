@@ -67,3 +67,18 @@ static func losses(sim, dt: float) -> float:
 				evap_total += m
 		vs["t"] = t - q_kj / maxf(c, 1.0)
 	return evap_total
+
+
+## Chladnutí obsahu trubek: holá nerezová trubka Ø 50 mm plná vody, U ≈ 10 W/(m²·K) (volná konvekce + sálání),
+## s ocelí trubky vychází časová konstanta asi 1,5 h (Ø 75 mm by měla 2,3 h). Sim průměry trubek nezná, bere se jedna
+## hodnota pro všechny. Tekoucí trubky se plní novým obsahem, takže se to projeví jen u stojících.
+const PIPE_TAU_S := 5400.0
+
+static func pipe_cooling(sim, dt: float) -> void:
+	var k: float = 1.0 - exp(-maxf(dt, 0.0) / PIPE_TAU_S)
+	var amb: float = sim.cal_ambient
+	for pid in sim.pipe_hold:
+		var e: Dictionary = sim.pipe_hold[pid]
+		if float(e.get("v", 0.0)) > 0.01:
+			e["t"] = float(e["t"]) - (float(e["t"]) - amb) * k
+

@@ -29,3 +29,11 @@ v `Trenazer varny\zaloha-pred-fyzika-plus\` (skripty jako `.txt`, je tam `.gdign
 `checklist_panel.gd` v `sim_panel.new_batch` (4000 L / 15 °C, platí i pro ruční várku – Vasil odsouhlasil). Aktivní
 `plan_edited.json` je ten z 20. 11. 20:52 (Vasil v kopii smazal trubku `pipe_mur91to7` a klapku `valve_muraghbe`,
 přidal novou trubku a klapku, posunul `valve_mur96gfu`); plán ze 17. 11. je v záloze.
+
+**21. 11. – 3. část (zatím jen tady, na PC NEZAPSÁNO – počítač nebyl připojený):** chladnutí stojícího obsahu trubek
+(`FyzikaPlus.pipe_cooling`, τ 1,5 h, test v `fyzika_plus_test.gd`). Na PC je potřeba zapsat `scripts/fyzika_plus.gd`,
+`scripts/sim.gd`, `tests/fyzika_plus_test.gd`.
+Zjištění: program má průtoky 5× zrychlené (`FLOW_SCALE`) a plochy nádob přeškálované (vířivka 15 m²), takže části
+závislé na skutečné rychlosti (kalový kužel podle klesání hladiny, rychlost rmutu v potrubí, řízení ledové vody) nejdou
+přenést beze změny – čeká na Vasilovo rozhodnutí. Pára: program už má vlastní model tlaku (`_steam_factor`).
+Startu programu bez grafiky trvá v kontejneru přes 4,5 min; `chkauto` proto běží desítky minut (pouštět na pozadí).
