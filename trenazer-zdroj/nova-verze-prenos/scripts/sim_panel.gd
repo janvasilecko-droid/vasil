@@ -1,5 +1,6 @@
 class_name SimPanel
 extends PanelContainer
+const FyzikaPlus = preload("res://scripts/fyzika_plus.gd")
 ## Ovládání simulace varu. Průtoky se řídí stavem klapek a čerpadel v plánu (klik na klapku / čerpadlo),
 ## tlačítko trasy jen nastaví klapky a čerpadlo najednou (jako „nastavit cestu“ v původní aplikaci).
 
@@ -1926,6 +1927,7 @@ func _update_readout() -> void:
 		var pct: float = float(rv.get("evap_lph", 0.0)) / maxf(float(rv["v"]), 1.0) * 100.0
 		lines.append("VAR %d min · odpar %.1f L/h (%.1f %%/h) · pěna %.0f %%" % [bm, float(rv.get("evap_lph", 0.0)), pct, float(rv.get("foam", 0.0)) * 100.0])
 		lines.append("hořkost %.0f IBU · DMS %.0f ppb · %.1f °P" % [sim.ibu(), sim.dms_ppb(), sim.plato("rvp")])
+		lines.append("pH mladiny %.2f · barva +%.1f EBC (Maillard)" % [FyzikaPlus.wort_ph(sim.mash_ph, float(rv.get("boil_s", 0.0))), sim.wort_col])
 		if bool(rv.get("overflow", false)):
 			lines.append("⚠ PŘEKYPĚNÍ – sniž ohřev!")
 	lines.append("— protokol —")

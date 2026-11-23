@@ -120,3 +120,45 @@ const MASH_VMAX := 1.5
 static func pipe_velocity(q_real_lpm: float) -> float:
 	return q_real_lpm / 60000.0 / (PI * PIPE_BORE_M * PIPE_BORE_M / 4.0)
 
+
+
+## ---- Chemie varu: pH sladiny a barva (Maillard) ----
+## pH sladiny = pH rmutu + 0,05 (ODHAD) a při varu klesá o 0,08 pH/h (VLB, Kunze). Barva roste podle Arrhenia
+## (Ea 77 kJ/mol), s pH (×exp(0,7·(pH−5,5))) a s hustotou (°P/12); pod 70 °C se nepřičítá nic. Barva piva ≈ 0,65 × barva
+## mladiny při zakvašení (Kunze s. 287). Obecné koeficienty podle FYZIKA_PLUS.md, ne měřené u Zajíců (ODHAD).
+const COLOR_K100 := 1.2       # EBC/h při 100 °C, pH 5,5, 12 °P (VLB: 5,7 → 8,0 EBC za 90 min varu)
+const COLOR_EA := 77000.0     # J/mol
+const COLOR_PH_K := 0.7
+const COLOR_MIN_T := 70.0
+const BOIL_PH_DROP_H := 0.08
+const WORT_PH_OFFSET := 0.05
+const BEER_COLOR_FACTOR := 0.65
+
+static func wort_ph(mash_ph: float, boil_s: float) -> float:
+	return mash_ph + WORT_PH_OFFSET - BOIL_PH_DROP_H * boil_s / 3600.0
+
+static func color_rate_ebc_h(t_c: float, ph: float, plato: float) -> float:
+	if t_c < COLOR_MIN_T:
+		return 0.0
+	var tk: float = t_c + 273.15
+	return COLOR_K100 * exp(-COLOR_EA / 8.314 * (1.0 / tk - 1.0 / 373.15)) * exp(COLOR_PH_K * (ph - 5.5)) * plato / 12.0
+
+## přičte barvu horké mladině v nádobě (rvp po vyvaření šrotu, wp); sim.wort_col = EBC navíc proti sladině
+static func color_step(sim, dt: float) -> void:
+	var rv: Dictionary = sim.vessels["rvp"]
+	var wp: Dictionary = sim.vessels["wp"]
+	var ph: float = wort_ph(sim.mash_ph, float(rv.get("boil_s", 0.0)))
+	var vt: float = 0.0
+	var dsum: float = 0.0
+	for key in ["rvp", "wp", "sk", "spilka"]:
+		var vs: Dictionary = sim.vessels[key]
+		var v: float = float(vs["v"])
+		if v < 50.0 or (key == "rvp" and float(vs["malt"]) * sim.MALT_L_PER_KG > 0.05 * v) or key == "sk":
+			continue
+		vt += v
+		dsum += v * color_rate_ebc_h(float(vs["t"]), ph, sim.plato(key)) * dt / 3600.0
+	if vt > 0.0:
+		sim.wort_col += dsum / vt
+
+static func beer_color_ebc(base_ebc: float, wort_col: float) -> float:
+	return BEER_COLOR_FACTOR * (base_ebc + wort_col)

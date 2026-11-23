@@ -21,6 +21,8 @@ const NI_SHARE := 0.22  # podíl extraktu ze sladu, který není škrob (cukry, 
 var enz_mean: float = 1.0  # enzymová síla zásypu (průměr podle sladů receptury: plzeňský 1, tmavé a karamelové míň)
 var ph_a: float = 1.0  # vliv pH rmutu na α-amylázu (nastavuje rozvaděč podle vody a kyseliny)
 var ph_b: float = 1.0  # totéž pro β-amylázu
+var mash_ph: float = 5.55  # pH rmutu (nastavuje rozvaděč); z něj FyzikaPlus.wort_ph
+var wort_col: float = 0.0  # EBC přibyla mladině z Maillardových reakcí (FyzikaPlus.color_step)
 const STEEL_C := 0.5  # kJ/(kg·K) nerez AISI 304 (PARAMETRY.md: cpSteel); hmotnosti ocelí nádob jsou ve vessels["…"]["steel"]
 
 ## ---------- kalibrace parametrů (kalibrace.json ve složce dat aplikace) ----------
@@ -245,6 +247,7 @@ func reset() -> void:
 	kal_ext = 0.0
 	evap_idle_l = 0.0
 	ice_auto = false
+	wort_col = 0.0
 	ice_lpm_now = ICE_LPM
 	cone_broken_l = 0.0
 	yeast_pitched = false
@@ -744,6 +747,7 @@ func step(dt: float) -> void:
 	# FYZIKA+: tepelné ztráty izolovaných nádob podle výpočtu a odpar z horké hladiny mimo var (scripts/fyzika_plus.gd).
 	# Dřív: všechny nádoby stejně, časová konstanta 12 h (vs["t"] -= (t - okolí) * dt / 43200).
 	evap_idle_l += FyzikaPlus.losses(self, dt)
+	FyzikaPlus.color_step(self, dt)  # FYZIKA+: barva mladiny z Maillardových reakcí
 	FyzikaPlus.pipe_cooling(self, dt)  # FYZIKA+: stojící obsah trubek chladne k teplotě haly
 
 
