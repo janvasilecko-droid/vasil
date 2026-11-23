@@ -461,10 +461,11 @@ func _start_auto(from: int, new_batch: bool) -> void:
 		navrh.reset_controls()
 		from = 0
 	# FYZIKA+ oprava: automat spuštěný bez „Nové várky“ (tlačítko AUTOMATICKÁ VÁRKA po startu programu nebo pokračování
-	# z uloženého stavu) měl prázdný bojler a stál na kroku 4. Před najetím páry na bojler ho proto napustí (4000 L studené vody).
+	# z uloženého stavu) měl prázdný bojler a stál na kroku 4. Před najetím páry na bojler ho proto napustí (4000 L, 80 °C).
 	if from <= 3 and float(sp.sim.vessels["hlt"]["v"]) < 50.0:
 		sp.sim.vessels["hlt"]["v"] = 4000.0
-		sp._log("Bojler byl prázdný – napuštěn studenou vodou (4000 L).")
+		sp.sim.vessels["hlt"]["t"] = 80.0
+		sp._log("Bojler byl prázdný – napuštěn horkou vodou (4000 L, 80 °C).")
 	auto = true
 	sp.sim.ice_auto = true  # FYZIKA+: automat pouští chladičem jen tolik ledové vody, kolik je potřeba na zakvašovací teplotu
 	auto_log.clear()

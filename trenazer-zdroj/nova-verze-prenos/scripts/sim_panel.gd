@@ -476,6 +476,36 @@ func close_all() -> void:
 	_log("Všechny klapky zavřeny, čerpadla vypnuta")
 
 
+## FYZIKA+ oprava: porty rozbočovače pro víc cest najednou (automat checklistu pouští např. vodu z bojleru i z řadu zároveň).
+## Dřív je nastavovalo jen tlačítko jedné cesty, takže při automatu zůstal rozbočovač zavřený a voda do kotle nedotekla.
+func set_manifold_ports_for(rns: Array) -> void:
+	if plant == null:
+		return
+	var mp: Dictionary = plant.call("manifold_ports")
+	if mp.is_empty():
+		return
+	var man: Dictionary = plan.get_item(str(mp["id"]))
+	if man.is_empty():
+		return
+	if not man.has("port_open") or typeof(man["port_open"]) != TYPE_DICTIONARY:
+		man["port_open"] = {}
+	var desired: Dictionary = {}
+	for rn in rns:
+		var req: Array = _compute_man_req(str(rn))
+		if req.size() == 2:
+			desired["L%d" % int(req[0])] = true
+			desired["P%d" % int(req[1])] = true
+	var ports: Dictionary = man["port_open"]
+	for i in int(man.get("cols", 4)):
+		for side in ["L", "P"]:
+			var key := "%s%d" % [side, i]
+			var should_open := bool(desired.get(key, false))
+			if bool(ports.get(key, true)) != should_open:
+				plant.call("manifold_port_toggle", key)
+			else:
+				ports[key] = should_open
+
+
 func _set_manifold_ports(rn: String) -> void:
 	if plant == null:
 		return
@@ -2064,9 +2094,10 @@ func load_state() -> bool:
 func new_batch() -> void:
 	resume_pending = false
 	sim.reset()
-	# FYZIKA+ oprava: nová várka začíná s bojlerem napuštěným studenou vodou (4000 L, 15 °C). Žádná cesta ho nenapouští
+	# FYZIKA+ oprava: nová várka začíná s bojlerem napuštěným a nahřátým (4000 L, 80 °C). Žádná cesta ho nenapouští
 	# a prázdný se nehřeje, takže várka (ruční i automat, krok 4) nešla začít.
 	sim.vessels["hlt"]["v"] = 4000.0
+	sim.vessels["hlt"]["t"] = 80.0  # Vasil 23. 11.: na páru se čekat nemusí – bojler je na začátku várky už nahřátý
 	sim.clog = 0.0
 	_front.clear()
 	sim.init_pipe_caps(_pipe_vol)

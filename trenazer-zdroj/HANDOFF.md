@@ -102,6 +102,15 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   tedy bez `new_batch()`, takže bojler zůstal prázdný (displej TEPLOTA BOILER „---“). `checklist_panel._start_auto` teď
   bojler napustí (4000 L), když je prázdný a automat začíná od kroku ≤ 4. Zapsáno na PC, program restartován; jestli projde, neověřeno
   (okno trenažéru bylo na obrazovce zakryté jiným oknem, ovládání přes obrazovku nešlo dokončit).
+  **23. 11. 18:35 – celá várka poprvé spuštěna na jeho PC** (`Zkouska cele varky.bat`; režim `chkauto` běží jen s `--capture=…`,
+  bat opraven; výsledek v `chkauto-vysledek.txt`, trvá ~2 min). Opravy: (a) Vasil: „na páru se čekat nemusí“ → bojler na začátku
+  várky 4000 L / 80 °C (`sim_panel.new_batch`, `checklist_panel._start_auto`); (b) automat checklistu neotvíral porty rozbočovače
+  (`sim_panel.set_manifold_ports_for` volané z `checklist_navrh._apply_set`) – voda z bojleru + řadu netekla do kotle (krok 5).
+  Stav: projde 25 ze 43 kroků, **stojí na kroku 26 (2. rmut ze SK do varny)**: cesta `rmut_varna` v plánu odkazuje na trubku
+  `pipe_mur91to7`, kterou Vasil 20. 11. v editoru smazal a nakreslil novou `pipe_new_1795204313` (konec [630,680] zřejmě nenavazuje);
+  sání C1 se ke SK dostane jen přes klapky cesty rmut_sk. Plán je jeho – neměnit bez pokynu (záloha plánu ze 17. 11. je
+  v `zaloha-pred-fyzika-plus/plan_edited-17-11.json`). Pozor: testy v kontejneru čtou plán z `user://plan_edited.json`,
+  jinak berou starý `plan.json` a výsledky sítě neodpovídají jeho PC.
   Zbývá přenést: stojící čerpadlo v `net_flow.gd`, pH a barva mladiny, nátok do vířivky, kreslení.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
