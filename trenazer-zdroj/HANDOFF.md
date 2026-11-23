@@ -116,6 +116,12 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   po otevření `valve_mur96jdk` + `valve_mur96n43` teče opačně (rvp → sk). Chybí tedy potrubí/klapky pro 2. rmut SK → C1 → kotel;
   nová trubka a klapka z 20. 11. je nejspíš jeho rozdělaná oprava. Potrubí nevymýšlet – musí říct/nakreslit, kudy 2. rmut na Zajíci teče.
   Přístup do `AppData\Roaming\Godot\app_userdata\Trenažér varny Zajíc — vzhled + editor` (odtud program čte plán) povolen v této relaci.
+  **23. 11. 18:55 – CELÁ VÁRKA PROJDE (43/43 kroků, 6:57 h; spilka 3572 L, 12,3 °P, 8,5 °C, kal 26 %)** na jeho PC se všemi opravami.
+  Poslední dvě příčiny: (1) nová trubka `pipe_new_1795204313` končila o 10 j. vedle trubky, na kterou navazuje ([630,680] místo
+  [630,690]) – po jeho svolení ("ty to udelej") opraveno jedním číslem v `plan_edited.json` (záloha před úpravou:
+  `zaloha-pred-fyzika-plus/plan_edited-pred-opravou-konce-trubky.json`); (2) cesta `virivka_chladic` nemá v plánu úsek přes
+  rozbočovač, takže automat neotevřel porty L1/P1 → krok 38 stál; `sim_panel.ROUTE_MANIFOLD` je doplní (hodnoty z `net_fix_routes.gd`).
+  Ověřit: kal 26 % ve spilce se zdá vysoký (train_test dával zákal 9 %) – není vyšetřeno, jestli to je kužel z FYZIKA+ nebo původní model.
   Zbývá přenést: stojící čerpadlo v `net_flow.gd`, pH a barva mladiny, nátok do vířivky, kreslení.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se

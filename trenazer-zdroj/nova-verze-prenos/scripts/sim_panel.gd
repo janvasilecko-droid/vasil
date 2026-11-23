@@ -491,7 +491,7 @@ func set_manifold_ports_for(rns: Array) -> void:
 		man["port_open"] = {}
 	var desired: Dictionary = {}
 	for rn in rns:
-		var req: Array = _compute_man_req(str(rn))
+		var req: Array = _man_req_of(str(rn))
 		if req.size() == 2:
 			desired["L%d" % int(req[0])] = true
 			desired["P%d" % int(req[1])] = true
@@ -504,6 +504,18 @@ func set_manifold_ports_for(rns: Array) -> void:
 				plant.call("manifold_port_toggle", key)
 			else:
 				ports[key] = should_open
+
+
+## FYZIKA+: cesty, které v plánu nemají nakreslený úsek přes rozbočovač, ale potrubí jimi opravdu vede (řádek vlevo, řádek vpravo).
+## Hodnoty vyšly z tests/net_fix_routes.gd podle trubek v plánu (chybějící porty cesty), nic se nevymýšlí.
+const ROUTE_MANIFOLD := {"virivka_chladic": [1, 1]}
+
+
+func _man_req_of(rn: String) -> Array:
+	var req: Array = _compute_man_req(rn)
+	if req.size() != 2 and ROUTE_MANIFOLD.has(rn):
+		req = ROUTE_MANIFOLD[rn]
+	return req
 
 
 func _set_manifold_ports(rn: String) -> void:
@@ -519,7 +531,7 @@ func _set_manifold_ports(rn: String) -> void:
 		man["port_open"] = {}
 	var desired: Dictionary = {}
 	if rn != "":
-		var req: Array = _compute_man_req(rn)
+		var req: Array = _man_req_of(rn)
 		if req.size() == 2:
 			desired["L%d" % int(req[0])] = true
 			desired["P%d" % int(req[1])] = true
