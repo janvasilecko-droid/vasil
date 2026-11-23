@@ -162,3 +162,4 @@ Vasil chce, aby se z obou knih (Kosař–Procházka i Kunze) vzalo **všechno, c
 - `fyzika_plus.gd`: `wort_ph` (pH rmutu +0,05, −0,08/h varu), `color_rate_ebc_h` (1,2 EBC/h při 100 °C, pH 5,5, 12 °P; Arrhenius Ea 77 kJ/mol; ×exp(0,7(pH−5,5)); pod 70 °C nic), `color_step`, `beer_color_ebc` (0,65×). Koeficienty obecné literární (VLB/Kunze) = ODHAD pro Zajíce.
 - `sim.gd`: `mash_ph`, `wort_col`; hák v `step`. `rozvadec_rt20.gd` předává `mash_ph`. `sim_panel.gd` ukazuje pH a barvu při varu.
 - Test `fyzika_plus_test` 13 kontrol OK. Nasazeno na PC; celovarka po změně zatím neověřena na PC.
+- 23. 11. 19:10 (celá várka s chemií na PC: 43/43, 6:57 h, spilka 3572 L, 12,3 °P, 8,5 °C). Záměrně NEUDĚLÁNO: nátok do vířivky (neznámý průměr vtoku – změřit/říct Vasil, jinak by hlídání bylo vymyšlené) a průchod stojícím čerpadlem (H16, riziko pro trasy, bez zpětných klapek; dělat jen na jeho pokyn a s testem všech tras). Barva je jedna hodnota pro celou várku (zjednodušení).
