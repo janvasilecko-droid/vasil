@@ -111,6 +111,11 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   sání C1 se ke SK dostane jen přes klapky cesty rmut_sk. Plán je jeho – neměnit bez pokynu (záloha plánu ze 17. 11. je
   v `zaloha-pred-fyzika-plus/plan_edited-17-11.json`). Pozor: testy v kontejneru čtou plán z `user://plan_edited.json`,
   jinak berou starý `plan.json` a výsledky sítě neodpovídají jeho PC.
+  **Oprava diagnózy kroku 26 (23. 11. 18:40):** smazaná trubka příčinou není – s plánem ze 17. 11. stojí várka stejně (zkoušeno
+  na jeho PC, pak vrácen jeho plán z 20. 11.). V obou plánech nemá C1 sání ze SK: s klapkami cesty `rmut_varna` čerpadlo „nesaje“,
+  po otevření `valve_mur96jdk` + `valve_mur96n43` teče opačně (rvp → sk). Chybí tedy potrubí/klapky pro 2. rmut SK → C1 → kotel;
+  nová trubka a klapka z 20. 11. je nejspíš jeho rozdělaná oprava. Potrubí nevymýšlet – musí říct/nakreslit, kudy 2. rmut na Zajíci teče.
+  Přístup do `AppData\Roaming\Godot\app_userdata\Trenažér varny Zajíc — vzhled + editor` (odtud program čte plán) povolen v této relaci.
   Zbývá přenést: stojící čerpadlo v `net_flow.gd`, pH a barva mladiny, nátok do vířivky, kreslení.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
