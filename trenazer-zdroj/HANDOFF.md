@@ -98,6 +98,10 @@ Hlavní dokument: `claude/FYZIKA_PLUS.md` v tomto projektu (kapitola 7 = doplně
   `FYZIKA-PLUS-PRENOS.md` (`plan_edited.json` nedotčen). ODHADY: podíl kalu 0,6 %,
   strhne se max. 10 % kalu, trubky Ø 50 mm. Celá várka podle checklistu (`--mode=chkauto`) NEOVĚŘENA – v kontejneru
   za 2 h nedoběhla (jen start programu trvá minuty); pustit na jeho PC přes `Zkouska cele varky.bat`.
+  **23. 11. 18:15 oprava kroku 4 podruhé:** tlačítko AUTOMATICKÁ VÁRKA (`panel_puvodni.gd`) spouští `_start_auto(0, false)`,
+  tedy bez `new_batch()`, takže bojler zůstal prázdný (displej TEPLOTA BOILER „---“). `checklist_panel._start_auto` teď
+  bojler napustí (4000 L), když je prázdný a automat začíná od kroku ≤ 4. Zapsáno na PC, program restartován; jestli projde, neověřeno
+  (okno trenažéru bylo na obrazovce zakryté jiným oknem, ovládání přes obrazovku nešlo dokončit).
   Zbývá přenést: stojící čerpadlo v `net_flow.gd`, pH a barva mladiny, nátok do vířivky, kreslení.
   Dřívější stav: 1. část **na jeho PC zapsaná nebyla** (spojení s PC
   během práce spadlo; `device_bash` tam nejde – málo místa na disku, jde jen stage/commit souborů). `chkauto` se
