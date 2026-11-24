@@ -159,7 +159,7 @@ func _process(delta: float) -> void:
 			for s in c[2]:
 				var a: PackedFloat32Array = _cols[s[0]]
 				if not is_nan(a[n - 1]):
-					txt += "%s %.1f · " % [s[2] if (c[0] as String).begins_with("p") or c[2].size() > 1 else c[0], a[n - 1]]
+					txt += "%s %.1f %s · " % [(c[0] as String) if c[2].size() == 1 else "%s/%s" % [(c[0] as String).split(" ")[0], s[2]], a[n - 1], c[1] if c[2].size() > 1 else ""]
 	_info.text = txt.trim_suffix(" · ")
 	_plot.queue_redraw()
 
