@@ -1,0 +1,7 @@
+{
+  "_poznamka": "Skutecne pocty lahvi spocitane rucne u palety. null = jeste nespocitano, fotka se pak do presnosti nezapocita. Fotky se stejnou hodnotou 'paleta' ukazuji tutez paletu.",
+  "paleta1.jpg":   { "paleta": 1, "pet": null, "sklo": 0 },
+  "paleta2_a.jpg": { "paleta": 2, "pet": null, "sklo": 20 },
+  "paleta2_b.jpg": { "paleta": 2, "pet": null, "sklo": 20 },
+  "paleta3.jpg":   { "paleta": 3, "pet": null, "sklo": 0 }
+}

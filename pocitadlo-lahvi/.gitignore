@@ -1,0 +1,4 @@
+.venv/
+vystup/
+__pycache__/
+.pytest_cache/
